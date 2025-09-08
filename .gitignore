@@ -1,0 +1,10 @@
+bin/
+obj/
+Properties/
+.vscode/
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+EgyptOnline.csproj
+EgyptOnline.http
+Migrations/
