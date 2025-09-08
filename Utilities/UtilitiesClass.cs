@@ -49,6 +49,24 @@ namespace EgyptOnline.Utilities
             }
         }
 
+        public string GetUserID(ClaimsPrincipal User)
+        {
+
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+            if (userId == null)
+            {
+                return null;
+            }
+
+            return userId;
+        }
+
+        public string PayTheMoney()
+        {
+            // Payment processing logic will go here
+            return "Hello there";
+        }
+
     }
 
 }

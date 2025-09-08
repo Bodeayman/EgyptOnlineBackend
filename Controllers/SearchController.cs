@@ -47,8 +47,6 @@ namespace EgyptOnline.Controllers
                 w.Email,
                 w.Location,
                 w.IsAvailable,
-
-
             }).ToList());
         }
     }
