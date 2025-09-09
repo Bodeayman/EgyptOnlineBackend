@@ -21,11 +21,12 @@ namespace EgyptOnline.Controllers
             _context = context;
             _utils = utils;
         }
-        [HttpPost]
-        public IActionResult ProcessPayment()
+        [HttpPost("callback")]
+        public async Task<IActionResult> PaymentCallback()
         {
-            // Payment processing logic will go here
-            return Ok(new { message = "Payment processed successfully!" });
+            // Optional: verify signature if gateway provides one
+
+            return Ok();
         }
         [HttpPost("addPayment")]
         public async Task<IActionResult> AddPayment([FromBody] CreatePaymentDto paymentDto)

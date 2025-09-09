@@ -1,7 +1,9 @@
 
 using System.Text;
 using EgyptOnline.Data;
+using EgyptOnline.Interfaces;
 using EgyptOnline.Models;
+using EgyptOnline.Services;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -57,6 +59,7 @@ builder.Services.AddIdentity<Worker, IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 builder.Services.AddSingleton<UtilitiesClass>();
+builder.Services.AddScoped<IPaymentService, PaymobService>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
