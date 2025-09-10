@@ -1,5 +1,6 @@
 using EgyptOnline.Data;
 using EgyptOnline.Dtos;
+using EgyptOnline.Interfaces;
 using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Mvc;
@@ -16,17 +17,27 @@ namespace EgyptOnline.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UtilitiesClass _utils;
 
-        public PaymentController(ApplicationDbContext context, UtilitiesClass utils)
+        private readonly IPaymentService _paymentService;
+
+        public PaymentController(ApplicationDbContext context, UtilitiesClass utils, IPaymentService paymentService)
         {
+            _paymentService = paymentService;
             _context = context;
             _utils = utils;
         }
         [HttpPost("callback")]
-        public async Task<IActionResult> PaymentCallback()
+        public async Task<IActionResult> PaymentCallback([FromBody] PaymentCallbackDto callbackDto)
         {
-            // Optional: verify signature if gateway provides one
+            try
+            {
+                string Link = await _paymentService.CreatePaymentSession(callbackDto.AmountCents ?? 0, callbackDto.OrderId); // The hell
+                return Ok(Link);
+            }
 
-            return Ok();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while processing the payment callback.", error = ex.Message });
+            }
         }
         [HttpPost("addPayment")]
         public async Task<IActionResult> AddPayment([FromBody] CreatePaymentDto paymentDto)

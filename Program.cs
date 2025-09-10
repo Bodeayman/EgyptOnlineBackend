@@ -48,6 +48,8 @@ builder.Services.AddSwaggerGen(
 
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<UtilitiesClass>();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -58,11 +60,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddIdentity<Worker, IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
-builder.Services.AddSingleton<UtilitiesClass>();
-builder.Services.AddScoped<IPaymentService, PaymobService>();
-
+builder.Services.AddHttpClient<IPaymentService, PaymobService>();
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+//Your are injecting the Objects in this file
 
 
 // Register authentication
