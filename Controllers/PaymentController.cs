@@ -1,3 +1,4 @@
+using System.Text.Json;
 using EgyptOnline.Data;
 using EgyptOnline.Dtos;
 using EgyptOnline.Interfaces;
@@ -37,6 +38,35 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "An error occurred while processing the payment callback.", error = ex.Message });
+            }
+        }
+
+        [HttpPost("webhook")]
+        public IActionResult PaymobWebhook([FromForm] IFormCollection form)
+        {
+            try
+            {
+                var success = form["success"].ToString();
+                var orderId = form["order"].ToString();
+
+                Console.WriteLine($"Webhook received for Order ID: {orderId}, Success: {success}");
+
+                var response = new WebhookResponseDto
+                {
+                    Message = success == "true" ? "Payment processed successfully" : "Payment failed",
+                    OrderId = orderId
+                };
+
+                return success == "true" ? Ok(response) : BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing webhook: {ex.Message}");
+                return StatusCode(500, new WebhookResponseDto
+                {
+                    Message = "An error occurred while processing the webhook",
+                    OrderId = ""
+                });
             }
         }
         [HttpPost("addPayment")]
