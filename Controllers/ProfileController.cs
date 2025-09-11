@@ -28,6 +28,7 @@ namespace EgyptOnline.Controllers
             _userManager = userManager;
             _context = context;
         }
+        // Get the profile of the worker
         [HttpGet]
         public async Task<IActionResult> GetProfile()
         {
@@ -63,7 +64,7 @@ namespace EgyptOnline.Controllers
             }
         }
 
-
+        //Update the location and availability and skills of the worker
         [HttpPut]
 
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateWorkerProfileDto model)

@@ -28,6 +28,8 @@ namespace EgyptOnline.Controllers
             _context = context;
             _userService = service;
         }
+
+        // This function returns the iframe that we will call the payment from
         [HttpPost("callback")]
         public async Task<IActionResult> PaymentCallback([FromBody] PaymentCallbackDto callbackDto)
         {
@@ -46,7 +48,7 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = "An error occurred while processing the payment callback.", error = ex.Message });
             }
         }
-
+        // callback function to handle the webhook from paymob after payment
         [HttpPost("webhook")]
         public IActionResult PaymobNewWebHook([FromBody] JsonElement payload)
         {
@@ -78,7 +80,7 @@ namespace EgyptOnline.Controllers
             }
 
         }
-
+        // Add types of payment to the user inventory
         [HttpPost("addPayment")]
         public async Task<IActionResult> AddPayment([FromBody] CreatePaymentDto paymentDto)
         {
@@ -99,7 +101,7 @@ namespace EgyptOnline.Controllers
             return Ok(new { message = "Payment Method added successfully!" });
 
         }
-
+        // Get all payment methods of the user/worker
         [HttpGet("allPayments")]
         public async Task<IActionResult> GetAllPayments()
         {
