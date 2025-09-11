@@ -1,0 +1,14 @@
+bin/
+obj/
+*.md
+*.git
+.vs/
+*.user
+*.suo
+*.db
+*.log
+*.sqlite
+*.pdb
+*.cache
+*.DS_Store
+*.env
