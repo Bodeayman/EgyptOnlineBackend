@@ -3,8 +3,8 @@
 using System.Runtime.InteropServices;
 using EgyptOnline.Data;
 using EgyptOnline.Dtos;
+using EgyptOnline.Interfaces;
 using EgyptOnline.Models;
-using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,14 +17,14 @@ namespace EgyptOnline.Controllers
 
     public class ProfileController : ControllerBase
     {
-        private readonly UtilitiesClass _utils;
+        private readonly IUserService _userService;
         private readonly UserManager<Worker> _userManager;
 
         private readonly ApplicationDbContext _context;
 
-        public ProfileController(UserManager<Worker> userManager, UtilitiesClass utils, ApplicationDbContext context)
+        public ProfileController(UserManager<Worker> userManager, IUserService userService, ApplicationDbContext context)
         {
-            _utils = utils;
+            _userService = userService;
             _userManager = userManager;
             _context = context;
         }

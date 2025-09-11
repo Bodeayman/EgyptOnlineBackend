@@ -5,7 +5,6 @@ using EgyptOnline.Data;
 using EgyptOnline.Dtos;
 using EgyptOnline.Interfaces;
 using EgyptOnline.Models;
-using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,25 +17,27 @@ namespace EgyptOnline.Controllers
     {
 
         private readonly ApplicationDbContext _context;
-        private readonly UtilitiesClass _utils;
+        private readonly IUserService _userService;
 
         private readonly IPaymentService _paymentService;
 
-        private readonly IConfiguration _config;
 
-        public PaymentController(ApplicationDbContext context, UtilitiesClass utils, IPaymentService paymentService, IConfiguration config)
+        public PaymentController(ApplicationDbContext context, IUserService service, IPaymentService paymentService)
         {
             _paymentService = paymentService;
             _context = context;
-            _utils = utils;
-            _config = config;
+            _userService = service;
         }
         [HttpPost("callback")]
         public async Task<IActionResult> PaymentCallback([FromBody] PaymentCallbackDto callbackDto)
         {
             try
             {
-                string Link = await _paymentService.CreatePaymentSession(callbackDto.AmountCents ?? 0, callbackDto.OrderId); // The hell
+                string Link = await _paymentService.CreatePaymentSession(
+                 callbackDto.AmountCents,
+                 callbackDto.OrderId,
+                 callbackDto.currency
+                 ); // The hell
                 return Ok(Link);
             }
 
@@ -81,7 +82,7 @@ namespace EgyptOnline.Controllers
         [HttpPost("addPayment")]
         public async Task<IActionResult> AddPayment([FromBody] CreatePaymentDto paymentDto)
         {
-            var userId = _utils.GetUserID(User);
+            var userId = _userService.GetUserID(User);
             Console.WriteLine(userId);
 
 
@@ -102,7 +103,7 @@ namespace EgyptOnline.Controllers
         [HttpGet("allPayments")]
         public async Task<IActionResult> GetAllPayments()
         {
-            var userId = _utils.GetUserID(User);
+            var userId = _userService.GetUserID(User);
 
             var payments = await _context.Payments.Where(p => p.WorkerId == userId).ToListAsync();
 

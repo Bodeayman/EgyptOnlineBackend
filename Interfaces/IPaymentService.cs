@@ -2,6 +2,6 @@ namespace EgyptOnline.Interfaces
 {
     public interface IPaymentService
     {
-        public Task<string> CreatePaymentSession(decimal amount, string orderId);
+        public Task<string> CreatePaymentSession(decimal amount, string orderId, string currency = "EGP");
     }
 }

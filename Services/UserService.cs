@@ -1,19 +1,20 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using EgyptOnline.Interfaces;
 using EgyptOnline.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
 
-namespace EgyptOnline.Utilities
+namespace EgyptOnline.Services
 {
-    public class UtilitiesClass
+    public class UserService : IUserService
     {
         private readonly IConfiguration _config;
 
-        public UtilitiesClass(IConfiguration config)
+        public UserService(IConfiguration config)
         {
             _config = config;
         }
@@ -61,11 +62,6 @@ namespace EgyptOnline.Utilities
             return userId;
         }
 
-        public string PayTheMoney()
-        {
-            // Payment processing logic will go here
-            return "Hello there";
-        }
 
     }
 

@@ -14,7 +14,7 @@ namespace EgyptOnline.Services
             _config = config;
         }
 
-        public async Task<string> CreatePaymentSession(decimal amount, string orderId)
+        public async Task<string> CreatePaymentSession(decimal amount, string orderId, string currency = "EGP")
         {
             try
             {
@@ -42,7 +42,7 @@ namespace EgyptOnline.Services
                         auth_token = token,
                         delivery_needed = "false",
                         amount_cents = (int)(amount * 100),
-                        currency = "EGP",
+                        currency = currency,
                         merchant_order_id = orderId,
                         items = Array.Empty<object>()
                     });
@@ -77,7 +77,7 @@ namespace EgyptOnline.Services
                             country = "EG",
                             state = "NA"
                         },
-                        currency = "EGP",
+                        currency = currency,
                         integration_id = integrationId
                     });
 

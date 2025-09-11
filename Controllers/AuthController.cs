@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using EgyptOnline.Utilities;
+using EgyptOnline.Interfaces;
 namespace EgyptOnline.Controllers
 {
 
@@ -11,13 +12,13 @@ namespace EgyptOnline.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly UtilitiesClass _utils;
+        private readonly IUserService _userService;
         private readonly UserManager<Worker> _userManager;
         private readonly SignInManager<Worker> _signInManager;
 
-        public AuthController(UserManager<Worker> userManager, SignInManager<Worker> signInManager, UtilitiesClass utils)
+        public AuthController(UserManager<Worker> userManager, SignInManager<Worker> signInManager, IUserService service)
         {
-            _utils = utils;
+            _userService = service;
             _userManager = userManager;
             _signInManager = signInManager;
         }
@@ -54,7 +55,7 @@ namespace EgyptOnline.Controllers
                     return Unauthorized("Invalid login attempt");
                 }
 
-                var token = _utils.GenerateJwtToken(user);
+                var token = _userService.GenerateJwtToken(user);
 
                 Console.WriteLine(token);
                 return Ok(new

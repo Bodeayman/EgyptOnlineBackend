@@ -2,12 +2,10 @@ namespace EgyptOnline.Dtos
 {
     public class PaymentCallbackDto
     {
-        public string? PaymentId { get; set; }
-        public string? OrderId { get; set; }
-        public decimal? AmountCents { get; set; } = 0;
-        public string? Success { get; set; }
-        public string? Currency { get; set; }
-        public string? CreatedAt { get; set; }
-        public string? AuthToken { get; set; }
+        public required string OrderId { get; set; } = Guid.NewGuid().ToString(); // The normal user
+        public required decimal AmountCents { get; set; } = 50; // The normal user
+
+        public required string currency { get; set; } = "EGP"; // The normal user
+
     }
 }
