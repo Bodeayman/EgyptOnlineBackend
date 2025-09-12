@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using EgyptOnline.Utilities;
 using EgyptOnline.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
 namespace EgyptOnline.Controllers
 {
 
@@ -55,19 +56,41 @@ namespace EgyptOnline.Controllers
                     return Unauthorized("Invalid login attempt");
                 }
 
-                var token = _userService.GenerateJwtToken(user);
+                var accessToken = _userService.GenerateJwtToken(user);
+                var refreshToken = _userService.GenerateRefreshToken(user);
 
-                Console.WriteLine(token);
                 return Ok(new
                 {
                     message = "Login successful",
-                    token = token
+                    accessToken = accessToken,
+                    refreshToken = refreshToken
                 });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, "Internal server error: " + ex.Message);
             }
+        }
+        [HttpPost("refresh")]
+        public IActionResult Refresh([FromBody] string refreshToken)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(refreshToken);
+
+            if (jwtToken.ValidTo < DateTime.UtcNow)
+                return Unauthorized("Refresh token expired");
+
+            var userId = jwtToken.Claims.First(c => c.Type == "uid").Value;
+            var user = _userManager.FindByIdAsync(userId).Result;
+
+            var newAccessToken = _userService.GenerateJwtToken(user);
+            var newRefreshToken = _userService.GenerateRefreshToken(user);
+
+            return Ok(new
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken
+            });
         }
 
 

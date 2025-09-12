@@ -1,5 +1,6 @@
 using EgyptOnline.Data;
 using EgyptOnline.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace EgyptOnline.Controllers
 
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class SearchController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

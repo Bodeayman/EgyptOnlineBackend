@@ -5,6 +5,7 @@ using EgyptOnline.Data;
 using EgyptOnline.Dtos;
 using EgyptOnline.Interfaces;
 using EgyptOnline.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ namespace EgyptOnline.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
 
     public class ProfileController : ControllerBase
     {

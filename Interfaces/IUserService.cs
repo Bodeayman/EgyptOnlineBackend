@@ -7,5 +7,7 @@ namespace EgyptOnline.Interfaces
     {
         string GenerateJwtToken(User user);
         string GetUserID(ClaimsPrincipal user);
+
+        string GenerateRefreshToken(User user);
     }
 }

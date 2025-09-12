@@ -35,11 +35,21 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                string userId = _userService.GetUserID(User);
+                if (userId == null)
+                {
+                    return Unauthorized(new { message = "You should sign in again" });
+                }
+                bool isPaid = await _context.Workers.AnyAsync(w => w.Id == userId && w.IsAvailable);
+                if (isPaid)
+                {
+                    return BadRequest(new { message = "User already has an active subscription." });
+                }
                 string Link = await _paymentService.CreatePaymentSession(
                  callbackDto.AmountCents,
                  callbackDto.OrderId,
                  callbackDto.currency
-                 ); // The hell
+                 );
                 return Ok(Link);
             }
 
@@ -50,7 +60,7 @@ namespace EgyptOnline.Controllers
         }
         // callback function to handle the webhook from paymob after payment
         [HttpPost("webhook")]
-        public IActionResult PaymobNewWebHook([FromBody] JsonElement payload)
+        public async Task<IActionResult> PaymobNewWebHook([FromBody] JsonElement payload)
         {
             try
             {
@@ -64,7 +74,13 @@ namespace EgyptOnline.Controllers
 
                 if (success)
                 {
-                    Console.WriteLine($"Payment succeeded for Order ID: {orderId}");
+                    string workerId = _userService.GetUserID(User);
+                    var worker = await _context.Workers.FirstOrDefaultAsync(w => w.Id == workerId);
+                    if (worker == null)
+                    {
+                        return BadRequest(new { message = "You should sign in again" });
+                    }
+                    await _context.SaveChangesAsync();
                     return Ok(new { message = "Payment processed successfully", orderId });
                 }
                 else
