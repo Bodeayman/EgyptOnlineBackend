@@ -1,6 +1,6 @@
 using EgyptOnline.Models;
 
-namespace EgyptOnline.Interfaces
+namespace EgyptOnline.Application.Interfaces
 {
     public interface IPaymentRepository
     {

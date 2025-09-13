@@ -1,11 +1,13 @@
 using System.Text;
-using EgyptOnline.Interfaces;
 using EgyptOnline.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
+using EgyptOnline.Repositories;
+using EgyptOnline.Domain.Interfaces;
+using EgyptOnline.Application.Interfaces;
 /*
 This file is for adding functionalies to program.cs instead of packing everything in one file
 like adding authentication and swagger configuration
@@ -18,6 +20,8 @@ namespace EgyptOnline.Extensions
         {
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IPaymentRepository, PaymentRepository>();
+            services.AddScoped<IOTPService, SmsMisrOtpService>();
+
             services.AddHttpClient<IPaymentService, PaymobService>();
             return services;
         }

@@ -1,5 +1,7 @@
 using System.Text.Json;
-using EgyptOnline.Interfaces;
+using EgyptOnline.Domain.Interfaces;
+
+using EgyptOnline.Models;
 
 namespace EgyptOnline.Services
 {
@@ -14,7 +16,7 @@ namespace EgyptOnline.Services
             _config = config;
         }
 
-        public async Task<string> CreatePaymentSession(decimal amount, string orderId, string currency = "EGP")
+        public async Task<string> CreatePaymentSession(decimal? amount, string orderId, Worker worker, string currency = "EGP")
         {
             try
             {
@@ -44,6 +46,7 @@ namespace EgyptOnline.Services
                         amount_cents = (int)(amount * 100),
                         currency = currency,
                         merchant_order_id = orderId,
+                        user_id = worker.Id,
                         items = Array.Empty<object>()
                     });
                 Console.WriteLine(orderResponse.Content.ReadAsStringAsync().Result);
@@ -61,21 +64,13 @@ namespace EgyptOnline.Services
                         amount_cents = (int)(amount * 100),
                         expiration = 3600,
                         order_id = orderIdInt,
+                        user_id = "",
                         billing_data = new
                         {
-                            first_name = "Test",
-                            last_name = "User",
-                            email = "test@example.com",
-                            phone_number = "01000000000",
-                            apartment = "NA",
-                            floor = "NA",
-                            street = "NA",
-                            building = "NA",
-                            shipping_method = "NA",
-                            postal_code = "NA",
-                            city = "Cairo",
-                            country = "EG",
-                            state = "NA"
+                            first_name = worker.UserName,
+                            email = worker.Email,
+                            phone_number = worker.PhoneNumber,
+                            city = worker.Location,
                         },
                         currency = currency,
                         integration_id = integrationId

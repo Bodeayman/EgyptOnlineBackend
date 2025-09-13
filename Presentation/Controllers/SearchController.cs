@@ -42,14 +42,18 @@ namespace EgyptOnline.Controllers
             }
 
             var result = await workers.ToListAsync();
-            return Ok(result.Select(w => new
-            {
-                w.Id,
-                w.UserName,
-                w.Email,
-                w.Location,
-                w.IsAvailable,
-            }).ToList());
+            return Ok(
+                result.Select(
+                w => new
+                {
+                    w.Id,
+                    w.UserName,
+                    w.Email,
+                    w.Location,
+                    w.IsAvailable,
+                }
+                ).ToList()
+            );
         }
     }
 }

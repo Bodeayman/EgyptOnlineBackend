@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using EgyptOnline.Models;
 
-namespace EgyptOnline.Interfaces
+namespace EgyptOnline.Domain.Interfaces
 {
     public interface IUserService
     {

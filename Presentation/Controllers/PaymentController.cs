@@ -2,8 +2,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using EgyptOnline.Data;
+using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
-using EgyptOnline.Interfaces;
 using EgyptOnline.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -40,14 +40,22 @@ namespace EgyptOnline.Controllers
                 {
                     return Unauthorized(new { message = "You should sign in again" });
                 }
+                Worker worker = await _context.Workers.FirstOrDefaultAsync(p => p.Id == userId);
+                if (worker == null)
+                {
+                    return BadRequest(new { message = "The user is not found" });
+
+                }
                 bool isPaid = await _context.Workers.AnyAsync(w => w.Id == userId && w.IsAvailable);
                 if (isPaid)
                 {
                     return BadRequest(new { message = "User already has an active subscription." });
                 }
+
                 string Link = await _paymentService.CreatePaymentSession(
                  callbackDto.AmountCents,
                  callbackDto.OrderId,
+                 worker,
                  callbackDto.currency
                  );
                 return Ok(Link);
@@ -62,6 +70,7 @@ namespace EgyptOnline.Controllers
         [HttpPost("webhook")]
         public async Task<IActionResult> PaymobNewWebHook([FromBody] JsonElement payload)
         {
+            //This is should be done after doing the payment
             try
             {
                 var obj = payload.GetProperty("obj");
@@ -69,24 +78,34 @@ namespace EgyptOnline.Controllers
                 bool success = obj.GetProperty("success").GetBoolean();
                 string orderId = obj.GetProperty("order").GetProperty("id").GetInt32().ToString();
                 string message = obj.GetProperty("data").GetProperty("message").GetString() ?? "";
+                Console.WriteLine(obj.ToString());
+                foreach (var header in Request.Headers)
+                {
+                    Console.WriteLine($"{header.Key}: {header.Value}");
+                }
 
-                Console.WriteLine($"Webhook received for Order ID: {orderId}, Success: {success}, Message: {message}");
+                string userId = "";
+
+                Console.WriteLine(userId);
+
 
                 if (success)
                 {
-                    string workerId = _userService.GetUserID(User);
-                    var worker = await _context.Workers.FirstOrDefaultAsync(w => w.Id == workerId);
-                    if (worker == null)
+                    bool workerFound = await _context.Workers.AnyAsync(p => p.Id == userId);
+                    if (workerFound)
                     {
-                        return BadRequest(new { message = "You should sign in again" });
+
+                        Worker worker = await _context.Workers.FirstAsync(p => p.Id == userId);
+                        worker.IsAvailable = true;
+                        await _context.SaveChangesAsync();
+                        return Ok(worker);
                     }
-                    await _context.SaveChangesAsync();
                     return Ok(new { message = "Payment processed successfully", orderId });
                 }
                 else
                 {
                     Console.WriteLine($"Payment failed for Order ID: {orderId}");
-                    return BadRequest(new { message = "Payment failed", orderId });
+                    return BadRequest(new { message = "Payment failed, Please retry paying again soon", orderId });
                 }
             }
             catch (Exception ex)

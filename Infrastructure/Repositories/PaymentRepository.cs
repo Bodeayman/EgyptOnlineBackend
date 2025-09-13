@@ -1,9 +1,9 @@
 using EgyptOnline.Data;
-using EgyptOnline.Interfaces;
+using EgyptOnline.Application.Interfaces;
 using EgyptOnline.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EgyptOnline.Services
+namespace EgyptOnline.Repositories
 {
     public class PaymentRepository : IPaymentRepository
     {

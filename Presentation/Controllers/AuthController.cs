@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using EgyptOnline.Utilities;
-using EgyptOnline.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.EntityFrameworkCore;
+using EgyptOnline.Domain.Interfaces;
+using EgyptOnline.Services;
 namespace EgyptOnline.Controllers
 {
 
@@ -15,13 +17,13 @@ namespace EgyptOnline.Controllers
     {
         private readonly IUserService _userService;
         private readonly UserManager<Worker> _userManager;
-        private readonly SignInManager<Worker> _signInManager;
+        private readonly IOTPService _smsOtpService;
 
-        public AuthController(UserManager<Worker> userManager, SignInManager<Worker> signInManager, IUserService service)
+        public AuthController(UserManager<Worker> userManager, IUserService service, IOTPService sms)
         {
             _userService = service;
             _userManager = userManager;
-            _signInManager = signInManager;
+            _smsOtpService = sms;
         }
 
         [HttpPost("register")]
@@ -57,13 +59,13 @@ namespace EgyptOnline.Controllers
                 }
 
                 var accessToken = _userService.GenerateJwtToken(user);
-                var refreshToken = _userService.GenerateRefreshToken(user);
+                // var refreshToken = _userService.GenerateRefreshToken(user);
 
                 return Ok(new
                 {
                     message = "Login successful",
                     accessToken = accessToken,
-                    refreshToken = refreshToken
+                    // refreshToken = refreshToken
                 });
             }
             catch (Exception ex)
@@ -91,6 +93,19 @@ namespace EgyptOnline.Controllers
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken
             });
+        }
+        [HttpPost("request-otp")]
+        public async Task<IActionResult> RequestOtp([FromBody] string phoneNumber)
+        {
+
+            Console.WriteLine(phoneNumber);
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+            if (user == null) return NotFound("User not found");
+            await _smsOtpService.SendOtpAsync(phoneNumber, false);
+            // SendOtpAsync()
+
+
+            return Ok("OTP sent");
         }
 
 

@@ -2,8 +2,8 @@
 
 using System.Runtime.InteropServices;
 using EgyptOnline.Data;
+using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
-using EgyptOnline.Interfaces;
 using EgyptOnline.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
