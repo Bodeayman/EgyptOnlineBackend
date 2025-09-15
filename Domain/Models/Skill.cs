@@ -6,8 +6,8 @@ namespace EgyptOnline.Models
 
         public int Id { get; set; }
         public string Name { get; set; } = "Unknown";
-        public string WorkerId { get; set; } = string.Empty;
+        public required int WorkerId { get; set; }
 
-        public Worker? Worker { get; set; }
+        public required Worker Worker { get; set; }
     }
 }

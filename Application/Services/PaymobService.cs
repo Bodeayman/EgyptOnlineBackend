@@ -16,7 +16,7 @@ namespace EgyptOnline.Services
             _config = config;
         }
 
-        public async Task<string> CreatePaymentSession(decimal? amount, string orderId, Worker worker, string currency = "EGP")
+        public async Task<string> CreatePaymentSession(decimal? amount, string orderId, User user, string currency = "EGP")
         {
             try
             {
@@ -46,7 +46,7 @@ namespace EgyptOnline.Services
                         amount_cents = (int)(amount * 100),
                         currency = currency,
                         merchant_order_id = orderId,
-                        user_id = worker.Id,
+                        user_id = user.Id,
                         items = Array.Empty<object>()
                     });
                 Console.WriteLine(orderResponse.Content.ReadAsStringAsync().Result);
@@ -67,10 +67,9 @@ namespace EgyptOnline.Services
                         user_id = "",
                         billing_data = new
                         {
-                            first_name = worker.UserName,
-                            email = worker.Email,
-                            phone_number = worker.PhoneNumber,
-                            city = worker.Location,
+                            first_name = user.UserName,
+                            email = user.Email,
+                            phone_number = user.PhoneNumber,
                         },
                         currency = currency,
                         integration_id = integrationId

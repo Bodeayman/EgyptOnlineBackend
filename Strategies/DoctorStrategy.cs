@@ -8,8 +8,7 @@ namespace EgyptOnline.Strategies
     {
         public async Task AddEntity(User user, ApplicationDbContext context)
         {
-            Worker worker = user as Worker ?? new Worker();
-            await context.Workers.AddAsync(worker);
+
         }
     }
 }

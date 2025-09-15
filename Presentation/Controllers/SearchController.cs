@@ -27,7 +27,7 @@ namespace EgyptOnline.Controllers
             {
                 if (!string.IsNullOrEmpty(filter.FullName))
                 {
-                    workers = workers.Where(w => w.UserName.Contains(filter.FullName));
+                    workers = workers.Where(w => w.User.UserName.Contains(filter.FullName));
                 }
 
                 if (!string.IsNullOrEmpty(filter.Location))
@@ -37,7 +37,7 @@ namespace EgyptOnline.Controllers
 
                 if (filter.Skills != null && filter.Skills.Any())
                 {
-                    workers = workers.Where(w => w.Skills.Any(s => filter.Skills.Contains(s.Name)));
+                    //Skills logic
                 }
             }
 
@@ -47,8 +47,8 @@ namespace EgyptOnline.Controllers
                 w => new
                 {
                     w.Id,
-                    w.UserName,
-                    w.Email,
+                    w.User.UserName,
+                    w.User.Email,
                     w.Location,
                     w.IsAvailable,
                 }

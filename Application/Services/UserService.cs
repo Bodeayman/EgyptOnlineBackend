@@ -41,7 +41,7 @@ namespace EgyptOnline.Services
                     issuer: _config["Jwt:Issuer"],
                     audience: _config["Jwt:Audience"],
                     claims: claims,
-                    expires: DateTime.UtcNow.AddMinutes(15),
+                    expires: DateTime.UtcNow.AddMinutes(30),
                     signingCredentials: credentials
                 );
 

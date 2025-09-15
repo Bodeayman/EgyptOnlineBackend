@@ -40,13 +40,14 @@ namespace EgyptOnline.Controllers
                 {
                     return Unauthorized(new { message = "You should sign in again" });
                 }
-                Worker worker = await _context.Workers.FirstOrDefaultAsync(p => p.Id == userId);
-                if (worker == null)
+                User user = await _context.Users.FirstOrDefaultAsync(p => p.Id == userId);
+                if (user == null)
                 {
                     return BadRequest(new { message = "The user is not found" });
 
                 }
-                bool isPaid = await _context.Workers.AnyAsync(w => w.Id == userId && w.IsAvailable);
+                var ServicesProvider = await _context.ServiceProviders.FirstOrDefaultAsync(sp => sp.UserId == userId);
+                bool isPaid = await _context.ServiceProviders.AnyAsync(w => w.UserId == userId && w.IsAvailable);
                 if (isPaid)
                 {
                     return BadRequest(new { message = "User already has an active subscription." });
@@ -55,7 +56,7 @@ namespace EgyptOnline.Controllers
                 string Link = await _paymentService.CreatePaymentSession(
                  callbackDto.AmountCents,
                  callbackDto.OrderId,
-                 worker,
+                 user,
                  callbackDto.currency
                  );
                 return Ok(Link);
@@ -91,11 +92,11 @@ namespace EgyptOnline.Controllers
 
                 if (success)
                 {
-                    bool workerFound = await _context.Workers.AnyAsync(p => p.Id == userId);
+                    bool workerFound = await _context.Workers.AnyAsync(p => p.UserId == userId);
                     if (workerFound)
                     {
 
-                        Worker worker = await _context.Workers.FirstAsync(p => p.Id == userId);
+                        Worker worker = await _context.Workers.FirstAsync(p => p.UserId == userId);
                         worker.IsAvailable = true;
                         await _context.SaveChangesAsync();
                         return Ok(worker);
@@ -116,35 +117,8 @@ namespace EgyptOnline.Controllers
 
         }
         // Add types of payment to the user inventory
-        [HttpPost("addPayment")]
-        public async Task<IActionResult> AddPayment([FromBody] CreatePaymentDto paymentDto)
-        {
-            var userId = _userService.GetUserID(User);
-            Console.WriteLine(userId);
 
-
-            // return Ok(userId);
-            var payment = await _context.Payments.AddAsync(new Payment
-            {
-
-                WorkerId = userId,
-                PaymentType = paymentDto.PaymentType,
-                PaymentCode = paymentDto.PaymentCode
-            });
-
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Payment Method added successfully!" });
-
-        }
         // Get all payment methods of the user/worker
-        [HttpGet("allPayments")]
-        public async Task<IActionResult> GetAllPayments()
-        {
-            var userId = _userService.GetUserID(User);
 
-            var payments = await _context.Payments.Where(p => p.WorkerId == userId).ToListAsync();
-
-            return Ok(payments);
-        }
     }
 }
