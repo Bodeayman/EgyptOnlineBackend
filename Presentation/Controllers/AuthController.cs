@@ -272,20 +272,34 @@ namespace EgyptOnline.Controllers
 
             return Ok("OTP sent");
         }
-
+        [Authorize]
         [HttpPost("upload-profile-image")]
         public async Task<IActionResult> UploadProfileImage(IFormFile file)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
 
-            using var ms = new MemoryStream();
-            await file.CopyToAsync(ms);
-            var fileBytes = ms.ToArray();
+                if (file == null || file.Length == 0)
+                    return BadRequest("No file uploaded.");
 
-            var url = await _cdnService.UploadImageAsync(fileBytes, file.FileName, "/user-uploads");
+                using var ms = new MemoryStream();
+                await file.CopyToAsync(ms);
+                var fileBytes = ms.ToArray();
 
-            return Ok(new { Url = url });
+                var url = await _cdnService.UploadImageAsync(fileBytes, file.FileName, "/user-uploads");
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                user.ImageUrl = url;
+
+                await _context.SaveChangesAsync();
+                return Ok(new { Url = url });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error {ex.Message}");
+            }
+
+
         }
 
 

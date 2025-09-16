@@ -25,11 +25,11 @@ namespace EgyptOnline.Services
         {
             try
             {
-                var uploadRequest = new UploadRequest
+                var uploadRequest = new FileCreateRequest
                 {
-                    File = fileBytes,
-                    FileName = fileName,
-                    Folder = folder
+                    file = fileBytes,
+                    fileName = fileName,
+                    folder = folder
                 };
 
                 var result = await _imageKitClient.UploadAsync(uploadRequest);
