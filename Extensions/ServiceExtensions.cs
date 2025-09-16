@@ -21,6 +21,8 @@ namespace EgyptOnline.Extensions
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<IOTPService, SmsMisrOtpService>();
+            services.AddScoped<ICDNService, ImageKitService>();
+
 
             services.AddHttpClient<IPaymentService, PaymobService>();
             return services;

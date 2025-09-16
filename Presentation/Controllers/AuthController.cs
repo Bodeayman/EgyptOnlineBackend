@@ -20,14 +20,17 @@ namespace EgyptOnline.Controllers
         private readonly UserManager<User> _userManager;
         private readonly IOTPService _smsOtpService;
 
+        private readonly ICDNService _cdnService;
+
         private readonly ApplicationDbContext _context;
 
-        public AuthController(UserManager<User> userManager, IUserService service, IOTPService sms, ApplicationDbContext context)
+        public AuthController(UserManager<User> userManager, IUserService service, IOTPService sms, ApplicationDbContext context, ICDNService CDNService)
         {
             _userService = service;
             _userManager = userManager;
             _smsOtpService = sms;
             _context = context;
+            _cdnService = CDNService;
         }
 
         [HttpPost("register")]
@@ -269,6 +272,22 @@ namespace EgyptOnline.Controllers
 
             return Ok("OTP sent");
         }
+
+        [HttpPost("upload-profile-image")]
+        public async Task<IActionResult> UploadProfileImage(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            var fileBytes = ms.ToArray();
+
+            var url = await _cdnService.UploadImageAsync(fileBytes, file.FileName, "/user-uploads");
+
+            return Ok(new { Url = url });
+        }
+
 
 
 
