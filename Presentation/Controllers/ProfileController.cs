@@ -5,6 +5,7 @@ using EgyptOnline.Data;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
 using EgyptOnline.Models;
+using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -37,6 +38,19 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                var user = await _context.Users
+                    .Include(u => u.ServiceProvider)
+                    .Include(u => u.Subscription)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                    return NotFound();
+
+                return Ok(user.ToShowProfileDto());
+                /*var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
                 {
                     return Unauthorized("User ID not found in token");
@@ -100,6 +114,7 @@ namespace EgyptOnline.Controllers
                 {
                     return StatusCode(500, new { message = "Something wrong with showing the profile" });
                 }
+                */
 
             }
             catch (Exception ex)

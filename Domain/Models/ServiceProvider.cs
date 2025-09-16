@@ -16,6 +16,6 @@ namespace EgyptOnline.Models
 
         public string? Bio { get; set; }
 
-        public string ProviderType { get; set; } = "User";
+        public string ProviderType { get; set; } = "Worker";
     }
 }

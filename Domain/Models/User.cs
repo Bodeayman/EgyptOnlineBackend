@@ -4,6 +4,9 @@ namespace EgyptOnline.Models
 {
     public class User : IdentityUser
     {
+
+        public string? ImageUrl { get; set; }
+        public required string UserType { get; set; } = "User";
         public ServicesProvider? ServiceProvider { get; set; }
 
         public Subscription? Subscription { get; set; }

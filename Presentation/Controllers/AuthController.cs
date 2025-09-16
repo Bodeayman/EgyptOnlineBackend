@@ -41,9 +41,21 @@ namespace EgyptOnline.Controllers
                     return BadRequest(ModelState);
                 }
 
+
+                //So first it will determine if that a user or a worker
+                string UserType;
+                if (model.UserType == "User")
+                {
+                    UserType = "User";
+                }
+                else
+                {
+                    UserType = "SP";
+                }
+
                 var user = new
                 User
-                { UserName = model.FullName, Email = model.Email, PhoneNumber = model.PhoneNumber };
+                { UserName = model.FullName, Email = model.Email, PhoneNumber = model.PhoneNumber, UserType = model.UserType };
                 if (await _userManager.FindByEmailAsync(model.Email) != null)
                 {
                     return BadRequest(new { message = "The User is Registered Before" });
@@ -157,8 +169,35 @@ namespace EgyptOnline.Controllers
                 {
                     return Unauthorized("Invalid login attempt");
                 }
+                var AllUserDetails = await _context.Users.Include(u => u.ServiceProvider)
+                    .Include(u => u.Subscription)
+                    .FirstOrDefaultAsync(u => u.Id == user.Id);
+                UsersTypes UserRole;
 
-                var accessToken = _userService.GenerateJwtToken(user);
+                if (AllUserDetails.UserType == "User")
+                {
+                    UserRole = UsersTypes.User;
+                }
+                else
+                {
+                    if (AllUserDetails.ServiceProvider.ProviderType == "Worker")
+                    {
+                        UserRole = UsersTypes.Worker;
+                    }
+                    else if (AllUserDetails.ServiceProvider.ProviderType == "Company")
+                    {
+                        UserRole = UsersTypes.Company;
+                    }
+                    else if (AllUserDetails.ServiceProvider.ProviderType == "Contractor")
+                    {
+                        UserRole = UsersTypes.Contractor;
+                    }
+                    else
+                    {
+                        return StatusCode(500, new { message = "Error while Fetching the User" });
+                    }
+                }
+                var accessToken = _userService.GenerateJwtToken(user, UserRole);
                 // var refreshToken = _userService.GenerateRefreshToken(user);
 
                 return Ok(new
@@ -183,9 +222,32 @@ namespace EgyptOnline.Controllers
                 return Unauthorized("Refresh token expired");
 
             var userId = jwtToken.Claims.First(c => c.Type == "uid").Value;
-            var user = _userManager.FindByIdAsync(userId).Result;
+            var typeClaim = jwtToken.Claims.First(c => c.Type == "role").Value;
 
-            var newAccessToken = _userService.GenerateJwtToken(user);
+
+            var user = _userManager.FindByIdAsync(userId).Result;
+            UsersTypes UserRole;
+            if (typeClaim == "User")
+            {
+                UserRole = UsersTypes.User;
+            }
+            else if (typeClaim == "Worker")
+            {
+                UserRole = UsersTypes.Worker;
+            }
+            else if (typeClaim == "Company")
+            {
+                UserRole = UsersTypes.Company;
+            }
+            else if (typeClaim == "Contractor")
+            {
+                UserRole = UsersTypes.Contractor;
+            }
+            else
+            {
+                return StatusCode(500, new { message = "Error while Fetching the User" });
+            }
+            var newAccessToken = _userService.GenerateJwtToken(user, UserRole);
             var newRefreshToken = _userService.GenerateRefreshToken(user);
 
             return Ok(new

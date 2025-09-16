@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Models;
+using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -23,18 +24,21 @@ namespace EgyptOnline.Services
             _config = config;
         }
 
-        public string GenerateJwtToken(User user)
+        public string GenerateJwtToken(User user, UsersTypes userRole)
         {
             try
             {
                 var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+                Console.WriteLine("The string ", userRole.ToString());
+                Console.WriteLine("The enum ", userRole);
 
                 var claims = new[]
                 {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("uid", user.Id)
+                new Claim("uid", user.Id),
+                new Claim("role",userRole.ToString())
             };
 
                 var token = new JwtSecurityToken(
