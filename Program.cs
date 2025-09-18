@@ -1,15 +1,10 @@
 
-using System.Text;
 using EgyptOnline.Data;
 using EgyptOnline.Models;
-using EgyptOnline.Services;
-using EgyptOnline.Utilities;
 using EgyptOnline.Extensions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();

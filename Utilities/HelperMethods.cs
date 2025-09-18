@@ -1,3 +1,5 @@
+using EgyptOnline.Models;
+
 namespace EgyptOnline.Utilities
 {
     public static class Helper
@@ -19,6 +21,11 @@ namespace EgyptOnline.Utilities
                 username = "user" + Guid.NewGuid().ToString("N").Substring(0, 6);
 
             return username;
+        }
+        public static IQueryable<T> PaginateUsers<T>(IQueryable<T> ListOfUsers, int PageNumber, int PageSize = Constants.PAGE_SIZE)
+        {
+            var newListOfUsers = ListOfUsers.Skip(PageSize * (PageNumber - 1)).Take(PageSize);
+            return newListOfUsers;
         }
     }
 }

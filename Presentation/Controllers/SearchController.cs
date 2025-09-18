@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using EgyptOnline.Data;
 using EgyptOnline.Dtos;
+using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -48,7 +49,7 @@ namespace EgyptOnline.Controllers
                         workers = workers.Where(w => w.Skill != null && w.Skill.Contains(filter.Profession));
                     }
                 }
-
+                workers = Helper.PaginateUsers(workers, filter!.PageNumber, Constants.PAGE_SIZE);
                 var result = await workers.ToListAsync();
                 return Ok(
 
@@ -99,6 +100,7 @@ namespace EgyptOnline.Controllers
                         companies = companies.Where(w => w.Business != null && w.Business.Contains(filter.Profession));
                     }
                 }
+                companies = Helper.PaginateUsers(companies, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var result = await companies.ToListAsync();
                 return Ok(
@@ -150,6 +152,8 @@ namespace EgyptOnline.Controllers
                         contractors = contractors.Where(w => w.Specialization != null && w.Specialization.Contains(filter.Profession));
                     }
                 }
+                contractors = Helper.PaginateUsers(contractors, filter!.PageNumber, Constants.PAGE_SIZE);
+
                 var result = await contractors.ToListAsync();
                 return Ok(
 
