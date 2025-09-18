@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using EgyptOnline.Repositories;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Application.Interfaces;
+using EgyptOnline.Strategies;
 /*
 This file is for adding functionalies to program.cs instead of packing everything in one file
 like adding authentication and swagger configuration
@@ -19,12 +20,16 @@ namespace EgyptOnline.Extensions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<IOTPService, SmsMisrOtpService>();
             services.AddScoped<ICDNService, ImageKitService>();
+            services.AddScoped<IPaymentStrategy, MobileWalletPaymentStrategy>();
+            services.AddScoped<IPaymentStrategy, CreditCardPaymentStrategy>();
+            services.AddScoped<IPaymentService, PaymobService>();
+            services.AddScoped<CreditCardPaymentStrategy>();
+            services.AddScoped<MobileWalletPaymentStrategy>();
 
+            services.AddHttpClient();
 
-            services.AddHttpClient<IPaymentService, PaymobService>();
             return services;
         }
 

@@ -55,10 +55,17 @@ namespace EgyptOnline.Controllers
                 {
                     UserType = "SP";
                 }
-
+                string UserName = Helper.GenerateUserName(model.FirstName, model.LastName);
                 var user = new
                 User
-                { UserName = model.FullName, Email = model.Email, PhoneNumber = model.PhoneNumber, UserType = model.UserType };
+                {
+                    UserName = UserName,
+                    Email = model.Email,
+                    PhoneNumber = model.PhoneNumber,
+                    UserType = model.UserType,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName
+                };
                 if (await _userManager.FindByEmailAsync(model.Email) != null)
                 {
                     return BadRequest(new { message = "The User is Registered Before" });

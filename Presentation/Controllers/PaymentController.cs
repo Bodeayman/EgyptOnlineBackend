@@ -5,6 +5,8 @@ using EgyptOnline.Data;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
 using EgyptOnline.Models;
+using EgyptOnline.Strategies;
+using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,13 +22,19 @@ namespace EgyptOnline.Controllers
         private readonly IUserService _userService;
 
         private readonly IPaymentService _paymentService;
+        private readonly CreditCardPaymentStrategy _creditCardStrategy;
+        private readonly MobileWalletPaymentStrategy _mobileWalletStrategy;
 
 
-        public PaymentController(ApplicationDbContext context, IUserService service, IPaymentService paymentService)
+        public PaymentController(ApplicationDbContext context, IUserService service, IPaymentService paymentService, CreditCardPaymentStrategy creditCardStrategy,
+        MobileWalletPaymentStrategy mobileWalletStrategy)
         {
             _paymentService = paymentService;
             _context = context;
             _userService = service;
+            _creditCardStrategy = creditCardStrategy;
+            _mobileWalletStrategy = mobileWalletStrategy;
+
         }
 
         // This function returns the iframe that we will call the payment from
@@ -52,14 +60,26 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(new { message = "User already has an active subscription." });
                 }
+                string Link;
+                if (callbackDto.PaymentMethod == "CreditCard")
+                {
+                    Link = await _paymentService.CreatePaymentSession(
+                         callbackDto.AmountCents ?? 50,
+                         user
+                        , _creditCardStrategy
 
-                string Link = await _paymentService.CreatePaymentSession(
-                 callbackDto.AmountCents,
-                 callbackDto.OrderId,
-                 user,
-                 callbackDto.currency
-                 );
-                return Ok(Link);
+                         );
+                }
+                else
+                {
+                    Link = await _paymentService.CreatePaymentSession(
+                    callbackDto.AmountCents ?? 50,
+                    user
+                    , _mobileWalletStrategy
+                    );
+                }
+
+                return Ok(new { message = Link });
             }
 
             catch (Exception ex)
@@ -114,7 +134,11 @@ namespace EgyptOnline.Controllers
                 Console.WriteLine($"Error processing webhook: {ex.Message}");
                 return StatusCode(500, new { message = "An error occurred while processing the webhook.", error = ex.Message });
             }
-
+        }
+        [HttpPost("pay-mobile-wallet")]
+        public async Task<IActionResult> PayMobileWallet()
+        {
+            return Ok();
         }
         // Add types of payment to the user inventory
 

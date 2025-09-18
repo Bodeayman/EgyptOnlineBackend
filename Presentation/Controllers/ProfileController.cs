@@ -50,71 +50,7 @@ namespace EgyptOnline.Controllers
                     return NotFound();
 
                 return Ok(user.ToShowProfileDto());
-                /*var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
-                if (userId == null)
-                {
-                    return Unauthorized("User ID not found in token");
-                }
 
-                var user = await _userManager.FindByIdAsync(userId);
-                if (user == null)
-                {
-                    return NotFound("User not found");
-                }
-                Console.WriteLine(userId);
-                var ServiceProvider = await _context.ServiceProviders.FirstOrDefaultAsync(w => w.UserId == userId);
-                Console.WriteLine(ServiceProvider != null);
-
-                if (ServiceProvider!.ProviderType == "Worker")
-                {
-
-                    return Ok(await _context.ServiceProviders
-              .FirstOrDefaultAsync(C => C.UserId == userId));
-                }
-                else if (ServiceProvider!.ProviderType == "Company")
-                {
-
-                    return Ok(await _context.Set<Company>()
-                   .Include(C => new
-                   {
-                       C.Bio,
-                       C.Location,
-                       C.Business,
-                       C.IsAvailable,
-                       C.User.PhoneNumber,
-                       C.User.UserName,
-                       C.User.Email,
-                       Subscription = new
-                       {
-                           EndDate = C.User.Subscription.EndDate
-                       }
-                   })
-                   .FirstOrDefaultAsync(C => C.UserId == userId));
-                }
-                else if (ServiceProvider!.ProviderType == "Worker")
-                {
-                    return Ok(await _context.Set<Contractor>()
-              .Include(C => new
-              {
-                  C.Bio,
-                  C.Location,
-                  C.Specialization,
-                  C.IsAvailable,
-                  C.User.PhoneNumber,
-                  C.User.UserName,
-                  C.User.Email,
-                  Subscription = new
-                  {
-                      EndDate = C.User.Subscription.EndDate
-                  }
-              })
-              .FirstOrDefaultAsync(C => C.UserId == userId));
-                }
-                else
-                {
-                    return StatusCode(500, new { message = "Something wrong with showing the profile" });
-                }
-                */
 
             }
             catch (Exception ex)
@@ -130,6 +66,7 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                string newUserName = Helper.GenerateUserName(model.FirstName, model.LastName);
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
                 {
@@ -143,8 +80,7 @@ namespace EgyptOnline.Controllers
                 }
                 //So we then have a user
                 //Update
-                user.UserName = model.FullName ?? user.UserName;
-                user.Email = model.Email ?? user.Email;
+                user.UserName = newUserName ?? user.UserName;
                 var result = await _userManager.UpdateAsync(user);
                 await _context.SaveChangesAsync();
 
@@ -159,7 +95,7 @@ namespace EgyptOnline.Controllers
                 }
 
                 serviceProvider.Location = model.Location ?? serviceProvider.Location;
-                serviceProvider.IsAvailable = model.IsAvailable ?? serviceProvider.IsAvailable;
+
                 serviceProvider.Bio = model.Bio ?? serviceProvider.Bio;
 
                 if (serviceProvider.ProviderType == "Worker")
@@ -179,6 +115,10 @@ namespace EgyptOnline.Controllers
                     var company = await _context.Companies.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
 
                     company!.Business = model.Business ?? company.Business;
+                }
+                else
+                {
+                    return BadRequest(new { message = "Put a correct ServiceProvider Name" });
                 }
 
                 await _context.SaveChangesAsync();
@@ -200,6 +140,14 @@ namespace EgyptOnline.Controllers
 No active subscription AND not a service provider → show ads.
 
 Otherwise → no ads.
+{
+  "fullName": "aymoon",
+  
 
+  "skill": "Cooking",
+  "specialization": "string",
+  "business": "string",
+  "providerType": "Worker"
+}
 
 */

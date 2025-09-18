@@ -11,6 +11,8 @@ namespace EgyptOnline.Utilities
             {
                 Id = user.Id,
                 UserName = user.UserName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 ImageUrl = user.ImageUrl,
