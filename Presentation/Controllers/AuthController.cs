@@ -17,6 +17,8 @@ namespace EgyptOnline.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly UserManager<User> _userManager;
+
         private readonly UserRegisterationService _userRegisterationService;
         private readonly IOTPService _smsOtpService;
 
@@ -24,13 +26,14 @@ namespace EgyptOnline.Controllers
 
         private readonly ApplicationDbContext _context;
 
-        public AuthController(UserRegisterationService userRegisterationService, IUserService service, IOTPService sms, ApplicationDbContext context, ICDNService CDNService)
+        public AuthController(UserManager<User> userManager, UserRegisterationService userRegisterationService, IUserService service, IOTPService sms, ApplicationDbContext context, ICDNService CDNService)
         {
             _userRegisterationService = userRegisterationService;
             _userService = service;
             _smsOtpService = sms;
             _context = context;
             _cdnService = CDNService;
+            _userManager = userManager;
         }
 
         [HttpPost("register")]
@@ -76,7 +79,7 @@ namespace EgyptOnline.Controllers
                             User = UserRegisterationResult.User,
                             UserId = UserRegisterationResult.User!.Id,
                             Bio = model.Bio,
-                            WorkerType = (int)model.WorkerType,
+                            WorkerType = model.WorkerType,
                             Skill = model.Skill,
                             ProviderType = model.ProviderType,
 

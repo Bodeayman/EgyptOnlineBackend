@@ -81,6 +81,8 @@ namespace EgyptOnline.Controllers
                 //So we then have a user
                 //Update
                 user.UserName = newUserName ?? user.UserName;
+                user.Location = model.Location ?? user.Location;
+
                 var result = await _userManager.UpdateAsync(user);
                 await _context.SaveChangesAsync();
 
@@ -94,7 +96,6 @@ namespace EgyptOnline.Controllers
 
                 }
 
-                serviceProvider.Location = model.Location ?? serviceProvider.Location;
 
                 serviceProvider.Bio = model.Bio ?? serviceProvider.Bio;
 

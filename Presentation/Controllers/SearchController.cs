@@ -5,7 +5,6 @@ using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
 namespace EgyptOnline.Controllers
 {
 
@@ -14,10 +13,14 @@ namespace EgyptOnline.Controllers
     [Authorize]
     public class SearchController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
 
-        public SearchController(ApplicationDbContext context)
+        private readonly ApplicationDbContext _context;
+        private readonly ILogger<SearchController> _logger;
+
+
+        public SearchController(ApplicationDbContext context, ILogger<SearchController> logger)
         {
+            _logger = logger;
             _context = context;
         }
         //Search for the workers based on the things that you want
@@ -41,7 +44,7 @@ namespace EgyptOnline.Controllers
 
                     if (!string.IsNullOrEmpty(filter.Location))
                     {
-                        workers = workers.Where(w => w.Location != null && w.Location.Contains(filter.Location));
+                        workers = workers.Where(w => w.User.Location != null && w.User.Location.Contains(filter.Location));
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))
@@ -60,7 +63,7 @@ namespace EgyptOnline.Controllers
                     w.User.Email,
                     w.User.PhoneNumber,
                     w.IsAvailable,
-                    w.Location,
+                    w.User.Location,
                     w.Skill,
                     w.Bio,
                     w.ProviderType,
@@ -92,7 +95,7 @@ namespace EgyptOnline.Controllers
 
                     if (!string.IsNullOrEmpty(filter.Location))
                     {
-                        companies = companies.Where(w => w.Location != null && w.Location.Contains(filter.Location));
+                        companies = companies.Where(w => w.User.Location != null && w.User.Location.Contains(filter.Location));
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))
@@ -112,7 +115,7 @@ namespace EgyptOnline.Controllers
                     w.User.Email,
                     w.User.PhoneNumber,
                     w.IsAvailable,
-                    w.Location,
+                    w.User.Location,
                     w.Business,
                     w.Bio,
                     w.ProviderType,
@@ -125,6 +128,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, $"Internal Error Message {ex.Message}");
                 return StatusCode(500, new { message = $"Internal Error Message {ex.Message}" });
             }
         }
@@ -144,7 +148,7 @@ namespace EgyptOnline.Controllers
 
                     if (!string.IsNullOrEmpty(filter.Location))
                     {
-                        contractors = contractors.Where(w => w.Location != null && w.Location.Contains(filter.Location));
+                        contractors = contractors.Where(w => w.User.Location != null && w.User.Location.Contains(filter.Location));
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))
@@ -164,7 +168,7 @@ namespace EgyptOnline.Controllers
                     w.User.Email,
                     w.User.PhoneNumber,
                     w.IsAvailable,
-                    w.Location,
+                    w.User.Location,
                     w.Specialization,
                     w.Bio,
                     w.ProviderType,

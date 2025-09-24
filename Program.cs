@@ -4,9 +4,24 @@ using EgyptOnline.Models;
 using EgyptOnline.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Environment.EnvironmentName = "Development";
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console(
+        restrictedToMinimumLevel: LogEventLevel.Information,
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}"
+    )
+    .WriteTo.File(
+        "Logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        restrictedToMinimumLevel: LogEventLevel.Debug,
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}{NewLine}"
+    )
+    .CreateLogger();
 
 // Now appsettings.Development.json will be loaded
 builder.Configuration
@@ -24,7 +39,7 @@ builder.Services.AddIdentity<User, IdentityRole>()
 builder.Services.AddApplicationServices();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddSwaggerWithJwt();
-
+builder.Host.UseSerilog();
 var app = builder.Build();
 
 /*

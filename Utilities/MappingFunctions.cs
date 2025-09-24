@@ -14,6 +14,8 @@ namespace EgyptOnline.Utilities
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
+                Location = user.Location,
+
                 PhoneNumber = user.PhoneNumber,
                 ImageUrl = user.ImageUrl,
                 UserType = user.UserType,
@@ -41,7 +43,6 @@ namespace EgyptOnline.Utilities
             {
                 Id = serviceProvider.Id,
                 IsAvailable = serviceProvider.IsAvailable,
-                Location = serviceProvider.Location,
                 Bio = serviceProvider.Bio,
                 ProviderType = serviceProvider.ProviderType
             };

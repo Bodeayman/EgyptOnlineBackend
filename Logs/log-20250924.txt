@@ -1,0 +1,1562 @@
+2025-09-24 20:53:54.046 +03:00 [DBG] Registered model binder providers, in the following order: ["Microsoft.AspNetCore.Mvc.ModelBinding.Binders.BinderTypeModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ServicesModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.BodyModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.HeaderModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.FloatingPointTypeModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.EnumTypeModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.DateTimeModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.SimpleTypeModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.TryParseModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.CancellationTokenModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ByteArrayModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.FormFileModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.FormCollectionModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.KeyValuePairModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.DictionaryModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ArrayModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.CollectionModelBinderProvider","Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ComplexObjectModelBinderProvider"]
+2025-09-24 20:53:54.154 +03:00 [DBG] Hosting starting
+2025-09-24 20:53:54.168 +03:00 [INF] User profile is available. Using 'C:\Users\abdul\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-09-24 20:53:54.178 +03:00 [DBG] Reading data from file 'C:\Users\abdul\AppData\Local\ASP.NET\DataProtection-Keys\key-00d5dab7-3dff-4a90-9b8a-866ba0d12fce.xml'.
+2025-09-24 20:53:54.182 +03:00 [DBG] Reading data from file 'C:\Users\abdul\AppData\Local\ASP.NET\DataProtection-Keys\key-07d09fa1-55dd-4e8c-a11d-778c2b39439c.xml'.
+2025-09-24 20:53:54.184 +03:00 [DBG] Reading data from file 'C:\Users\abdul\AppData\Local\ASP.NET\DataProtection-Keys\key-ce329dbb-ebb9-42bf-b7eb-c51a0c2130a2.xml'.
+2025-09-24 20:53:54.186 +03:00 [DBG] Reading data from file 'C:\Users\abdul\AppData\Local\ASP.NET\DataProtection-Keys\key-fbb0b157-878f-49ab-ba20-988e748b863c.xml'.
+2025-09-24 20:53:54.191 +03:00 [DBG] Found key {00d5dab7-3dff-4a90-9b8a-866ba0d12fce}.
+2025-09-24 20:53:54.197 +03:00 [DBG] Found key {07d09fa1-55dd-4e8c-a11d-778c2b39439c}.
+2025-09-24 20:53:54.198 +03:00 [DBG] Found key {ce329dbb-ebb9-42bf-b7eb-c51a0c2130a2}.
+2025-09-24 20:53:54.199 +03:00 [DBG] Found key {fbb0b157-878f-49ab-ba20-988e748b863c}.
+2025-09-24 20:53:54.205 +03:00 [DBG] Considering key {07d09fa1-55dd-4e8c-a11d-778c2b39439c} with expiration date 2025-11-16 12:02:08Z as default key.
+2025-09-24 20:53:54.209 +03:00 [DBG] Forwarded activator type request from Microsoft.AspNetCore.DataProtection.XmlEncryption.DpapiXmlDecryptor, Microsoft.AspNetCore.DataProtection, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60 to Microsoft.AspNetCore.DataProtection.XmlEncryption.DpapiXmlDecryptor, Microsoft.AspNetCore.DataProtection, Culture=neutral, PublicKeyToken=adb9793829ddae60
+2025-09-24 20:53:54.212 +03:00 [DBG] Decrypting secret element using Windows DPAPI.
+2025-09-24 20:53:54.214 +03:00 [DBG] Forwarded activator type request from Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel.AuthenticatedEncryptorDescriptorDeserializer, Microsoft.AspNetCore.DataProtection, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60 to Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel.AuthenticatedEncryptorDescriptorDeserializer, Microsoft.AspNetCore.DataProtection, Culture=neutral, PublicKeyToken=adb9793829ddae60
+2025-09-24 20:53:54.219 +03:00 [DBG] Opening CNG algorithm 'AES' from provider 'null' with chaining mode CBC.
+2025-09-24 20:53:54.220 +03:00 [DBG] Opening CNG algorithm 'SHA256' from provider 'null' with HMAC.
+2025-09-24 20:53:54.223 +03:00 [DBG] Using key {07d09fa1-55dd-4e8c-a11d-778c2b39439c} as the default key.
+2025-09-24 20:53:54.225 +03:00 [DBG] Key ring with default key {07d09fa1-55dd-4e8c-a11d-778c2b39439c} was loaded during application startup.
+2025-09-24 20:53:54.260 +03:00 [DBG] Middleware configuration started with options: {AllowedHosts = *, AllowEmptyHosts = True, IncludeFailureMessage = True}
+2025-09-24 20:53:54.262 +03:00 [DBG] Wildcard detected, all requests with hosts will be allowed.
+2025-09-24 20:53:54.275 +03:00 [INF] Now listening on: http://localhost:5095
+2025-09-24 20:53:54.278 +03:00 [DBG] Loaded hosting startup assembly EgyptOnline
+2025-09-24 20:53:54.280 +03:00 [DBG] Loaded hosting startup assembly Microsoft.AspNetCore.Watch.BrowserRefresh
+2025-09-24 20:53:54.283 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-09-24 20:53:54.285 +03:00 [INF] Hosting environment: Development
+2025-09-24 20:53:54.288 +03:00 [INF] Content root path: C:\Bode\EgyptOnline\EgyptOnline
+2025-09-24 20:53:54.292 +03:00 [DBG] Hosting started
+2025-09-24 20:54:04.974 +03:00 [DBG] Connection id "0HNFRIDD4AOU1" received FIN.
+2025-09-24 20:54:04.986 +03:00 [DBG] Connection id "0HNFRIDD4AOU1" accepted.
+2025-09-24 20:54:04.992 +03:00 [DBG] Connection id "0HNFRIDD4AOU1" started.
+2025-09-24 20:54:04.995 +03:00 [DBG] Connection id "0HNFRIDD4AOU2" accepted.
+2025-09-24 20:54:05.001 +03:00 [DBG] Connection id "0HNFRIDD4AOU2" started.
+2025-09-24 20:54:05.012 +03:00 [DBG] Connection id "0HNFRIDD4AOU1" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 20:54:05.019 +03:00 [DBG] Connection id "0HNFRIDD4AOU1" disconnecting.
+2025-09-24 20:54:05.025 +03:00 [DBG] Connection id "0HNFRIDD4AOU1" stopped.
+2025-09-24 20:54:05.046 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/search/worker - null 0
+2025-09-24 20:54:05.102 +03:00 [DBG] 1 candidate(s) found for the request path '/api/search/worker'
+2025-09-24 20:54:05.109 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)' with route pattern 'api/Search/worker' is valid for the request path '/api/search/worker'
+2025-09-24 20:54:05.117 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:54:05.152 +03:00 [WRN] Failed to determine the https port for redirect.
+2025-09-24 20:54:05.318 +03:00 [DBG] Successfully validated the token.
+2025-09-24 20:54:05.322 +03:00 [DBG] AuthenticationScheme: Bearer was successfully authenticated.
+2025-09-24 20:54:05.329 +03:00 [DBG] Authorization was successful.
+2025-09-24 20:54:05.332 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:54:05.364 +03:00 [INF] Route matched with {action = "SearchWorkers", controller = "Search"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchWorkers(EgyptOnline.Dtos.FilterSearchDto) on controller EgyptOnline.Controllers.SearchController (EgyptOnline).
+2025-09-24 20:54:05.368 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 20:54:05.371 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 20:54:05.375 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 20:54:05.378 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 20:54:05.380 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 20:54:05.385 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:54:05.564 +03:00 [DBG] An 'IServiceProvider' was created for internal use by Entity Framework.
+2025-09-24 20:54:05.602 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:54:05.613 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:54:05.617 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' using the name '' in request data ...
+2025-09-24 20:54:05.621 +03:00 [DBG] Rejected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'null'.
+2025-09-24 20:54:05.623 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:54:05.626 +03:00 [DBG] Attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:54:05.630 +03:00 [DBG] Done attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:54:06.447 +03:00 [DBG] The index {'UserId'} was not created on entity type 'IdentityUserRole<string>' as the properties are already covered by the index {'UserId', 'RoleId'}.
+2025-09-24 20:54:06.451 +03:00 [DBG] The index {'UserId'} was not created on entity type 'IdentityUserToken<string>' as the properties are already covered by the index {'UserId', 'LoginProvider', 'Name'}.
+2025-09-24 20:54:06.766 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 20:54:06.813 +03:00 [DBG] Compiling query expression: 
+'DbSet<Worker>()
+    .Include(w => w.User)'
+2025-09-24 20:54:06.947 +03:00 [DBG] Including navigation: 'ServicesProvider.User'.
+2025-09-24 20:54:07.339 +03:00 [DBG] Generated query execution expression: 
+'queryContext => SingleQueryingEnumerable.Create<Worker>(
+    relationalQueryContext: (RelationalQueryContext)queryContext, 
+    relationalCommandResolver: parameters => [LIFTABLE Constant: RelationalCommandCache.QueryExpression(
+        Client Projections:
+            0 -> Dictionary<IProperty, int> { [Property: ServicesProvider.Id (int) Required PK FK AfterSave:Throw ValueGenerated.OnAdd, 0], [Property: ServicesProvider.Bio (string), 1], [Property: ServicesProvider.IsAvailable (bool) Required, 2], [Property: ServicesProvider.ProviderType (string) Required, 3], [Property: ServicesProvider.ServicePricePerDay (int) Required, 4], [Property: ServicesProvider.UserId (string) Required FK Index, 5], [Property: Worker.Skill (string) Required, 6], [Property: Worker.WorkerType (WorkerTypes) Required, 7] }
+            1 -> Dictionary<IProperty, int> { [Property: User.Id (string) Required PK AfterSave:Throw, 8], [Property: User.AccessFailedCount (int) Required, 9], [Property: User.ConcurrencyStamp (string) Concurrency, 10], [Property: User.Email (string) MaxLength(256), 11], [Property: User.EmailConfirmed (bool) Required, 12], [Property: User.FirstName (string), 13], [Property: User.ImageUrl (string), 14], [Property: User.LastName (string), 15], [Property: User.Location (string), 16], [Property: User.LockoutEnabled (bool) Required, 17], [Property: User.LockoutEnd (DateTimeOffset?), 18], [Property: User.NormalizedEmail (string) Index MaxLength(256), 19], [Property: User.NormalizedUserName (string) Index MaxLength(256), 20], [Property: User.PasswordHash (string), 21], [Property: User.PhoneNumber (string), 22], [Property: User.PhoneNumberConfirmed (bool) Required, 23], [Property: User.SecurityStamp (string), 24], [Property: User.TwoFactorEnabled (bool) Required, 25], [Property: User.UserName (string) MaxLength(256), 26], [Property: User.UserType (string) Required, 27] }
+        SELECT s.Id, s.Bio, s.IsAvailable, s.ProviderType, s.ServicePricePerDay, s.UserId, w.Skill, w.WorkerType, a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.FirstName, a.ImageUrl, a.LastName, a.Location, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName, a.UserType
+        FROM ServicesProviders AS s
+        INNER JOIN Workers AS w ON s.Id == w.Id
+        INNER JOIN AspNetUsers AS a ON s.UserId == a.Id) | Resolver: c => new RelationalCommandCache(
+        c.Dependencies.MemoryCache, 
+        c.RelationalDependencies.QuerySqlGeneratorFactory, 
+        c.RelationalDependencies.RelationalParameterBasedSqlProcessorFactory, 
+        Client Projections:
+            0 -> Dictionary<IProperty, int> { [Property: ServicesProvider.Id (int) Required PK FK AfterSave:Throw ValueGenerated.OnAdd, 0], [Property: ServicesProvider.Bio (string), 1], [Property: ServicesProvider.IsAvailable (bool) Required, 2], [Property: ServicesProvider.ProviderType (string) Required, 3], [Property: ServicesProvider.ServicePricePerDay (int) Required, 4], [Property: ServicesProvider.UserId (string) Required FK Index, 5], [Property: Worker.Skill (string) Required, 6], [Property: Worker.WorkerType (WorkerTypes) Required, 7] }
+            1 -> Dictionary<IProperty, int> { [Property: User.Id (string) Required PK AfterSave:Throw, 8], [Property: User.AccessFailedCount (int) Required, 9], [Property: User.ConcurrencyStamp (string) Concurrency, 10], [Property: User.Email (string) MaxLength(256), 11], [Property: User.EmailConfirmed (bool) Required, 12], [Property: User.FirstName (string), 13], [Property: User.ImageUrl (string), 14], [Property: User.LastName (string), 15], [Property: User.Location (string), 16], [Property: User.LockoutEnabled (bool) Required, 17], [Property: User.LockoutEnd (DateTimeOffset?), 18], [Property: User.NormalizedEmail (string) Index MaxLength(256), 19], [Property: User.NormalizedUserName (string) Index MaxLength(256), 20], [Property: User.PasswordHash (string), 21], [Property: User.PhoneNumber (string), 22], [Property: User.PhoneNumberConfirmed (bool) Required, 23], [Property: User.SecurityStamp (string), 24], [Property: User.TwoFactorEnabled (bool) Required, 25], [Property: User.UserName (string) MaxLength(256), 26], [Property: User.UserType (string) Required, 27] }
+        SELECT s.Id, s.Bio, s.IsAvailable, s.ProviderType, s.ServicePricePerDay, s.UserId, w.Skill, w.WorkerType, a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.FirstName, a.ImageUrl, a.LastName, a.Location, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName, a.UserType
+        FROM ServicesProviders AS s
+        INNER JOIN Workers AS w ON s.Id == w.Id
+        INNER JOIN AspNetUsers AS a ON s.UserId == a.Id, 
+        False, 
+        new HashSet<string>(
+            new string[]{ }, 
+            StringComparer.Ordinal
+        )
+    )].GetRelationalCommandTemplate(parameters), 
+    readerColumns: null, 
+    shaper: (queryContext, dataReader, resultContext, resultCoordinator) => 
+    {
+        Worker entity;
+        User entity;
+        entity = 
+        {
+            MaterializationContext materializationContext1;
+            IEntityType entityType1;
+            Worker instance1;
+            InternalEntityEntry entry1;
+            bool hasNullKey1;
+            materializationContext1 = new MaterializationContext(
+                [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                queryContext.Context
+            );
+            instance1 = default(Worker);
+            entry1 = queryContext.TryGetEntry(
+                key: [LIFTABLE Constant: Key: ServicesProvider.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker").FindPrimaryKey()], 
+                keyValues: new object[]{ (object)dataReader.GetInt32(0) }, 
+                throwOnNullKey: True, 
+                hasNullKey: hasNullKey1);
+            !(hasNullKey1) ? entry1 != default(InternalEntityEntry) ? 
+            {
+                entityType1 = entry1.EntityType;
+                return instance1 = (Worker)entry1.Entity;
+            } : 
+            {
+                ISnapshot shadowSnapshot1;
+                shadowSnapshot1 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                entityType1 = [LIFTABLE Constant: EntityType: Worker Base: ServicesProvider | Resolver: namelessParameter{0} => namelessParameter{0}.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker")];
+                instance1 = switch (entityType1)
+                {
+                    case [LIFTABLE Constant: EntityType: Worker Base: ServicesProvider | Resolver: namelessParameter{1} => namelessParameter{1}.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker")]: 
+                        {
+                            return 
+                            {
+                                Worker instance;
+                                instance = new Worker();
+                                instance.<Id>k__BackingField = dataReader.GetInt32(0);
+                                instance.<Bio>k__BackingField = dataReader.IsDBNull(1) ? default(string) : dataReader.GetString(1);
+                                instance.<IsAvailable>k__BackingField = dataReader.GetBoolean(2);
+                                instance.<ProviderType>k__BackingField = dataReader.GetString(3);
+                                instance.<ServicePricePerDay>k__BackingField = dataReader.GetInt32(4);
+                                instance.<UserId>k__BackingField = dataReader.GetString(5);
+                                instance.<Skill>k__BackingField = dataReader.GetString(6);
+                                instance.<WorkerType>k__BackingField = Invoke(((EnumToNumberConverter<WorkerTypes, int>)((IReadOnlyProperty)[LIFTABLE Constant: Property: Worker.WorkerType (WorkerTypes) Required | Resolver: namelessParameter{2} => namelessParameter{2}.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker").FindProperty("WorkerType")]).GetTypeMapping().Converter).ConvertFromProviderTyped, dataReader.GetInt32(7));
+                                (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                    context: materializationContext1.Context, 
+                                    entity: instance, 
+                                    queryTrackingBehavior: TrackAll, 
+                                    structuralType: [LIFTABLE Constant: EntityType: Worker Base: ServicesProvider | Resolver: namelessParameter{3} => namelessParameter{3}.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker")]) : default(void);
+                                return instance;
+                            }}
+                    default: 
+                        default(Worker)
+                }
+                ;
+                entry1 = entityType1 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                    entityType: entityType1, 
+                    entity: instance1, 
+                    snapshot: shadowSnapshot1);
+                return instance1;
+            } : default(void);
+            return instance1;
+        };
+        entity = 
+        {
+            MaterializationContext materializationContext2;
+            IEntityType entityType2;
+            User instance2;
+            InternalEntityEntry entry2;
+            bool hasNullKey2;
+            materializationContext2 = new MaterializationContext(
+                [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                queryContext.Context
+            );
+            instance2 = default(User);
+            entry2 = queryContext.TryGetEntry(
+                key: [LIFTABLE Constant: Key: User.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("EgyptOnline.Models.User").FindPrimaryKey()], 
+                keyValues: new object[]{ (object)dataReader.GetString(8) }, 
+                throwOnNullKey: True, 
+                hasNullKey: hasNullKey2);
+            !(hasNullKey2) ? entry2 != default(InternalEntityEntry) ? 
+            {
+                entityType2 = entry2.EntityType;
+                return instance2 = (User)entry2.Entity;
+            } : 
+            {
+                ISnapshot shadowSnapshot2;
+                shadowSnapshot2 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                entityType2 = [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{4} => namelessParameter{4}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")];
+                instance2 = switch (entityType2)
+                {
+                    case [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{5} => namelessParameter{5}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")]: 
+                        {
+                            return 
+                            {
+                                User instance;
+                                instance = new User();
+                                instance.<Id>k__BackingField = dataReader.GetString(8);
+                                instance.<AccessFailedCount>k__BackingField = dataReader.GetInt32(9);
+                                instance.<ConcurrencyStamp>k__BackingField = dataReader.IsDBNull(10) ? default(string) : dataReader.GetString(10);
+                                instance.<Email>k__BackingField = dataReader.IsDBNull(11) ? default(string) : dataReader.GetString(11);
+                                instance.<EmailConfirmed>k__BackingField = dataReader.GetBoolean(12);
+                                instance.<FirstName>k__BackingField = dataReader.IsDBNull(13) ? default(string) : dataReader.GetString(13);
+                                instance.<ImageUrl>k__BackingField = dataReader.IsDBNull(14) ? default(string) : dataReader.GetString(14);
+                                instance.<LastName>k__BackingField = dataReader.IsDBNull(15) ? default(string) : dataReader.GetString(15);
+                                instance.<Location>k__BackingField = dataReader.IsDBNull(16) ? default(string) : dataReader.GetString(16);
+                                instance.<LockoutEnabled>k__BackingField = dataReader.GetBoolean(17);
+                                instance.<LockoutEnd>k__BackingField = dataReader.IsDBNull(18) ? default(DateTimeOffset?) : (DateTimeOffset?)dataReader.GetFieldValue<DateTimeOffset>(18);
+                                instance.<NormalizedEmail>k__BackingField = dataReader.IsDBNull(19) ? default(string) : dataReader.GetString(19);
+                                instance.<NormalizedUserName>k__BackingField = dataReader.IsDBNull(20) ? default(string) : dataReader.GetString(20);
+                                instance.<PasswordHash>k__BackingField = dataReader.IsDBNull(21) ? default(string) : dataReader.GetString(21);
+                                instance.<PhoneNumber>k__BackingField = dataReader.IsDBNull(22) ? default(string) : dataReader.GetString(22);
+                                instance.<PhoneNumberConfirmed>k__BackingField = dataReader.GetBoolean(23);
+                                instance.<SecurityStamp>k__BackingField = dataReader.IsDBNull(24) ? default(string) : dataReader.GetString(24);
+                                instance.<TwoFactorEnabled>k__BackingField = dataReader.GetBoolean(25);
+                                instance.<UserName>k__BackingField = dataReader.IsDBNull(26) ? default(string) : dataReader.GetString(26);
+                                instance.<UserType>k__BackingField = dataReader.GetString(27);
+                                (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                    context: materializationContext2.Context, 
+                                    entity: instance, 
+                                    queryTrackingBehavior: TrackAll, 
+                                    structuralType: [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{6} => namelessParameter{6}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")]) : default(void);
+                                return instance;
+                            }}
+                    default: 
+                        default(User)
+                }
+                ;
+                entry2 = entityType2 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                    entityType: entityType2, 
+                    entity: instance2, 
+                    snapshot: shadowSnapshot2);
+                return instance2;
+            } : default(void);
+            return instance2;
+        };
+        ShaperProcessingExpressionVisitor.IncludeReference<Worker, Worker, User>(
+            queryContext: queryContext, 
+            entity: entity, 
+            relatedEntity: entity, 
+            navigation: [LIFTABLE Constant: Navigation: ServicesProvider.User (User) ToPrincipal User Inverse: ServiceProvider | Resolver: namelessParameter{7} => namelessParameter{7}.Dependencies.Model.FindEntityType("EgyptOnline.Models.ServicesProvider").FindNavigation("User")], 
+            inverseNavigation: [LIFTABLE Constant: Navigation: User.ServiceProvider (ServicesProvider) ToDependent ServicesProvider Inverse: User | Resolver: namelessParameter{8} => namelessParameter{8}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User").FindNavigation("ServiceProvider")], 
+            fixup: (namelessParameter{9}, namelessParameter{10}) => 
+            {
+                namelessParameter{9}.<User>k__BackingField = namelessParameter{10};
+                return namelessParameter{10}.<ServiceProvider>k__BackingField = namelessParameter{9};
+            }, 
+            trackingQuery: True);
+        return entity;
+    }, 
+    contextType: EgyptOnline.Data.ApplicationDbContext, 
+    standAloneStateManager: False, 
+    detailedErrorsEnabled: False, 
+    threadSafetyChecksEnabled: True)'
+2025-09-24 20:54:07.405 +03:00 [DBG] Creating DbConnection.
+2025-09-24 20:54:07.461 +03:00 [DBG] Created DbConnection. (54ms).
+2025-09-24 20:54:07.468 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:54:07.780 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:54:07.790 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 20:54:07.806 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (11ms).
+2025-09-24 20:54:07.814 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (24ms).
+2025-09-24 20:54:07.832 +03:00 [DBG] Executing DbCommand [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:54:07.912 +03:00 [INF] Executed DbCommand (68ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:54:07.923 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:54:07.941 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 15ms reading results.
+2025-09-24 20:54:07.950 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:54:07.961 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (9ms).
+2025-09-24 20:54:07.970 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 20:54:07.978 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 20:54:07.982 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 20:54:07.985 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 20:54:07.989 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 20:54:07.994 +03:00 [INF] Executing ObjectResult, writing value of type '<>f__AnonymousType14`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-09-24 20:54:08.057 +03:00 [INF] Executed action EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline) in 2669.3237ms
+2025-09-24 20:54:08.069 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:54:08.074 +03:00 [DBG] Connection id "0HNFRIDD4AOU2" completed keep alive response.
+2025-09-24 20:54:08.082 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 20:54:08.092 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:54:08.102 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (8ms).
+2025-09-24 20:54:08.109 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/search/worker - 500 null application/json; charset=utf-8 3065.1644ms
+2025-09-24 20:55:10.773 +03:00 [DBG] Connection id "0HNFRIDD4AOU3" received FIN.
+2025-09-24 20:55:10.778 +03:00 [DBG] Connection id "0HNFRIDD4AOU3" accepted.
+2025-09-24 20:55:10.781 +03:00 [DBG] Connection id "0HNFRIDD4AOU3" started.
+2025-09-24 20:55:10.782 +03:00 [DBG] Connection id "0HNFRIDD4AOU4" accepted.
+2025-09-24 20:55:10.783 +03:00 [DBG] Connection id "0HNFRIDD4AOU3" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 20:55:10.784 +03:00 [DBG] Connection id "0HNFRIDD4AOU4" started.
+2025-09-24 20:55:10.786 +03:00 [DBG] Connection id "0HNFRIDD4AOU3" disconnecting.
+2025-09-24 20:55:10.787 +03:00 [DBG] Connection id "0HNFRIDD4AOU3" stopped.
+2025-09-24 20:55:10.788 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/search/worker - null 0
+2025-09-24 20:55:10.797 +03:00 [DBG] 1 candidate(s) found for the request path '/api/search/worker'
+2025-09-24 20:55:10.799 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)' with route pattern 'api/Search/worker' is valid for the request path '/api/search/worker'
+2025-09-24 20:55:10.800 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:55:10.816 +03:00 [DBG] Successfully validated the token.
+2025-09-24 20:55:10.819 +03:00 [DBG] AuthenticationScheme: Bearer was successfully authenticated.
+2025-09-24 20:55:10.822 +03:00 [DBG] Authorization was successful.
+2025-09-24 20:55:10.825 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:55:10.827 +03:00 [INF] Route matched with {action = "SearchWorkers", controller = "Search"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchWorkers(EgyptOnline.Dtos.FilterSearchDto) on controller EgyptOnline.Controllers.SearchController (EgyptOnline).
+2025-09-24 20:55:10.829 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 20:55:10.830 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 20:55:10.831 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 20:55:10.833 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 20:55:10.835 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 20:55:10.836 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:55:10.841 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:55:10.842 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:55:10.844 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' using the name '' in request data ...
+2025-09-24 20:55:10.846 +03:00 [DBG] Rejected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'null'.
+2025-09-24 20:55:10.848 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:55:10.849 +03:00 [DBG] Attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:55:10.851 +03:00 [DBG] Done attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:55:10.879 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 20:55:10.888 +03:00 [DBG] Creating DbConnection.
+2025-09-24 20:55:10.890 +03:00 [DBG] Created DbConnection. (1ms).
+2025-09-24 20:55:10.891 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:55:10.893 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:55:10.894 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 20:55:10.895 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 20:55:10.896 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 20:55:10.897 +03:00 [DBG] Executing DbCommand [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:55:10.905 +03:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:55:10.907 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:55:10.908 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 20:55:10.909 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:55:10.911 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 20:55:10.913 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 20:55:10.915 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 20:55:10.916 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 20:55:10.917 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 20:55:10.918 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 20:55:10.919 +03:00 [INF] Executing ObjectResult, writing value of type '<>f__AnonymousType14`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-09-24 20:55:10.922 +03:00 [INF] Executed action EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline) in 85.5941ms
+2025-09-24 20:55:10.923 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:55:10.924 +03:00 [DBG] Connection id "0HNFRIDD4AOU4" completed keep alive response.
+2025-09-24 20:55:10.925 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 20:55:10.926 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:55:10.928 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 20:55:10.929 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/search/worker - 500 null application/json; charset=utf-8 141.7824ms
+2025-09-24 20:56:18.419 +03:00 [DBG] Connection id "0HNFRIDD4AOU2" disconnecting.
+2025-09-24 20:56:18.426 +03:00 [DBG] Connection id "0HNFRIDD4AOU2" stopped.
+2025-09-24 20:56:18.429 +03:00 [DBG] Connection id "0HNFRIDD4AOU2" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 20:57:03.099 +03:00 [DBG] Connection id "0HNFRIDD4AOU5" accepted.
+2025-09-24 20:57:03.099 +03:00 [DBG] Connection id "0HNFRIDD4AOU5" received FIN.
+2025-09-24 20:57:03.101 +03:00 [DBG] Connection id "0HNFRIDD4AOU5" started.
+2025-09-24 20:57:03.102 +03:00 [DBG] Connection id "0HNFRIDD4AOU6" accepted.
+2025-09-24 20:57:03.104 +03:00 [DBG] Connection id "0HNFRIDD4AOU6" started.
+2025-09-24 20:57:03.107 +03:00 [DBG] Connection id "0HNFRIDD4AOU5" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 20:57:03.108 +03:00 [DBG] Connection id "0HNFRIDD4AOU5" disconnecting.
+2025-09-24 20:57:03.109 +03:00 [DBG] Connection id "0HNFRIDD4AOU5" stopped.
+2025-09-24 20:57:03.109 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/search/worker - null 0
+2025-09-24 20:57:03.136 +03:00 [DBG] 1 candidate(s) found for the request path '/api/search/worker'
+2025-09-24 20:57:03.145 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)' with route pattern 'api/Search/worker' is valid for the request path '/api/search/worker'
+2025-09-24 20:57:03.162 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:57:03.189 +03:00 [DBG] Successfully validated the token.
+2025-09-24 20:57:03.191 +03:00 [DBG] AuthenticationScheme: Bearer was successfully authenticated.
+2025-09-24 20:57:03.196 +03:00 [DBG] Authorization was successful.
+2025-09-24 20:57:03.202 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:57:03.230 +03:00 [INF] Route matched with {action = "SearchWorkers", controller = "Search"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchWorkers(EgyptOnline.Dtos.FilterSearchDto) on controller EgyptOnline.Controllers.SearchController (EgyptOnline).
+2025-09-24 20:57:03.238 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 20:57:03.241 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 20:57:03.246 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 20:57:03.254 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 20:57:03.257 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 20:57:03.260 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:57:03.272 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:57:03.277 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:57:03.279 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' using the name '' in request data ...
+2025-09-24 20:57:03.287 +03:00 [DBG] Rejected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'null'.
+2025-09-24 20:57:03.289 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:57:03.291 +03:00 [DBG] Attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:57:03.300 +03:00 [DBG] Done attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:57:03.395 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 20:57:03.399 +03:00 [DBG] Creating DbConnection.
+2025-09-24 20:57:03.401 +03:00 [DBG] Created DbConnection. (1ms).
+2025-09-24 20:57:03.402 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:03.403 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:03.404 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 20:57:03.404 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 20:57:03.405 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 20:57:03.407 +03:00 [DBG] Executing DbCommand [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:57:03.411 +03:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:57:03.415 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:03.416 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 20:57:03.418 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:03.420 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 20:57:03.421 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 20:57:03.423 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 20:57:03.423 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 20:57:03.424 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 20:57:03.424 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 20:57:03.425 +03:00 [INF] Executing ObjectResult, writing value of type '<>f__AnonymousType14`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-09-24 20:57:03.429 +03:00 [INF] Executed action EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline) in 169.6575ms
+2025-09-24 20:57:03.431 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:57:03.432 +03:00 [DBG] Connection id "0HNFRIDD4AOU6" completed keep alive response.
+2025-09-24 20:57:03.434 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 20:57:03.435 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:03.436 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 20:57:03.437 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/search/worker - 500 null application/json; charset=utf-8 327.9124ms
+2025-09-24 20:57:21.846 +03:00 [DBG] Connection id "0HNFRIDD4AOU4" disconnecting.
+2025-09-24 20:57:21.851 +03:00 [DBG] Connection id "0HNFRIDD4AOU4" stopped.
+2025-09-24 20:57:21.856 +03:00 [DBG] Connection id "0HNFRIDD4AOU4" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 20:57:38.078 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/search/worker - null 0
+2025-09-24 20:57:38.086 +03:00 [DBG] 1 candidate(s) found for the request path '/api/search/worker'
+2025-09-24 20:57:38.087 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)' with route pattern 'api/Search/worker' is valid for the request path '/api/search/worker'
+2025-09-24 20:57:38.089 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:57:38.090 +03:00 [DBG] Successfully validated the token.
+2025-09-24 20:57:38.091 +03:00 [DBG] AuthenticationScheme: Bearer was successfully authenticated.
+2025-09-24 20:57:38.093 +03:00 [DBG] Authorization was successful.
+2025-09-24 20:57:38.093 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:57:38.104 +03:00 [INF] Route matched with {action = "SearchWorkers", controller = "Search"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchWorkers(EgyptOnline.Dtos.FilterSearchDto) on controller EgyptOnline.Controllers.SearchController (EgyptOnline).
+2025-09-24 20:57:38.108 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 20:57:38.109 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 20:57:38.114 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 20:57:38.118 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 20:57:38.121 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 20:57:38.123 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:57:38.127 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:57:38.133 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:57:38.136 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' using the name '' in request data ...
+2025-09-24 20:57:38.138 +03:00 [DBG] Rejected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'null'.
+2025-09-24 20:57:38.141 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:57:38.142 +03:00 [DBG] Attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:57:38.145 +03:00 [DBG] Done attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:57:38.149 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 20:57:38.151 +03:00 [DBG] Creating DbConnection.
+2025-09-24 20:57:38.152 +03:00 [DBG] Created DbConnection. (1ms).
+2025-09-24 20:57:38.153 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:38.155 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:38.156 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 20:57:38.157 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 20:57:38.159 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (2ms).
+2025-09-24 20:57:38.160 +03:00 [DBG] Executing DbCommand [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:57:38.164 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:57:38.166 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:38.167 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 20:57:38.169 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:38.170 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 20:57:38.174 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 20:57:38.177 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 20:57:38.177 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 20:57:38.178 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 20:57:38.178 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 20:57:38.179 +03:00 [INF] Executing ObjectResult, writing value of type '<>f__AnonymousType14`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-09-24 20:57:38.181 +03:00 [INF] Executed action EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline) in 58.214ms
+2025-09-24 20:57:38.183 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:57:38.184 +03:00 [DBG] Connection id "0HNFRIDD4AOU6" completed keep alive response.
+2025-09-24 20:57:38.185 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 20:57:38.187 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:57:38.188 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 20:57:38.190 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/search/worker - 500 null application/json; charset=utf-8 112.1937ms
+2025-09-24 20:58:35.349 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/search/worker - null 0
+2025-09-24 20:58:35.355 +03:00 [DBG] 1 candidate(s) found for the request path '/api/search/worker'
+2025-09-24 20:58:35.358 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)' with route pattern 'api/Search/worker' is valid for the request path '/api/search/worker'
+2025-09-24 20:58:35.362 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:58:35.373 +03:00 [DBG] Successfully validated the token.
+2025-09-24 20:58:35.375 +03:00 [DBG] AuthenticationScheme: Bearer was successfully authenticated.
+2025-09-24 20:58:35.380 +03:00 [DBG] Authorization was successful.
+2025-09-24 20:58:35.381 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:58:35.394 +03:00 [INF] Route matched with {action = "SearchWorkers", controller = "Search"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchWorkers(EgyptOnline.Dtos.FilterSearchDto) on controller EgyptOnline.Controllers.SearchController (EgyptOnline).
+2025-09-24 20:58:35.397 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 20:58:35.398 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 20:58:35.399 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 20:58:35.401 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 20:58:35.402 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 20:58:35.403 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:58:35.408 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 20:58:35.409 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:58:35.410 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' using the name '' in request data ...
+2025-09-24 20:58:35.412 +03:00 [DBG] Rejected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'null'.
+2025-09-24 20:58:35.413 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:58:35.414 +03:00 [DBG] Attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 20:58:35.415 +03:00 [DBG] Done attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 20:58:35.420 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 20:58:35.422 +03:00 [DBG] Creating DbConnection.
+2025-09-24 20:58:35.423 +03:00 [DBG] Created DbConnection. (0ms).
+2025-09-24 20:58:35.424 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:58:35.424 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:58:35.426 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 20:58:35.427 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 20:58:35.428 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (2ms).
+2025-09-24 20:58:35.429 +03:00 [DBG] Executing DbCommand [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:58:35.433 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 20:58:35.435 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:58:35.436 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 20:58:35.437 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:58:35.438 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 20:58:35.439 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 20:58:35.441 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 20:58:35.441 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 20:58:35.441 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 20:58:35.442 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 20:58:35.443 +03:00 [INF] Executing ObjectResult, writing value of type '<>f__AnonymousType14`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-09-24 20:58:35.444 +03:00 [INF] Executed action EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline) in 41.7581ms
+2025-09-24 20:58:35.445 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 20:58:35.446 +03:00 [DBG] Connection id "0HNFRIDD4AOU6" completed keep alive response.
+2025-09-24 20:58:35.447 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 20:58:35.448 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 20:58:35.449 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 20:58:35.450 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/search/worker - 500 null application/json; charset=utf-8 100.3599ms
+2025-09-24 21:00:47.426 +03:00 [DBG] Connection id "0HNFRIDD4AOU6" disconnecting.
+2025-09-24 21:00:47.430 +03:00 [DBG] Connection id "0HNFRIDD4AOU6" stopped.
+2025-09-24 21:00:47.433 +03:00 [DBG] Connection id "0HNFRIDD4AOU6" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 21:03:07.654 +03:00 [DBG] Connection id "0HNFRIDD4AOU7" received FIN.
+2025-09-24 21:03:07.659 +03:00 [DBG] Connection id "0HNFRIDD4AOU7" accepted.
+2025-09-24 21:03:07.660 +03:00 [DBG] Connection id "0HNFRIDD4AOU7" started.
+2025-09-24 21:03:07.662 +03:00 [DBG] Connection id "0HNFRIDD4AOU8" accepted.
+2025-09-24 21:03:07.663 +03:00 [DBG] Connection id "0HNFRIDD4AOU8" started.
+2025-09-24 21:03:07.667 +03:00 [DBG] Connection id "0HNFRIDD4AOU7" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 21:03:07.669 +03:00 [DBG] Connection id "0HNFRIDD4AOU7" disconnecting.
+2025-09-24 21:03:07.670 +03:00 [DBG] Connection id "0HNFRIDD4AOU7" stopped.
+2025-09-24 21:03:07.683 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/search/worker - application/json 10
+2025-09-24 21:03:07.697 +03:00 [DBG] 1 candidate(s) found for the request path '/api/search/worker'
+2025-09-24 21:03:07.699 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)' with route pattern 'api/Search/worker' is valid for the request path '/api/search/worker'
+2025-09-24 21:03:07.702 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 21:03:07.718 +03:00 [DBG] Successfully validated the token.
+2025-09-24 21:03:07.719 +03:00 [DBG] AuthenticationScheme: Bearer was successfully authenticated.
+2025-09-24 21:03:07.723 +03:00 [DBG] Authorization was successful.
+2025-09-24 21:03:07.731 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 21:03:07.738 +03:00 [INF] Route matched with {action = "SearchWorkers", controller = "Search"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchWorkers(EgyptOnline.Dtos.FilterSearchDto) on controller EgyptOnline.Controllers.SearchController (EgyptOnline).
+2025-09-24 21:03:07.740 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 21:03:07.742 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 21:03:07.744 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 21:03:07.746 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 21:03:07.749 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 21:03:07.750 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 21:03:07.759 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 21:03:07.767 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 21:03:07.772 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' using the name '' in request data ...
+2025-09-24 21:03:07.789 +03:00 [DBG] Selected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'application/json'.
+2025-09-24 21:03:07.888 +03:00 [DBG] Connection id "0HNFRIDD4AOU8", Request id "0HNFRIDD4AOU8:00000001": started reading request body.
+2025-09-24 21:03:07.893 +03:00 [DBG] Connection id "0HNFRIDD4AOU8", Request id "0HNFRIDD4AOU8:00000001": done reading request body.
+2025-09-24 21:03:07.910 +03:00 [DBG] JSON input formatter succeeded, deserializing to type 'EgyptOnline.Dtos.FilterSearchDto'
+2025-09-24 21:03:07.913 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 21:03:07.914 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 21:03:07.915 +03:00 [DBG] Attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 21:03:07.929 +03:00 [DBG] Done attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 21:03:07.935 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 21:03:07.939 +03:00 [DBG] Creating DbConnection.
+2025-09-24 21:03:07.940 +03:00 [DBG] Created DbConnection. (1ms).
+2025-09-24 21:03:07.941 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.034 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.035 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 21:03:08.036 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 21:03:08.037 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (2ms).
+2025-09-24 21:03:08.039 +03:00 [DBG] Executing DbCommand [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 21:03:08.065 +03:00 [INF] Executed DbCommand (25ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 21:03:08.067 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.068 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 21:03:08.069 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.070 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 21:03:08.096 +03:00 [DBG] Compiling query expression: 
+'DbSet<Worker>()
+    .Include(w => w.User)
+    .Skip(__p_0)
+    .Take(__p_1)'
+2025-09-24 21:03:08.112 +03:00 [DBG] Including navigation: 'ServicesProvider.User'.
+2025-09-24 21:03:08.145 +03:00 [WRN] The query uses a row limiting operator ('Skip'/'Take') without an 'OrderBy' operator. This may lead to unpredictable results. If the 'Distinct' operator is used after 'OrderBy', then make sure to use the 'OrderBy' operator after 'Distinct' as the ordering would otherwise get erased.
+2025-09-24 21:03:08.146 +03:00 [WRN] The query uses a row limiting operator ('Skip'/'Take') without an 'OrderBy' operator. This may lead to unpredictable results. If the 'Distinct' operator is used after 'OrderBy', then make sure to use the 'OrderBy' operator after 'Distinct' as the ordering would otherwise get erased.
+2025-09-24 21:03:08.206 +03:00 [DBG] Generated query execution expression: 
+'queryContext => SingleQueryingEnumerable.Create<Worker>(
+    relationalQueryContext: (RelationalQueryContext)queryContext, 
+    relationalCommandResolver: parameters => [LIFTABLE Constant: RelationalCommandCache.QueryExpression(
+        Client Projections:
+            0 -> Dictionary<IProperty, int> { [Property: ServicesProvider.Id (int) Required PK FK AfterSave:Throw ValueGenerated.OnAdd, 0], [Property: ServicesProvider.Bio (string), 1], [Property: ServicesProvider.IsAvailable (bool) Required, 2], [Property: ServicesProvider.ProviderType (string) Required, 3], [Property: ServicesProvider.ServicePricePerDay (int) Required, 4], [Property: ServicesProvider.UserId (string) Required FK Index, 5], [Property: Worker.Skill (string) Required, 6], [Property: Worker.WorkerType (WorkerTypes) Required, 7] }
+            1 -> Dictionary<IProperty, int> { [Property: User.Id (string) Required PK AfterSave:Throw, 8], [Property: User.AccessFailedCount (int) Required, 9], [Property: User.ConcurrencyStamp (string) Concurrency, 10], [Property: User.Email (string) MaxLength(256), 11], [Property: User.EmailConfirmed (bool) Required, 12], [Property: User.FirstName (string), 13], [Property: User.ImageUrl (string), 14], [Property: User.LastName (string), 15], [Property: User.Location (string), 16], [Property: User.LockoutEnabled (bool) Required, 17], [Property: User.LockoutEnd (DateTimeOffset?), 18], [Property: User.NormalizedEmail (string) Index MaxLength(256), 19], [Property: User.NormalizedUserName (string) Index MaxLength(256), 20], [Property: User.PasswordHash (string), 21], [Property: User.PhoneNumber (string), 22], [Property: User.PhoneNumberConfirmed (bool) Required, 23], [Property: User.SecurityStamp (string), 24], [Property: User.TwoFactorEnabled (bool) Required, 25], [Property: User.UserName (string) MaxLength(256), 26], [Property: User.UserType (string) Required, 27] }
+        SELECT s0.Id, s0.Bio, s0.IsAvailable, s0.ProviderType, s0.ServicePricePerDay, s0.UserId, s0.Skill, s0.WorkerType, a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.FirstName, a.ImageUrl, a.LastName, a.Location, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName, a.UserType
+        FROM 
+        (
+            SELECT s.Id, s.Bio, s.IsAvailable, s.ProviderType, s.ServicePricePerDay, s.UserId, w.Skill, w.WorkerType
+            FROM ServicesProviders AS s
+            INNER JOIN Workers AS w ON s.Id == w.Id
+            OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+        ) AS s0
+        INNER JOIN AspNetUsers AS a ON s0.UserId == a.Id) | Resolver: c => new RelationalCommandCache(
+        c.Dependencies.MemoryCache, 
+        c.RelationalDependencies.QuerySqlGeneratorFactory, 
+        c.RelationalDependencies.RelationalParameterBasedSqlProcessorFactory, 
+        Client Projections:
+            0 -> Dictionary<IProperty, int> { [Property: ServicesProvider.Id (int) Required PK FK AfterSave:Throw ValueGenerated.OnAdd, 0], [Property: ServicesProvider.Bio (string), 1], [Property: ServicesProvider.IsAvailable (bool) Required, 2], [Property: ServicesProvider.ProviderType (string) Required, 3], [Property: ServicesProvider.ServicePricePerDay (int) Required, 4], [Property: ServicesProvider.UserId (string) Required FK Index, 5], [Property: Worker.Skill (string) Required, 6], [Property: Worker.WorkerType (WorkerTypes) Required, 7] }
+            1 -> Dictionary<IProperty, int> { [Property: User.Id (string) Required PK AfterSave:Throw, 8], [Property: User.AccessFailedCount (int) Required, 9], [Property: User.ConcurrencyStamp (string) Concurrency, 10], [Property: User.Email (string) MaxLength(256), 11], [Property: User.EmailConfirmed (bool) Required, 12], [Property: User.FirstName (string), 13], [Property: User.ImageUrl (string), 14], [Property: User.LastName (string), 15], [Property: User.Location (string), 16], [Property: User.LockoutEnabled (bool) Required, 17], [Property: User.LockoutEnd (DateTimeOffset?), 18], [Property: User.NormalizedEmail (string) Index MaxLength(256), 19], [Property: User.NormalizedUserName (string) Index MaxLength(256), 20], [Property: User.PasswordHash (string), 21], [Property: User.PhoneNumber (string), 22], [Property: User.PhoneNumberConfirmed (bool) Required, 23], [Property: User.SecurityStamp (string), 24], [Property: User.TwoFactorEnabled (bool) Required, 25], [Property: User.UserName (string) MaxLength(256), 26], [Property: User.UserType (string) Required, 27] }
+        SELECT s0.Id, s0.Bio, s0.IsAvailable, s0.ProviderType, s0.ServicePricePerDay, s0.UserId, s0.Skill, s0.WorkerType, a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.FirstName, a.ImageUrl, a.LastName, a.Location, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName, a.UserType
+        FROM 
+        (
+            SELECT s.Id, s.Bio, s.IsAvailable, s.ProviderType, s.ServicePricePerDay, s.UserId, w.Skill, w.WorkerType
+            FROM ServicesProviders AS s
+            INNER JOIN Workers AS w ON s.Id == w.Id
+            OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+        ) AS s0
+        INNER JOIN AspNetUsers AS a ON s0.UserId == a.Id, 
+        False, 
+        new HashSet<string>(
+            new string[]{ }, 
+            StringComparer.Ordinal
+        )
+    )].GetRelationalCommandTemplate(parameters), 
+    readerColumns: null, 
+    shaper: (queryContext, dataReader, resultContext, resultCoordinator) => 
+    {
+        Worker entity;
+        User entity;
+        entity = 
+        {
+            MaterializationContext materializationContext1;
+            IEntityType entityType1;
+            Worker instance1;
+            InternalEntityEntry entry1;
+            bool hasNullKey1;
+            materializationContext1 = new MaterializationContext(
+                [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                queryContext.Context
+            );
+            instance1 = default(Worker);
+            entry1 = queryContext.TryGetEntry(
+                key: [LIFTABLE Constant: Key: ServicesProvider.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker").FindPrimaryKey()], 
+                keyValues: new object[]{ (object)dataReader.GetInt32(0) }, 
+                throwOnNullKey: True, 
+                hasNullKey: hasNullKey1);
+            !(hasNullKey1) ? entry1 != default(InternalEntityEntry) ? 
+            {
+                entityType1 = entry1.EntityType;
+                return instance1 = (Worker)entry1.Entity;
+            } : 
+            {
+                ISnapshot shadowSnapshot1;
+                shadowSnapshot1 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                entityType1 = [LIFTABLE Constant: EntityType: Worker Base: ServicesProvider | Resolver: namelessParameter{0} => namelessParameter{0}.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker")];
+                instance1 = switch (entityType1)
+                {
+                    case [LIFTABLE Constant: EntityType: Worker Base: ServicesProvider | Resolver: namelessParameter{1} => namelessParameter{1}.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker")]: 
+                        {
+                            return 
+                            {
+                                Worker instance;
+                                instance = new Worker();
+                                instance.<Id>k__BackingField = dataReader.GetInt32(0);
+                                instance.<Bio>k__BackingField = dataReader.IsDBNull(1) ? default(string) : dataReader.GetString(1);
+                                instance.<IsAvailable>k__BackingField = dataReader.GetBoolean(2);
+                                instance.<ProviderType>k__BackingField = dataReader.GetString(3);
+                                instance.<ServicePricePerDay>k__BackingField = dataReader.GetInt32(4);
+                                instance.<UserId>k__BackingField = dataReader.GetString(5);
+                                instance.<Skill>k__BackingField = dataReader.GetString(6);
+                                instance.<WorkerType>k__BackingField = Invoke(((EnumToNumberConverter<WorkerTypes, int>)((IReadOnlyProperty)[LIFTABLE Constant: Property: Worker.WorkerType (WorkerTypes) Required | Resolver: namelessParameter{2} => namelessParameter{2}.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker").FindProperty("WorkerType")]).GetTypeMapping().Converter).ConvertFromProviderTyped, dataReader.GetInt32(7));
+                                (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                    context: materializationContext1.Context, 
+                                    entity: instance, 
+                                    queryTrackingBehavior: TrackAll, 
+                                    structuralType: [LIFTABLE Constant: EntityType: Worker Base: ServicesProvider | Resolver: namelessParameter{3} => namelessParameter{3}.Dependencies.Model.FindEntityType("EgyptOnline.Models.Worker")]) : default(void);
+                                return instance;
+                            }}
+                    default: 
+                        default(Worker)
+                }
+                ;
+                entry1 = entityType1 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                    entityType: entityType1, 
+                    entity: instance1, 
+                    snapshot: shadowSnapshot1);
+                return instance1;
+            } : default(void);
+            return instance1;
+        };
+        entity = 
+        {
+            MaterializationContext materializationContext2;
+            IEntityType entityType2;
+            User instance2;
+            InternalEntityEntry entry2;
+            bool hasNullKey2;
+            materializationContext2 = new MaterializationContext(
+                [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                queryContext.Context
+            );
+            instance2 = default(User);
+            entry2 = queryContext.TryGetEntry(
+                key: [LIFTABLE Constant: Key: User.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("EgyptOnline.Models.User").FindPrimaryKey()], 
+                keyValues: new object[]{ (object)dataReader.GetString(8) }, 
+                throwOnNullKey: True, 
+                hasNullKey: hasNullKey2);
+            !(hasNullKey2) ? entry2 != default(InternalEntityEntry) ? 
+            {
+                entityType2 = entry2.EntityType;
+                return instance2 = (User)entry2.Entity;
+            } : 
+            {
+                ISnapshot shadowSnapshot2;
+                shadowSnapshot2 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                entityType2 = [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{4} => namelessParameter{4}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")];
+                instance2 = switch (entityType2)
+                {
+                    case [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{5} => namelessParameter{5}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")]: 
+                        {
+                            return 
+                            {
+                                User instance;
+                                instance = new User();
+                                instance.<Id>k__BackingField = dataReader.GetString(8);
+                                instance.<AccessFailedCount>k__BackingField = dataReader.GetInt32(9);
+                                instance.<ConcurrencyStamp>k__BackingField = dataReader.IsDBNull(10) ? default(string) : dataReader.GetString(10);
+                                instance.<Email>k__BackingField = dataReader.IsDBNull(11) ? default(string) : dataReader.GetString(11);
+                                instance.<EmailConfirmed>k__BackingField = dataReader.GetBoolean(12);
+                                instance.<FirstName>k__BackingField = dataReader.IsDBNull(13) ? default(string) : dataReader.GetString(13);
+                                instance.<ImageUrl>k__BackingField = dataReader.IsDBNull(14) ? default(string) : dataReader.GetString(14);
+                                instance.<LastName>k__BackingField = dataReader.IsDBNull(15) ? default(string) : dataReader.GetString(15);
+                                instance.<Location>k__BackingField = dataReader.IsDBNull(16) ? default(string) : dataReader.GetString(16);
+                                instance.<LockoutEnabled>k__BackingField = dataReader.GetBoolean(17);
+                                instance.<LockoutEnd>k__BackingField = dataReader.IsDBNull(18) ? default(DateTimeOffset?) : (DateTimeOffset?)dataReader.GetFieldValue<DateTimeOffset>(18);
+                                instance.<NormalizedEmail>k__BackingField = dataReader.IsDBNull(19) ? default(string) : dataReader.GetString(19);
+                                instance.<NormalizedUserName>k__BackingField = dataReader.IsDBNull(20) ? default(string) : dataReader.GetString(20);
+                                instance.<PasswordHash>k__BackingField = dataReader.IsDBNull(21) ? default(string) : dataReader.GetString(21);
+                                instance.<PhoneNumber>k__BackingField = dataReader.IsDBNull(22) ? default(string) : dataReader.GetString(22);
+                                instance.<PhoneNumberConfirmed>k__BackingField = dataReader.GetBoolean(23);
+                                instance.<SecurityStamp>k__BackingField = dataReader.IsDBNull(24) ? default(string) : dataReader.GetString(24);
+                                instance.<TwoFactorEnabled>k__BackingField = dataReader.GetBoolean(25);
+                                instance.<UserName>k__BackingField = dataReader.IsDBNull(26) ? default(string) : dataReader.GetString(26);
+                                instance.<UserType>k__BackingField = dataReader.GetString(27);
+                                (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                    context: materializationContext2.Context, 
+                                    entity: instance, 
+                                    queryTrackingBehavior: TrackAll, 
+                                    structuralType: [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{6} => namelessParameter{6}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")]) : default(void);
+                                return instance;
+                            }}
+                    default: 
+                        default(User)
+                }
+                ;
+                entry2 = entityType2 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                    entityType: entityType2, 
+                    entity: instance2, 
+                    snapshot: shadowSnapshot2);
+                return instance2;
+            } : default(void);
+            return instance2;
+        };
+        ShaperProcessingExpressionVisitor.IncludeReference<Worker, Worker, User>(
+            queryContext: queryContext, 
+            entity: entity, 
+            relatedEntity: entity, 
+            navigation: [LIFTABLE Constant: Navigation: ServicesProvider.User (User) ToPrincipal User Inverse: ServiceProvider | Resolver: namelessParameter{7} => namelessParameter{7}.Dependencies.Model.FindEntityType("EgyptOnline.Models.ServicesProvider").FindNavigation("User")], 
+            inverseNavigation: [LIFTABLE Constant: Navigation: User.ServiceProvider (ServicesProvider) ToDependent ServicesProvider Inverse: User | Resolver: namelessParameter{8} => namelessParameter{8}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User").FindNavigation("ServiceProvider")], 
+            fixup: (namelessParameter{9}, namelessParameter{10}) => 
+            {
+                namelessParameter{9}.<User>k__BackingField = namelessParameter{10};
+                return namelessParameter{10}.<ServiceProvider>k__BackingField = namelessParameter{9};
+            }, 
+            trackingQuery: True);
+        return entity;
+    }, 
+    contextType: EgyptOnline.Data.ApplicationDbContext, 
+    standAloneStateManager: False, 
+    detailedErrorsEnabled: False, 
+    threadSafetyChecksEnabled: True)'
+2025-09-24 21:03:08.261 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.263 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.265 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 21:03:08.267 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 21:03:08.280 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (14ms).
+2025-09-24 21:03:08.289 +03:00 [DBG] Executing DbCommand [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT s0."Id", s0."Bio", s0."IsAvailable", s0."ProviderType", s0."ServicePricePerDay", s0."UserId", s0."Skill", s0."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM (
+    SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType"
+    FROM "ServicesProviders" AS s
+    INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+    LIMIT @__p_1 OFFSET @__p_0
+) AS s0
+INNER JOIN "AspNetUsers" AS a ON s0."UserId" = a."Id"
+2025-09-24 21:03:08.362 +03:00 [INF] Executed DbCommand (76ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT s0."Id", s0."Bio", s0."IsAvailable", s0."ProviderType", s0."ServicePricePerDay", s0."UserId", s0."Skill", s0."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM (
+    SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType"
+    FROM "ServicesProviders" AS s
+    INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+    LIMIT @__p_1 OFFSET @__p_0
+) AS s0
+INNER JOIN "AspNetUsers" AS a ON s0."UserId" = a."Id"
+2025-09-24 21:03:08.374 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.381 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 11ms reading results.
+2025-09-24 21:03:08.388 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.392 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (3ms).
+2025-09-24 21:03:08.401 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 21:03:08.404 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 21:03:08.406 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 21:03:08.406 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 21:03:08.409 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 21:03:08.411 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[<>f__AnonymousType20`8[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], EgyptOnline, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-09-24 21:03:08.423 +03:00 [INF] Executed action EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline) in 673.536ms
+2025-09-24 21:03:08.427 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 21:03:08.433 +03:00 [DBG] Connection id "0HNFRIDD4AOU8" completed keep alive response.
+2025-09-24 21:03:08.438 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 21:03:08.440 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:08.442 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 21:03:08.444 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/search/worker - 200 null application/json; charset=utf-8 762.7544ms
+2025-09-24 21:03:22.838 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/search/worker - application/json 26
+2025-09-24 21:03:22.842 +03:00 [DBG] 1 candidate(s) found for the request path '/api/search/worker'
+2025-09-24 21:03:22.844 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)' with route pattern 'api/Search/worker' is valid for the request path '/api/search/worker'
+2025-09-24 21:03:22.844 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 21:03:22.846 +03:00 [DBG] Successfully validated the token.
+2025-09-24 21:03:22.847 +03:00 [DBG] AuthenticationScheme: Bearer was successfully authenticated.
+2025-09-24 21:03:22.848 +03:00 [DBG] Authorization was successful.
+2025-09-24 21:03:22.849 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 21:03:22.850 +03:00 [INF] Route matched with {action = "SearchWorkers", controller = "Search"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] SearchWorkers(EgyptOnline.Dtos.FilterSearchDto) on controller EgyptOnline.Controllers.SearchController (EgyptOnline).
+2025-09-24 21:03:22.851 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 21:03:22.852 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 21:03:22.852 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 21:03:22.854 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 21:03:22.855 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 21:03:22.856 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 21:03:22.858 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.SearchController (EgyptOnline)
+2025-09-24 21:03:22.860 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 21:03:22.862 +03:00 [DBG] Attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' using the name '' in request data ...
+2025-09-24 21:03:22.864 +03:00 [DBG] Selected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'application/json'.
+2025-09-24 21:03:22.865 +03:00 [DBG] Connection id "0HNFRIDD4AOU8", Request id "0HNFRIDD4AOU8:00000002": started reading request body.
+2025-09-24 21:03:22.865 +03:00 [DBG] Connection id "0HNFRIDD4AOU8", Request id "0HNFRIDD4AOU8:00000002": done reading request body.
+2025-09-24 21:03:22.869 +03:00 [DBG] JSON input formatter succeeded, deserializing to type 'EgyptOnline.Dtos.FilterSearchDto'
+2025-09-24 21:03:22.870 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 21:03:22.871 +03:00 [DBG] Done attempting to bind parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 21:03:22.872 +03:00 [DBG] Attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto' ...
+2025-09-24 21:03:22.873 +03:00 [DBG] Done attempting to validate the bound parameter 'filter' of type 'EgyptOnline.Dtos.FilterSearchDto'.
+2025-09-24 21:03:22.874 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 21:03:22.876 +03:00 [DBG] Creating DbConnection.
+2025-09-24 21:03:22.876 +03:00 [DBG] Created DbConnection. (0ms).
+2025-09-24 21:03:22.877 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.878 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.879 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 21:03:22.879 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 21:03:22.880 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 21:03:22.882 +03:00 [DBG] Executing DbCommand [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 21:03:22.886 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "ServicesProviders" AS s
+INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+INNER JOIN "AspNetUsers" AS a ON s."UserId" = a."Id"
+2025-09-24 21:03:22.887 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.888 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 0ms reading results.
+2025-09-24 21:03:22.889 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.890 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 21:03:22.891 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.892 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.893 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 21:03:22.893 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 21:03:22.894 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 21:03:22.895 +03:00 [DBG] Executing DbCommand [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT s0."Id", s0."Bio", s0."IsAvailable", s0."ProviderType", s0."ServicePricePerDay", s0."UserId", s0."Skill", s0."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM (
+    SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType"
+    FROM "ServicesProviders" AS s
+    INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+    LIMIT @__p_1 OFFSET @__p_0
+) AS s0
+INNER JOIN "AspNetUsers" AS a ON s0."UserId" = a."Id"
+2025-09-24 21:03:22.898 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT s0."Id", s0."Bio", s0."IsAvailable", s0."ProviderType", s0."ServicePricePerDay", s0."UserId", s0."Skill", s0."WorkerType", a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM (
+    SELECT s."Id", s."Bio", s."IsAvailable", s."ProviderType", s."ServicePricePerDay", s."UserId", w."Skill", w."WorkerType"
+    FROM "ServicesProviders" AS s
+    INNER JOIN "Workers" AS w ON s."Id" = w."Id"
+    LIMIT @__p_1 OFFSET @__p_0
+) AS s0
+INNER JOIN "AspNetUsers" AS a ON s0."UserId" = a."Id"
+2025-09-24 21:03:22.901 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.902 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 21:03:22.904 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.905 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 21:03:22.905 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 21:03:22.907 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 21:03:22.907 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 21:03:22.908 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 21:03:22.908 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 21:03:22.909 +03:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[<>f__AnonymousType20`8[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], EgyptOnline, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-09-24 21:03:22.910 +03:00 [INF] Executed action EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline) in 54.5617ms
+2025-09-24 21:03:22.911 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.SearchController.SearchWorkers (EgyptOnline)'
+2025-09-24 21:03:22.912 +03:00 [DBG] Connection id "0HNFRIDD4AOU8" completed keep alive response.
+2025-09-24 21:03:22.914 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 21:03:22.915 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 21:03:22.915 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 21:03:22.916 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/search/worker - 200 null application/json; charset=utf-8 78.4836ms
+2025-09-24 21:05:33.789 +03:00 [DBG] Connection id "0HNFRIDD4AOU8" disconnecting.
+2025-09-24 21:05:33.794 +03:00 [DBG] Connection id "0HNFRIDD4AOU8" stopped.
+2025-09-24 21:05:33.797 +03:00 [DBG] Connection id "0HNFRIDD4AOU8" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 23:10:06.824 +03:00 [DBG] Connection id "0HNFRIDD4AOU9" received FIN.
+2025-09-24 23:10:06.832 +03:00 [DBG] Connection id "0HNFRIDD4AOU9" accepted.
+2025-09-24 23:10:06.834 +03:00 [DBG] Connection id "0HNFRIDD4AOU9" started.
+2025-09-24 23:10:06.838 +03:00 [DBG] Connection id "0HNFRIDD4AOUA" accepted.
+2025-09-24 23:10:06.839 +03:00 [DBG] Connection id "0HNFRIDD4AOUA" started.
+2025-09-24 23:10:06.840 +03:00 [DBG] Connection id "0HNFRIDD4AOU9" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 23:10:06.842 +03:00 [DBG] Connection id "0HNFRIDD4AOU9" disconnecting.
+2025-09-24 23:10:06.845 +03:00 [DBG] Connection id "0HNFRIDD4AOU9" stopped.
+2025-09-24 23:10:06.863 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/auth/register - application/json 209
+2025-09-24 23:10:06.885 +03:00 [DBG] 1 candidate(s) found for the request path '/api/auth/register'
+2025-09-24 23:10:06.891 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)' with route pattern 'api/Auth/register' is valid for the request path '/api/auth/register'
+2025-09-24 23:10:06.895 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:10:06.982 +03:00 [INF] Failed to validate the token.
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '9/24/2025 6:15:15 PM', Current time (UTC): '9/24/2025 8:10:06 PM'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2025-09-24 23:10:07.087 +03:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '9/24/2025 6:15:15 PM', Current time (UTC): '9/24/2025 8:10:06 PM'.
+2025-09-24 23:10:07.093 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:10:07.143 +03:00 [INF] Route matched with {action = "Register", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Register(EgyptOnline.Dtos.RegisterWorkerDto) on controller EgyptOnline.Controllers.AuthController (EgyptOnline).
+2025-09-24 23:10:07.145 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 23:10:07.148 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 23:10:07.150 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 23:10:07.152 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 23:10:07.153 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 23:10:07.154 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.AuthController (EgyptOnline)
+2025-09-24 23:10:07.292 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.AuthController (EgyptOnline)
+2025-09-24 23:10:07.294 +03:00 [DBG] Attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' ...
+2025-09-24 23:10:07.297 +03:00 [DBG] Attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' using the name '' in request data ...
+2025-09-24 23:10:07.299 +03:00 [DBG] Selected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'application/json'.
+2025-09-24 23:10:07.336 +03:00 [DBG] Connection id "0HNFRIDD4AOUA", Request id "0HNFRIDD4AOUA:00000001": started reading request body.
+2025-09-24 23:10:07.338 +03:00 [DBG] Connection id "0HNFRIDD4AOUA", Request id "0HNFRIDD4AOUA:00000001": done reading request body.
+2025-09-24 23:10:07.354 +03:00 [DBG] JSON input formatter succeeded, deserializing to type 'EgyptOnline.Dtos.RegisterWorkerDto'
+2025-09-24 23:10:07.355 +03:00 [DBG] Done attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:10:07.356 +03:00 [DBG] Done attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:10:07.358 +03:00 [DBG] Attempting to validate the bound parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' ...
+2025-09-24 23:10:07.403 +03:00 [DBG] Done attempting to validate the bound parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:10:07.453 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 23:10:07.488 +03:00 [DBG] Compiling query expression: 
+'DbSet<User>()
+    .SingleOrDefault(u => u.NormalizedEmail == __normalizedEmail_0)'
+2025-09-24 23:10:07.560 +03:00 [DBG] Generated query execution expression: 
+'queryContext => ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync<User>(
+    asyncEnumerable: SingleQueryingEnumerable.Create<User>(
+        relationalQueryContext: (RelationalQueryContext)queryContext, 
+        relationalCommandResolver: parameters => [LIFTABLE Constant: RelationalCommandCache.QueryExpression(
+            Projection Mapping:
+                EmptyProjectionMember -> Dictionary<IProperty, int> { [Property: User.Id (string) Required PK AfterSave:Throw, 0], [Property: User.AccessFailedCount (int) Required, 1], [Property: User.ConcurrencyStamp (string) Concurrency, 2], [Property: User.Email (string) MaxLength(256), 3], [Property: User.EmailConfirmed (bool) Required, 4], [Property: User.FirstName (string), 5], [Property: User.ImageUrl (string), 6], [Property: User.LastName (string), 7], [Property: User.Location (string), 8], [Property: User.LockoutEnabled (bool) Required, 9], [Property: User.LockoutEnd (DateTimeOffset?), 10], [Property: User.NormalizedEmail (string) Index MaxLength(256), 11], [Property: User.NormalizedUserName (string) Index MaxLength(256), 12], [Property: User.PasswordHash (string), 13], [Property: User.PhoneNumber (string), 14], [Property: User.PhoneNumberConfirmed (bool) Required, 15], [Property: User.SecurityStamp (string), 16], [Property: User.TwoFactorEnabled (bool) Required, 17], [Property: User.UserName (string) MaxLength(256), 18], [Property: User.UserType (string) Required, 19] }
+            SELECT TOP(2) a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.FirstName, a.ImageUrl, a.LastName, a.Location, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName, a.UserType
+            FROM AspNetUsers AS a
+            WHERE a.NormalizedEmail == @__normalizedEmail_0) | Resolver: c => new RelationalCommandCache(
+            c.Dependencies.MemoryCache, 
+            c.RelationalDependencies.QuerySqlGeneratorFactory, 
+            c.RelationalDependencies.RelationalParameterBasedSqlProcessorFactory, 
+            Projection Mapping:
+                EmptyProjectionMember -> Dictionary<IProperty, int> { [Property: User.Id (string) Required PK AfterSave:Throw, 0], [Property: User.AccessFailedCount (int) Required, 1], [Property: User.ConcurrencyStamp (string) Concurrency, 2], [Property: User.Email (string) MaxLength(256), 3], [Property: User.EmailConfirmed (bool) Required, 4], [Property: User.FirstName (string), 5], [Property: User.ImageUrl (string), 6], [Property: User.LastName (string), 7], [Property: User.Location (string), 8], [Property: User.LockoutEnabled (bool) Required, 9], [Property: User.LockoutEnd (DateTimeOffset?), 10], [Property: User.NormalizedEmail (string) Index MaxLength(256), 11], [Property: User.NormalizedUserName (string) Index MaxLength(256), 12], [Property: User.PasswordHash (string), 13], [Property: User.PhoneNumber (string), 14], [Property: User.PhoneNumberConfirmed (bool) Required, 15], [Property: User.SecurityStamp (string), 16], [Property: User.TwoFactorEnabled (bool) Required, 17], [Property: User.UserName (string) MaxLength(256), 18], [Property: User.UserType (string) Required, 19] }
+            SELECT TOP(2) a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.FirstName, a.ImageUrl, a.LastName, a.Location, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName, a.UserType
+            FROM AspNetUsers AS a
+            WHERE a.NormalizedEmail == @__normalizedEmail_0, 
+            False, 
+            new HashSet<string>(
+                new string[]{ }, 
+                StringComparer.Ordinal
+            )
+        )].GetRelationalCommandTemplate(parameters), 
+        readerColumns: null, 
+        shaper: (queryContext, dataReader, resultContext, resultCoordinator) => 
+        {
+            User entity;
+            entity = 
+            {
+                MaterializationContext materializationContext1;
+                IEntityType entityType1;
+                User instance1;
+                InternalEntityEntry entry1;
+                bool hasNullKey1;
+                materializationContext1 = new MaterializationContext(
+                    [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                    queryContext.Context
+                );
+                instance1 = default(User);
+                entry1 = queryContext.TryGetEntry(
+                    key: [LIFTABLE Constant: Key: User.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("EgyptOnline.Models.User").FindPrimaryKey()], 
+                    keyValues: new object[]{ (object)dataReader.GetString(0) }, 
+                    throwOnNullKey: True, 
+                    hasNullKey: hasNullKey1);
+                !(hasNullKey1) ? entry1 != default(InternalEntityEntry) ? 
+                {
+                    entityType1 = entry1.EntityType;
+                    return instance1 = (User)entry1.Entity;
+                } : 
+                {
+                    ISnapshot shadowSnapshot1;
+                    shadowSnapshot1 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                    entityType1 = [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{0} => namelessParameter{0}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")];
+                    instance1 = switch (entityType1)
+                    {
+                        case [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{1} => namelessParameter{1}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")]: 
+                            {
+                                return 
+                                {
+                                    User instance;
+                                    instance = new User();
+                                    instance.<Id>k__BackingField = dataReader.GetString(0);
+                                    instance.<AccessFailedCount>k__BackingField = dataReader.GetInt32(1);
+                                    instance.<ConcurrencyStamp>k__BackingField = dataReader.IsDBNull(2) ? default(string) : dataReader.GetString(2);
+                                    instance.<Email>k__BackingField = dataReader.IsDBNull(3) ? default(string) : dataReader.GetString(3);
+                                    instance.<EmailConfirmed>k__BackingField = dataReader.GetBoolean(4);
+                                    instance.<FirstName>k__BackingField = dataReader.IsDBNull(5) ? default(string) : dataReader.GetString(5);
+                                    instance.<ImageUrl>k__BackingField = dataReader.IsDBNull(6) ? default(string) : dataReader.GetString(6);
+                                    instance.<LastName>k__BackingField = dataReader.IsDBNull(7) ? default(string) : dataReader.GetString(7);
+                                    instance.<Location>k__BackingField = dataReader.IsDBNull(8) ? default(string) : dataReader.GetString(8);
+                                    instance.<LockoutEnabled>k__BackingField = dataReader.GetBoolean(9);
+                                    instance.<LockoutEnd>k__BackingField = dataReader.IsDBNull(10) ? default(DateTimeOffset?) : (DateTimeOffset?)dataReader.GetFieldValue<DateTimeOffset>(10);
+                                    instance.<NormalizedEmail>k__BackingField = dataReader.IsDBNull(11) ? default(string) : dataReader.GetString(11);
+                                    instance.<NormalizedUserName>k__BackingField = dataReader.IsDBNull(12) ? default(string) : dataReader.GetString(12);
+                                    instance.<PasswordHash>k__BackingField = dataReader.IsDBNull(13) ? default(string) : dataReader.GetString(13);
+                                    instance.<PhoneNumber>k__BackingField = dataReader.IsDBNull(14) ? default(string) : dataReader.GetString(14);
+                                    instance.<PhoneNumberConfirmed>k__BackingField = dataReader.GetBoolean(15);
+                                    instance.<SecurityStamp>k__BackingField = dataReader.IsDBNull(16) ? default(string) : dataReader.GetString(16);
+                                    instance.<TwoFactorEnabled>k__BackingField = dataReader.GetBoolean(17);
+                                    instance.<UserName>k__BackingField = dataReader.IsDBNull(18) ? default(string) : dataReader.GetString(18);
+                                    instance.<UserType>k__BackingField = dataReader.GetString(19);
+                                    (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                        context: materializationContext1.Context, 
+                                        entity: instance, 
+                                        queryTrackingBehavior: TrackAll, 
+                                        structuralType: [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{2} => namelessParameter{2}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")]) : default(void);
+                                    return instance;
+                                }}
+                        default: 
+                            default(User)
+                    }
+                    ;
+                    entry1 = entityType1 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                        entityType: entityType1, 
+                        entity: instance1, 
+                        snapshot: shadowSnapshot1);
+                    return instance1;
+                } : default(void);
+                return instance1;
+            };
+            return entity;
+        }, 
+        contextType: EgyptOnline.Data.ApplicationDbContext, 
+        standAloneStateManager: False, 
+        detailedErrorsEnabled: False, 
+        threadSafetyChecksEnabled: True), 
+    cancellationToken: queryContext.CancellationToken)'
+2025-09-24 23:10:07.593 +03:00 [DBG] Creating DbConnection.
+2025-09-24 23:10:07.596 +03:00 [DBG] Created DbConnection. (2ms).
+2025-09-24 23:10:07.597 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:07.708 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:07.711 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:07.713 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (2ms).
+2025-09-24 23:10:07.719 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (8ms).
+2025-09-24 23:10:07.720 +03:00 [DBG] Executing DbCommand [Parameters=[@__normalizedEmail_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @__normalizedEmail_0
+LIMIT 2
+2025-09-24 23:10:07.748 +03:00 [INF] Executed DbCommand (27ms) [Parameters=[@__normalizedEmail_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @__normalizedEmail_0
+LIMIT 2
+2025-09-24 23:10:07.752 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:07.753 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 2ms reading results.
+2025-09-24 23:10:07.754 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:07.755 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:10:07.864 +03:00 [DBG] Compiling query expression: 
+'DbSet<User>()
+    .FirstOrDefault(u => u.NormalizedUserName == __normalizedUserName_0)'
+2025-09-24 23:10:07.876 +03:00 [DBG] Generated query execution expression: 
+'queryContext => ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync<User>(
+    asyncEnumerable: SingleQueryingEnumerable.Create<User>(
+        relationalQueryContext: (RelationalQueryContext)queryContext, 
+        relationalCommandResolver: parameters => [LIFTABLE Constant: RelationalCommandCache.QueryExpression(
+            Projection Mapping:
+                EmptyProjectionMember -> Dictionary<IProperty, int> { [Property: User.Id (string) Required PK AfterSave:Throw, 0], [Property: User.AccessFailedCount (int) Required, 1], [Property: User.ConcurrencyStamp (string) Concurrency, 2], [Property: User.Email (string) MaxLength(256), 3], [Property: User.EmailConfirmed (bool) Required, 4], [Property: User.FirstName (string), 5], [Property: User.ImageUrl (string), 6], [Property: User.LastName (string), 7], [Property: User.Location (string), 8], [Property: User.LockoutEnabled (bool) Required, 9], [Property: User.LockoutEnd (DateTimeOffset?), 10], [Property: User.NormalizedEmail (string) Index MaxLength(256), 11], [Property: User.NormalizedUserName (string) Index MaxLength(256), 12], [Property: User.PasswordHash (string), 13], [Property: User.PhoneNumber (string), 14], [Property: User.PhoneNumberConfirmed (bool) Required, 15], [Property: User.SecurityStamp (string), 16], [Property: User.TwoFactorEnabled (bool) Required, 17], [Property: User.UserName (string) MaxLength(256), 18], [Property: User.UserType (string) Required, 19] }
+            SELECT TOP(1) a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.FirstName, a.ImageUrl, a.LastName, a.Location, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName, a.UserType
+            FROM AspNetUsers AS a
+            WHERE a.NormalizedUserName == @__normalizedUserName_0) | Resolver: c => new RelationalCommandCache(
+            c.Dependencies.MemoryCache, 
+            c.RelationalDependencies.QuerySqlGeneratorFactory, 
+            c.RelationalDependencies.RelationalParameterBasedSqlProcessorFactory, 
+            Projection Mapping:
+                EmptyProjectionMember -> Dictionary<IProperty, int> { [Property: User.Id (string) Required PK AfterSave:Throw, 0], [Property: User.AccessFailedCount (int) Required, 1], [Property: User.ConcurrencyStamp (string) Concurrency, 2], [Property: User.Email (string) MaxLength(256), 3], [Property: User.EmailConfirmed (bool) Required, 4], [Property: User.FirstName (string), 5], [Property: User.ImageUrl (string), 6], [Property: User.LastName (string), 7], [Property: User.Location (string), 8], [Property: User.LockoutEnabled (bool) Required, 9], [Property: User.LockoutEnd (DateTimeOffset?), 10], [Property: User.NormalizedEmail (string) Index MaxLength(256), 11], [Property: User.NormalizedUserName (string) Index MaxLength(256), 12], [Property: User.PasswordHash (string), 13], [Property: User.PhoneNumber (string), 14], [Property: User.PhoneNumberConfirmed (bool) Required, 15], [Property: User.SecurityStamp (string), 16], [Property: User.TwoFactorEnabled (bool) Required, 17], [Property: User.UserName (string) MaxLength(256), 18], [Property: User.UserType (string) Required, 19] }
+            SELECT TOP(1) a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.FirstName, a.ImageUrl, a.LastName, a.Location, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName, a.UserType
+            FROM AspNetUsers AS a
+            WHERE a.NormalizedUserName == @__normalizedUserName_0, 
+            False, 
+            new HashSet<string>(
+                new string[]{ }, 
+                StringComparer.Ordinal
+            )
+        )].GetRelationalCommandTemplate(parameters), 
+        readerColumns: null, 
+        shaper: (queryContext, dataReader, resultContext, resultCoordinator) => 
+        {
+            User entity;
+            entity = 
+            {
+                MaterializationContext materializationContext1;
+                IEntityType entityType1;
+                User instance1;
+                InternalEntityEntry entry1;
+                bool hasNullKey1;
+                materializationContext1 = new MaterializationContext(
+                    [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                    queryContext.Context
+                );
+                instance1 = default(User);
+                entry1 = queryContext.TryGetEntry(
+                    key: [LIFTABLE Constant: Key: User.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("EgyptOnline.Models.User").FindPrimaryKey()], 
+                    keyValues: new object[]{ (object)dataReader.GetString(0) }, 
+                    throwOnNullKey: True, 
+                    hasNullKey: hasNullKey1);
+                !(hasNullKey1) ? entry1 != default(InternalEntityEntry) ? 
+                {
+                    entityType1 = entry1.EntityType;
+                    return instance1 = (User)entry1.Entity;
+                } : 
+                {
+                    ISnapshot shadowSnapshot1;
+                    shadowSnapshot1 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                    entityType1 = [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{0} => namelessParameter{0}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")];
+                    instance1 = switch (entityType1)
+                    {
+                        case [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{1} => namelessParameter{1}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")]: 
+                            {
+                                return 
+                                {
+                                    User instance;
+                                    instance = new User();
+                                    instance.<Id>k__BackingField = dataReader.GetString(0);
+                                    instance.<AccessFailedCount>k__BackingField = dataReader.GetInt32(1);
+                                    instance.<ConcurrencyStamp>k__BackingField = dataReader.IsDBNull(2) ? default(string) : dataReader.GetString(2);
+                                    instance.<Email>k__BackingField = dataReader.IsDBNull(3) ? default(string) : dataReader.GetString(3);
+                                    instance.<EmailConfirmed>k__BackingField = dataReader.GetBoolean(4);
+                                    instance.<FirstName>k__BackingField = dataReader.IsDBNull(5) ? default(string) : dataReader.GetString(5);
+                                    instance.<ImageUrl>k__BackingField = dataReader.IsDBNull(6) ? default(string) : dataReader.GetString(6);
+                                    instance.<LastName>k__BackingField = dataReader.IsDBNull(7) ? default(string) : dataReader.GetString(7);
+                                    instance.<Location>k__BackingField = dataReader.IsDBNull(8) ? default(string) : dataReader.GetString(8);
+                                    instance.<LockoutEnabled>k__BackingField = dataReader.GetBoolean(9);
+                                    instance.<LockoutEnd>k__BackingField = dataReader.IsDBNull(10) ? default(DateTimeOffset?) : (DateTimeOffset?)dataReader.GetFieldValue<DateTimeOffset>(10);
+                                    instance.<NormalizedEmail>k__BackingField = dataReader.IsDBNull(11) ? default(string) : dataReader.GetString(11);
+                                    instance.<NormalizedUserName>k__BackingField = dataReader.IsDBNull(12) ? default(string) : dataReader.GetString(12);
+                                    instance.<PasswordHash>k__BackingField = dataReader.IsDBNull(13) ? default(string) : dataReader.GetString(13);
+                                    instance.<PhoneNumber>k__BackingField = dataReader.IsDBNull(14) ? default(string) : dataReader.GetString(14);
+                                    instance.<PhoneNumberConfirmed>k__BackingField = dataReader.GetBoolean(15);
+                                    instance.<SecurityStamp>k__BackingField = dataReader.IsDBNull(16) ? default(string) : dataReader.GetString(16);
+                                    instance.<TwoFactorEnabled>k__BackingField = dataReader.GetBoolean(17);
+                                    instance.<UserName>k__BackingField = dataReader.IsDBNull(18) ? default(string) : dataReader.GetString(18);
+                                    instance.<UserType>k__BackingField = dataReader.GetString(19);
+                                    (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                        context: materializationContext1.Context, 
+                                        entity: instance, 
+                                        queryTrackingBehavior: TrackAll, 
+                                        structuralType: [LIFTABLE Constant: EntityType: User | Resolver: namelessParameter{2} => namelessParameter{2}.Dependencies.Model.FindEntityType("EgyptOnline.Models.User")]) : default(void);
+                                    return instance;
+                                }}
+                        default: 
+                            default(User)
+                    }
+                    ;
+                    entry1 = entityType1 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                        entityType: entityType1, 
+                        entity: instance1, 
+                        snapshot: shadowSnapshot1);
+                    return instance1;
+                } : default(void);
+                return instance1;
+            };
+            return entity;
+        }, 
+        contextType: EgyptOnline.Data.ApplicationDbContext, 
+        standAloneStateManager: False, 
+        detailedErrorsEnabled: False, 
+        threadSafetyChecksEnabled: True), 
+    cancellationToken: queryContext.CancellationToken)'
+2025-09-24 23:10:07.885 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:07.886 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:07.887 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:07.888 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:07.889 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:10:07.890 +03:00 [DBG] Executing DbCommand [Parameters=[@__normalizedUserName_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @__normalizedUserName_0
+LIMIT 1
+2025-09-24 23:10:07.894 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[@__normalizedUserName_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @__normalizedUserName_0
+LIMIT 1
+2025-09-24 23:10:07.896 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:07.897 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 23:10:07.899 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:07.900 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:10:08.065 +03:00 [DBG] Context 'ApplicationDbContext' started tracking 'User' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:08.072 +03:00 [DBG] SaveChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:10:08.075 +03:00 [DBG] DetectChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:10:08.096 +03:00 [DBG] DetectChanges completed for 'ApplicationDbContext'.
+2025-09-24 23:10:08.191 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.193 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.196 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:08.197 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:08.198 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (2ms).
+2025-09-24 23:10:08.202 +03:00 [DBG] Executing DbCommand [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?' (DbType = Boolean), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = Boolean), @p16='?', @p17='?' (DbType = Boolean), @p18='?', @p19='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "FirstName", "ImageUrl", "LastName", "Location", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserType")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19);
+2025-09-24 23:10:08.226 +03:00 [INF] Executed DbCommand (26ms) [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?' (DbType = Boolean), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = Boolean), @p16='?', @p17='?' (DbType = Boolean), @p18='?', @p19='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "FirstName", "ImageUrl", "LastName", "Location", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserType")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19);
+2025-09-24 23:10:08.232 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.233 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 5ms reading results.
+2025-09-24 23:10:08.235 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.236 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:10:08.252 +03:00 [DBG] An entity of type 'User' tracked by 'ApplicationDbContext' changed state from '"Added"' to '"Unchanged"'. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:08.254 +03:00 [DBG] SaveChanges completed for 'ApplicationDbContext' with 1 entities written to the database.
+2025-09-24 23:10:08.274 +03:00 [DBG] 'ApplicationDbContext' generated a temporary value for the property 'Worker.Id'. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:08.300 +03:00 [DBG] The navigation 'User.ServiceProvider' was detected as changed. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:08.305 +03:00 [DBG] Context 'ApplicationDbContext' started tracking 'Worker' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:08.307 +03:00 [DBG] SaveChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:10:08.308 +03:00 [DBG] DetectChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:10:08.317 +03:00 [DBG] DetectChanges completed for 'ApplicationDbContext'.
+2025-09-24 23:10:08.335 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.336 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.340 +03:00 [DBG] Beginning transaction with isolation level 'Unspecified'.
+2025-09-24 23:10:08.351 +03:00 [DBG] Began transaction with isolation level 'ReadCommitted'.
+2025-09-24 23:10:08.353 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:08.354 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:08.355 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (2ms).
+2025-09-24 23:10:08.357 +03:00 [DBG] Executing DbCommand [Parameters=[@p0='?', @p1='?' (DbType = Boolean), @p2='?', @p3='?' (DbType = Int32), @p4='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "ServicesProviders" ("Bio", "IsAvailable", "ProviderType", "ServicePricePerDay", "UserId")
+VALUES (@p0, @p1, @p2, @p3, @p4)
+RETURNING "Id";
+2025-09-24 23:10:08.373 +03:00 [INF] Executed DbCommand (16ms) [Parameters=[@p0='?', @p1='?' (DbType = Boolean), @p2='?', @p3='?' (DbType = Int32), @p4='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "ServicesProviders" ("Bio", "IsAvailable", "ProviderType", "ServicePricePerDay", "UserId")
+VALUES (@p0, @p1, @p2, @p3, @p4)
+RETURNING "Id";
+2025-09-24 23:10:08.388 +03:00 [DBG] The foreign key property 'ServicesProvider.Id' was detected as changed. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see property values.
+2025-09-24 23:10:08.394 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.396 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 20ms reading results.
+2025-09-24 23:10:08.398 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:08.399 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:08.403 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (4ms).
+2025-09-24 23:10:08.405 +03:00 [DBG] Executing DbCommand [Parameters=[@p5='?' (DbType = Int32), @p6='?', @p7='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Workers" ("Id", "Skill", "WorkerType")
+VALUES (@p5, @p6, @p7);
+2025-09-24 23:10:08.409 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[@p5='?' (DbType = Int32), @p6='?', @p7='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Workers" ("Id", "Skill", "WorkerType")
+VALUES (@p5, @p6, @p7);
+2025-09-24 23:10:08.411 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.412 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 23:10:08.415 +03:00 [DBG] Committing transaction.
+2025-09-24 23:10:08.420 +03:00 [DBG] Committed transaction.
+2025-09-24 23:10:08.422 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.423 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:10:08.427 +03:00 [DBG] Disposing transaction.
+2025-09-24 23:10:08.429 +03:00 [DBG] An entity of type 'Worker' tracked by 'ApplicationDbContext' changed state from '"Added"' to '"Unchanged"'. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:08.430 +03:00 [DBG] SaveChanges completed for 'ApplicationDbContext' with 2 entities written to the database.
+2025-09-24 23:10:08.433 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 23:10:08.436 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 23:10:08.436 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 23:10:08.437 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 23:10:08.438 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 23:10:08.440 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType14`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-09-24 23:10:08.444 +03:00 [INF] Executed action EgyptOnline.Controllers.AuthController.Register (EgyptOnline) in 1289.5002ms
+2025-09-24 23:10:08.445 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:10:08.446 +03:00 [DBG] Connection id "0HNFRIDD4AOUA" completed keep alive response.
+2025-09-24 23:10:08.448 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 23:10:08.450 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:08.451 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:10:08.454 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/auth/register - 200 null application/json; charset=utf-8 1593.8468ms
+2025-09-24 23:10:58.354 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/auth/register - application/json 255
+2025-09-24 23:10:58.360 +03:00 [DBG] 1 candidate(s) found for the request path '/api/auth/register'
+2025-09-24 23:10:58.361 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)' with route pattern 'api/Auth/register' is valid for the request path '/api/auth/register'
+2025-09-24 23:10:58.362 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:10:58.372 +03:00 [INF] Failed to validate the token.
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '9/24/2025 6:15:15 PM', Current time (UTC): '9/24/2025 8:10:58 PM'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2025-09-24 23:10:58.378 +03:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '9/24/2025 6:15:15 PM', Current time (UTC): '9/24/2025 8:10:58 PM'.
+2025-09-24 23:10:58.380 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:10:58.383 +03:00 [INF] Route matched with {action = "Register", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Register(EgyptOnline.Dtos.RegisterWorkerDto) on controller EgyptOnline.Controllers.AuthController (EgyptOnline).
+2025-09-24 23:10:58.385 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 23:10:58.386 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 23:10:58.388 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 23:10:58.390 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 23:10:58.392 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 23:10:58.394 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.AuthController (EgyptOnline)
+2025-09-24 23:10:58.412 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.AuthController (EgyptOnline)
+2025-09-24 23:10:58.414 +03:00 [DBG] Attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' ...
+2025-09-24 23:10:58.414 +03:00 [DBG] Attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' using the name '' in request data ...
+2025-09-24 23:10:58.416 +03:00 [DBG] Selected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'application/json'.
+2025-09-24 23:10:58.417 +03:00 [DBG] Connection id "0HNFRIDD4AOUA", Request id "0HNFRIDD4AOUA:00000002": started reading request body.
+2025-09-24 23:10:58.418 +03:00 [DBG] Connection id "0HNFRIDD4AOUA", Request id "0HNFRIDD4AOUA:00000002": done reading request body.
+2025-09-24 23:10:58.424 +03:00 [DBG] JSON input formatter succeeded, deserializing to type 'EgyptOnline.Dtos.RegisterWorkerDto'
+2025-09-24 23:10:58.425 +03:00 [DBG] Done attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:10:58.426 +03:00 [DBG] Done attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:10:58.427 +03:00 [DBG] Attempting to validate the bound parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' ...
+2025-09-24 23:10:58.432 +03:00 [DBG] Done attempting to validate the bound parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:10:58.435 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 23:10:58.441 +03:00 [DBG] Creating DbConnection.
+2025-09-24 23:10:58.443 +03:00 [DBG] Created DbConnection. (1ms).
+2025-09-24 23:10:58.443 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.444 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.445 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:58.446 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:58.447 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:10:58.448 +03:00 [DBG] Executing DbCommand [Parameters=[@__normalizedEmail_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @__normalizedEmail_0
+LIMIT 2
+2025-09-24 23:10:58.454 +03:00 [INF] Executed DbCommand (6ms) [Parameters=[@__normalizedEmail_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @__normalizedEmail_0
+LIMIT 2
+2025-09-24 23:10:58.457 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.458 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 23:10:58.459 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.460 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 23:10:58.512 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.514 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.515 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:58.516 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:58.516 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:10:58.517 +03:00 [DBG] Executing DbCommand [Parameters=[@__normalizedUserName_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @__normalizedUserName_0
+LIMIT 1
+2025-09-24 23:10:58.519 +03:00 [INF] Executed DbCommand (2ms) [Parameters=[@__normalizedUserName_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @__normalizedUserName_0
+LIMIT 1
+2025-09-24 23:10:58.521 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.522 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 23:10:58.523 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.524 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 23:10:58.526 +03:00 [DBG] Context 'ApplicationDbContext' started tracking 'User' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:58.527 +03:00 [DBG] SaveChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:10:58.527 +03:00 [DBG] DetectChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:10:58.528 +03:00 [DBG] DetectChanges completed for 'ApplicationDbContext'.
+2025-09-24 23:10:58.530 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.531 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.532 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:58.533 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:58.533 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:10:58.534 +03:00 [DBG] Executing DbCommand [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?' (DbType = Boolean), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = Boolean), @p16='?', @p17='?' (DbType = Boolean), @p18='?', @p19='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "FirstName", "ImageUrl", "LastName", "Location", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserType")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19);
+2025-09-24 23:10:58.537 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?' (DbType = Boolean), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = Boolean), @p16='?', @p17='?' (DbType = Boolean), @p18='?', @p19='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "FirstName", "ImageUrl", "LastName", "Location", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserType")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19);
+2025-09-24 23:10:58.539 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.541 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 23:10:58.543 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.544 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:10:58.546 +03:00 [DBG] An entity of type 'User' tracked by 'ApplicationDbContext' changed state from '"Added"' to '"Unchanged"'. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:58.548 +03:00 [DBG] SaveChanges completed for 'ApplicationDbContext' with 1 entities written to the database.
+2025-09-24 23:10:58.553 +03:00 [DBG] 'ApplicationDbContext' generated a temporary value for the property 'Contractor.Id'. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:58.562 +03:00 [DBG] The navigation 'User.ServiceProvider' was detected as changed. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:58.563 +03:00 [DBG] Context 'ApplicationDbContext' started tracking 'Contractor' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:58.564 +03:00 [DBG] SaveChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:10:58.565 +03:00 [DBG] DetectChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:10:58.568 +03:00 [DBG] DetectChanges completed for 'ApplicationDbContext'.
+2025-09-24 23:10:58.569 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.570 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.572 +03:00 [DBG] Beginning transaction with isolation level 'Unspecified'.
+2025-09-24 23:10:58.573 +03:00 [DBG] Began transaction with isolation level 'ReadCommitted'.
+2025-09-24 23:10:58.574 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:58.574 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:58.575 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:10:58.576 +03:00 [DBG] Executing DbCommand [Parameters=[@p0='?', @p1='?' (DbType = Boolean), @p2='?', @p3='?' (DbType = Int32), @p4='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "ServicesProviders" ("Bio", "IsAvailable", "ProviderType", "ServicePricePerDay", "UserId")
+VALUES (@p0, @p1, @p2, @p3, @p4)
+RETURNING "Id";
+2025-09-24 23:10:58.579 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[@p0='?', @p1='?' (DbType = Boolean), @p2='?', @p3='?' (DbType = Int32), @p4='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "ServicesProviders" ("Bio", "IsAvailable", "ProviderType", "ServicePricePerDay", "UserId")
+VALUES (@p0, @p1, @p2, @p3, @p4)
+RETURNING "Id";
+2025-09-24 23:10:58.581 +03:00 [DBG] The foreign key property 'ServicesProvider.Id' was detected as changed. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see property values.
+2025-09-24 23:10:58.582 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.583 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 2ms reading results.
+2025-09-24 23:10:58.584 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:10:58.585 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:10:58.585 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:10:58.586 +03:00 [DBG] Executing DbCommand [Parameters=[@p5='?' (DbType = Int32), @p6='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Contractors" ("Id", "Specialization")
+VALUES (@p5, @p6);
+2025-09-24 23:10:58.592 +03:00 [INF] Executed DbCommand (6ms) [Parameters=[@p5='?' (DbType = Int32), @p6='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "Contractors" ("Id", "Specialization")
+VALUES (@p5, @p6);
+2025-09-24 23:10:58.594 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.596 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 23:10:58.597 +03:00 [DBG] Committing transaction.
+2025-09-24 23:10:58.599 +03:00 [DBG] Committed transaction.
+2025-09-24 23:10:58.599 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.601 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:10:58.602 +03:00 [DBG] Disposing transaction.
+2025-09-24 23:10:58.603 +03:00 [DBG] An entity of type 'Contractor' tracked by 'ApplicationDbContext' changed state from '"Added"' to '"Unchanged"'. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:10:58.605 +03:00 [DBG] SaveChanges completed for 'ApplicationDbContext' with 2 entities written to the database.
+2025-09-24 23:10:58.606 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 23:10:58.609 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 23:10:58.609 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 23:10:58.610 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 23:10:58.611 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 23:10:58.612 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType14`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-09-24 23:10:58.615 +03:00 [INF] Executed action EgyptOnline.Controllers.AuthController.Register (EgyptOnline) in 221.5108ms
+2025-09-24 23:10:58.616 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:10:58.617 +03:00 [DBG] Connection id "0HNFRIDD4AOUA" completed keep alive response.
+2025-09-24 23:10:58.618 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 23:10:58.619 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:10:58.620 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:10:58.622 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/auth/register - 200 null application/json; charset=utf-8 268.4141ms
+2025-09-24 23:11:06.612 +03:00 [INF] Request starting HTTP/1.1 POST http://localhost:5095/api/auth/register - application/json 176
+2025-09-24 23:11:06.615 +03:00 [DBG] 1 candidate(s) found for the request path '/api/auth/register'
+2025-09-24 23:11:06.616 +03:00 [DBG] Endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)' with route pattern 'api/Auth/register' is valid for the request path '/api/auth/register'
+2025-09-24 23:11:06.617 +03:00 [DBG] Request matched endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:11:06.619 +03:00 [INF] Failed to validate the token.
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '9/24/2025 6:15:15 PM', Current time (UTC): '9/24/2025 8:11:06 PM'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2025-09-24 23:11:06.621 +03:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '9/24/2025 6:15:15 PM', Current time (UTC): '9/24/2025 8:11:06 PM'.
+2025-09-24 23:11:06.622 +03:00 [INF] Executing endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:11:06.623 +03:00 [INF] Route matched with {action = "Register", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Register(EgyptOnline.Dtos.RegisterWorkerDto) on controller EgyptOnline.Controllers.AuthController (EgyptOnline).
+2025-09-24 23:11:06.625 +03:00 [DBG] Execution plan of authorization filters (in the following order): ["None"]
+2025-09-24 23:11:06.626 +03:00 [DBG] Execution plan of resource filters (in the following order): ["None"]
+2025-09-24 23:11:06.627 +03:00 [DBG] Execution plan of action filters (in the following order): ["Microsoft.AspNetCore.Mvc.ModelBinding.UnsupportedContentTypeFilter (Order: -3000)","Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter (Order: -2000)"]
+2025-09-24 23:11:06.628 +03:00 [DBG] Execution plan of exception filters (in the following order): ["None"]
+2025-09-24 23:11:06.629 +03:00 [DBG] Execution plan of result filters (in the following order): ["Microsoft.AspNetCore.Mvc.Infrastructure.ClientErrorResultFilter (Order: -2000)"]
+2025-09-24 23:11:06.630 +03:00 [DBG] Executing controller factory for controller EgyptOnline.Controllers.AuthController (EgyptOnline)
+2025-09-24 23:11:06.641 +03:00 [DBG] Executed controller factory for controller EgyptOnline.Controllers.AuthController (EgyptOnline)
+2025-09-24 23:11:06.642 +03:00 [DBG] Attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' ...
+2025-09-24 23:11:06.643 +03:00 [DBG] Attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' using the name '' in request data ...
+2025-09-24 23:11:06.644 +03:00 [DBG] Selected input formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonInputFormatter' for content type 'application/json'.
+2025-09-24 23:11:06.645 +03:00 [DBG] Connection id "0HNFRIDD4AOUA", Request id "0HNFRIDD4AOUA:00000003": started reading request body.
+2025-09-24 23:11:06.646 +03:00 [DBG] Connection id "0HNFRIDD4AOUA", Request id "0HNFRIDD4AOUA:00000003": done reading request body.
+2025-09-24 23:11:06.646 +03:00 [DBG] JSON input formatter succeeded, deserializing to type 'EgyptOnline.Dtos.RegisterWorkerDto'
+2025-09-24 23:11:06.647 +03:00 [DBG] Done attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:11:06.648 +03:00 [DBG] Done attempting to bind parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:11:06.650 +03:00 [DBG] Attempting to validate the bound parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto' ...
+2025-09-24 23:11:06.651 +03:00 [DBG] Done attempting to validate the bound parameter 'model' of type 'EgyptOnline.Dtos.RegisterWorkerDto'.
+2025-09-24 23:11:06.653 +03:00 [DBG] Entity Framework Core 9.0.8 initialized 'ApplicationDbContext' using provider 'Npgsql.EntityFrameworkCore.PostgreSQL:9.0.4+fd2380957bee5cd86f336466af36b08c0163f1a5' with options: None
+2025-09-24 23:11:06.656 +03:00 [DBG] Creating DbConnection.
+2025-09-24 23:11:06.656 +03:00 [DBG] Created DbConnection. (0ms).
+2025-09-24 23:11:06.657 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.658 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.659 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:11:06.660 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:11:06.661 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:11:06.662 +03:00 [DBG] Executing DbCommand [Parameters=[@__normalizedEmail_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @__normalizedEmail_0
+LIMIT 2
+2025-09-24 23:11:06.665 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[@__normalizedEmail_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @__normalizedEmail_0
+LIMIT 2
+2025-09-24 23:11:06.667 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.668 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 1ms reading results.
+2025-09-24 23:11:06.670 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.671 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:11:06.727 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.729 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.730 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:11:06.730 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:11:06.731 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:11:06.732 +03:00 [DBG] Executing DbCommand [Parameters=[@__normalizedUserName_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @__normalizedUserName_0
+LIMIT 1
+2025-09-24 23:11:06.735 +03:00 [INF] Executed DbCommand (3ms) [Parameters=[@__normalizedUserName_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."FirstName", a."ImageUrl", a."LastName", a."Location", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserType"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @__normalizedUserName_0
+LIMIT 1
+2025-09-24 23:11:06.737 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.738 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 0ms reading results.
+2025-09-24 23:11:06.739 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.740 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 23:11:06.741 +03:00 [DBG] Context 'ApplicationDbContext' started tracking 'User' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:11:06.742 +03:00 [DBG] SaveChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:11:06.743 +03:00 [DBG] DetectChanges starting for 'ApplicationDbContext'.
+2025-09-24 23:11:06.743 +03:00 [DBG] DetectChanges completed for 'ApplicationDbContext'.
+2025-09-24 23:11:06.744 +03:00 [DBG] Opening connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.745 +03:00 [DBG] Opened connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.746 +03:00 [DBG] Creating DbCommand for 'ExecuteReader'.
+2025-09-24 23:11:06.747 +03:00 [DBG] Created DbCommand for 'ExecuteReader' (0ms).
+2025-09-24 23:11:06.748 +03:00 [DBG] Initialized DbCommand for 'ExecuteReader' (1ms).
+2025-09-24 23:11:06.749 +03:00 [DBG] Executing DbCommand [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?' (DbType = Boolean), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = Boolean), @p16='?', @p17='?' (DbType = Boolean), @p18='?', @p19='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "FirstName", "ImageUrl", "LastName", "Location", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserType")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19);
+2025-09-24 23:11:06.753 +03:00 [INF] Executed DbCommand (4ms) [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?' (DbType = Boolean), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = Boolean), @p16='?', @p17='?' (DbType = Boolean), @p18='?', @p19='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "FirstName", "ImageUrl", "LastName", "Location", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserType")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19);
+2025-09-24 23:11:06.755 +03:00 [DBG] Closing data reader to 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.755 +03:00 [DBG] A data reader for 'EgyptOnlineDB' on server 'tcp://localhost:5432' is being disposed after spending 0ms reading results.
+2025-09-24 23:11:06.757 +03:00 [DBG] Closing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.758 +03:00 [DBG] Closed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (0ms).
+2025-09-24 23:11:06.759 +03:00 [DBG] An entity of type 'User' tracked by 'ApplicationDbContext' changed state from '"Added"' to '"Unchanged"'. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+2025-09-24 23:11:06.760 +03:00 [DBG] SaveChanges completed for 'ApplicationDbContext' with 1 entities written to the database.
+2025-09-24 23:11:06.761 +03:00 [DBG] List of registered output formatters, in the following order: ["Microsoft.AspNetCore.Mvc.Formatters.HttpNoContentOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StringOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.StreamOutputFormatter","Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter"]
+2025-09-24 23:11:06.762 +03:00 [DBG] No information found on request to perform content negotiation.
+2025-09-24 23:11:06.763 +03:00 [DBG] Attempting to select an output formatter without using a content type as no explicit content types were specified for the response.
+2025-09-24 23:11:06.763 +03:00 [DBG] Attempting to select the first formatter in the output formatters list which can write the result.
+2025-09-24 23:11:06.764 +03:00 [DBG] Selected output formatter 'Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter' and content type 'application/json' to write the response.
+2025-09-24 23:11:06.765 +03:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType14`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-09-24 23:11:06.766 +03:00 [INF] Executed action EgyptOnline.Controllers.AuthController.Register (EgyptOnline) in 136.6661ms
+2025-09-24 23:11:06.768 +03:00 [INF] Executed endpoint 'EgyptOnline.Controllers.AuthController.Register (EgyptOnline)'
+2025-09-24 23:11:06.769 +03:00 [DBG] Connection id "0HNFRIDD4AOUA" completed keep alive response.
+2025-09-24 23:11:06.771 +03:00 [DBG] 'ApplicationDbContext' disposed.
+2025-09-24 23:11:06.772 +03:00 [DBG] Disposing connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432'.
+2025-09-24 23:11:06.773 +03:00 [DBG] Disposed connection to database 'EgyptOnlineDB' on server 'tcp://localhost:5432' (1ms).
+2025-09-24 23:11:06.775 +03:00 [INF] Request finished HTTP/1.1 POST http://localhost:5095/api/auth/register - 200 null application/json; charset=utf-8 163.1089ms
+2025-09-24 23:11:51.370 +03:00 [INF] Application is shutting down...
+2025-09-24 23:11:51.387 +03:00 [DBG] Hosting stopping
+2025-09-24 23:11:51.524 +03:00 [DBG] Connection id "0HNFRIDD4AOUA" disconnecting.
+2025-09-24 23:11:51.530 +03:00 [DBG] Connection id "0HNFRIDD4AOUA" stopped.
+2025-09-24 23:11:51.534 +03:00 [DBG] Connection id "0HNFRIDD4AOUA" sending FIN because: "The Socket transport's send loop completed gracefully."
+2025-09-24 23:11:51.557 +03:00 [DBG] Hosting stopped
