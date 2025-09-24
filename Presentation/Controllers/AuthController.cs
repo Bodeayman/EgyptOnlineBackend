@@ -17,17 +17,17 @@ namespace EgyptOnline.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly UserManager<User> _userManager;
+        private readonly UserRegisterationService _userRegisterationService;
         private readonly IOTPService _smsOtpService;
 
         private readonly ICDNService _cdnService;
 
         private readonly ApplicationDbContext _context;
 
-        public AuthController(UserManager<User> userManager, IUserService service, IOTPService sms, ApplicationDbContext context, ICDNService CDNService)
+        public AuthController(UserRegisterationService userRegisterationService, IUserService service, IOTPService sms, ApplicationDbContext context, ICDNService CDNService)
         {
+            _userRegisterationService = userRegisterationService;
             _userService = service;
-            _userManager = userManager;
             _smsOtpService = sms;
             _context = context;
             _cdnService = CDNService;
@@ -44,43 +44,16 @@ namespace EgyptOnline.Controllers
                     return BadRequest(ModelState);
                 }
 
-
-                //So first it will determine if that a user or a worker
-                string UserType;
+                UserRegisterationResult UserRegisterationResult = await _userRegisterationService.registerUser(model);
                 if (model.UserType == "User")
                 {
-                    UserType = "User";
-                }
-                else
-                {
-                    UserType = "SP";
-                }
-                string UserName = Helper.GenerateUserName(model.FirstName, model.LastName);
-                var user = new
-                User
-                {
-                    UserName = UserName,
-                    Email = model.Email,
-                    PhoneNumber = model.PhoneNumber,
-                    UserType = model.UserType,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName
-                };
-                if (await _userManager.FindByEmailAsync(model.Email) != null)
-                {
-                    return BadRequest(new { message = "The User is Registered Before" });
-                }
-                var result = await _userManager.CreateAsync(user, model.Password);
-
-                if (model.UserType == "User")
-                {
-                    if (result.Succeeded)
+                    if (UserRegisterationResult.Result == IdentityResult.Success)
                     {
                         return Ok(new { message = "You registered successfully!" });
                     }
                     else
                     {
-                        foreach (var res in result.Errors)
+                        foreach (var res in UserRegisterationResult.Result.Errors)
                         {
                             Console.WriteLine(res.Description);
                         }
@@ -100,10 +73,10 @@ namespace EgyptOnline.Controllers
                         }
                         var Worker = new Worker
                         {
-                            User = user,
-                            UserId = user.Id,
+                            User = UserRegisterationResult.User,
+                            UserId = UserRegisterationResult.User!.Id,
                             Bio = model.Bio,
-                            Location = model.Location,
+                            WorkerType = (int)model.WorkerType,
                             Skill = model.Skill,
                             ProviderType = model.ProviderType,
 
@@ -120,10 +93,9 @@ namespace EgyptOnline.Controllers
                         }
                         var Contractor = new Contractor
                         {
-                            User = user,
-                            UserId = user.Id,
+                            User = UserRegisterationResult.User,
+                            UserId = UserRegisterationResult.User!.Id,
                             Bio = model.Bio,
-                            Location = model.Location,
                             Specialization = model.Specialization,
                             ProviderType = model.ProviderType,
                             IsAvailable = true,
@@ -139,10 +111,9 @@ namespace EgyptOnline.Controllers
                         }
                         var Company = new Company
                         {
-                            User = user,
-                            UserId = user.Id,
+                            User = UserRegisterationResult.User,
+                            UserId = UserRegisterationResult.User!.Id,
                             Bio = model.Bio,
-                            Location = model.Location,
                             ProviderType = model.ProviderType,
 
                             Business = model.Business,

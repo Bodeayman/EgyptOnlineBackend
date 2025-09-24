@@ -18,6 +18,7 @@ namespace EgyptOnline.Dtos
 
         public string? Specialization { get; set; }
         public string? Business { get; set; }
+        public string? WorkerType { get; set; } = "PerDay";
         public string? ProviderType { get; set; } = "Worker";
     }
 }

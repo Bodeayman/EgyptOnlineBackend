@@ -1,14 +1,52 @@
-bin/
-obj/
-*.md
-*.git
+# Visual Studio / IDE
 .vs/
 *.user
 *.suo
-*.db
+*.ncrunch*
+*.ide
+*.vscode/
+
+# Build outputs
+bin/
+obj/
+out/
+
+# Logs and caches
 *.log
-*.sqlite
-*.pdb
 *.cache
-*.DS_Store
+*.pdb
+*.pid
+*.tmp
+*.bak
+*.swp
+
+# Databases / local storage
+*.db
+*.sqlite
+*.mdf
+*.ldf
+*.sql
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Secrets / sensitive configs
 *.env
+appsettings.Development.json
+secrets.json
+
+# Node / frontend (if used)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Documentation / markdown
+*.md
+
+# Git / version control
+.git/
+.gitignore
+
+# Other temp files
+*.appsettings.*

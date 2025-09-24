@@ -12,10 +12,11 @@ namespace EgyptOnline.Models
 
         public bool IsAvailable { get; set; } = true;
 
-        public string? Location { get; set; } = "Unknown";
 
         public string? Bio { get; set; }
 
         public string ProviderType { get; set; } = "Worker";
+
+        public int ServicePricePerDay { get; set; } = 0;
     }
 }
