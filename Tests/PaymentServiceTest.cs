@@ -1,4 +1,0 @@
-namespace EgyptOnline.Tests
-{
-
-}

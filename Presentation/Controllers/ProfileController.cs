@@ -37,6 +37,7 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                Console.WriteLine("worksRightNOWWWWWWW");
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
                     return Unauthorized();
@@ -70,13 +71,13 @@ namespace EgyptOnline.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
                 {
-                    return Unauthorized("User ID not found in token");
+                    return Unauthorized(new { message = "User ID not found in token" });
                 }
 
                 var user = await _userManager.FindByIdAsync(userId);
                 if (user == null)
                 {
-                    return NotFound("User not found");
+                    return NotFound(new { messag = "User not found" });
                 }
                 //So we then have a user
                 //Update
@@ -84,38 +85,52 @@ namespace EgyptOnline.Controllers
                 user.Location = model.Location ?? user.Location;
 
                 var result = await _userManager.UpdateAsync(user);
-                await _context.SaveChangesAsync();
 
 
                 var serviceProvider = await _context.ServiceProviders
                 .FirstOrDefaultAsync(sp => sp.UserId == userId);
 
-                if (serviceProvider == null)
+                if (serviceProvider == null || user.UserType == "User")
                 {
-                    return BadRequest("This User is not a serviceProvider");
-
+                    return Ok(new { message = "User Data Updated" });
+                }
+                if (serviceProvider == null && user.UserType != "User")
+                {
+                    return NotFound(new { message = "The Service Provider is not found here" });
                 }
 
 
                 serviceProvider.Bio = model.Bio ?? serviceProvider.Bio;
 
+
                 if (serviceProvider.ProviderType == "Worker")
                 {
                     var worker = await _context.Workers.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
+                    serviceProvider.ServicePricePerDay = model.ServicePricePerDay;
 
                     worker!.Skill = model.Skill;
                 }
-                if (serviceProvider.ProviderType == "Contractor")
+                else if (serviceProvider.ProviderType == "Contractor")
                 {
                     var contractor = await _context.Contractors.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
 
                     contractor!.Specialization = model.Specialization ?? contractor.Specialization;
                 }
-                if (serviceProvider.ProviderType == "Company")
+                else if (serviceProvider.ProviderType == "Company")
                 {
                     var company = await _context.Companies.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
-
+                    company!.Owner = model.Owner ?? company.Owner;
                     company!.Business = model.Business ?? company.Business;
+                }
+                else if (serviceProvider.ProviderType == "Marketplace")
+                {
+                    var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
+                    marketPlace!.Business = model.Business ?? marketPlace.Business;
+                }
+                else if (serviceProvider.ProviderType == "Engineer")
+                {
+                    var engineer = await _context.Engineers.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
+                    engineer!.Specialization = model.Specialization ?? engineer.Specialization;
                 }
                 else
                 {
@@ -135,20 +150,3 @@ namespace EgyptOnline.Controllers
     }
 
 }
-/*
-👉 So in your situation:
-
-No active subscription AND not a service provider → show ads.
-
-Otherwise → no ads.
-{
-  "fullName": "aymoon",
-  
-
-  "skill": "Cooking",
-  "specialization": "string",
-  "business": "string",
-  "providerType": "Worker"
-}
-
-*/

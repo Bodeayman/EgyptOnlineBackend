@@ -1,8 +1,7 @@
 namespace EgyptOnline.Models
 {
-    public class Company : ServicesProvider
+    public class MarketPlace : ServicesProvider
     {
-
         public required string Business { get; set; }
     }
 }

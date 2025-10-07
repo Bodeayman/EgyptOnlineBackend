@@ -2,6 +2,9 @@ bin/
 obj/
 Properties/
 .vscode/
+.idea/
+Logs/
+EgyptOnline.sln
 appsettings.json
 appsettings.Development.json
 appsettings.Production.json
@@ -9,3 +12,7 @@ EgyptOnline.csproj
 EgyptOnline.http
 Migrations/
 fly.toml
+docker-compose.yaml
+Dockerfile
+*.log
+*.txt

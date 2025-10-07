@@ -9,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Services;
 using EgyptOnline.Data;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace EgyptOnline.Controllers
 {
 
@@ -35,7 +38,7 @@ namespace EgyptOnline.Controllers
             _cdnService = CDNService;
             _userManager = userManager;
         }
-
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterWorkerDto model)
         {
@@ -47,33 +50,36 @@ namespace EgyptOnline.Controllers
                     return BadRequest(ModelState);
                 }
 
-                UserRegisterationResult UserRegisterationResult = await _userRegisterationService.registerUser(model);
+                UserRegisterationResult UserRegisterationResult = await _userRegisterationService.RegisterUser(model);
+                if (UserRegisterationResult.Result != IdentityResult.Success)
+                {
+                    return StatusCode(500, new { message = UserRegisterationResult.Result });
+
+                }
                 if (model.UserType == "User")
                 {
-                    if (UserRegisterationResult.Result == IdentityResult.Success)
-                    {
-                        return Ok(new { message = "You registered successfully!" });
-                    }
-                    else
-                    {
-                        foreach (var res in UserRegisterationResult.Result.Errors)
-                        {
-                            Console.WriteLine(res.Description);
-                        }
-                        return StatusCode(500, new { message = "Something happened with saving the User" });
+                    /* This save operation will work here when the registerd one is a user , 
+                    so no need to check if the service provider is null or not */
+                    await _context.SaveChangesAsync();
+                    return StatusCode(201, new { message = "You registered successfully!" });
 
-                    }
                 }
-                if (model.UserType == "SP")
+                else if (model.UserType == "SP")
                 {
-                    Console.WriteLine(model.ProviderType);
-                    Console.WriteLine(model.ProviderType.Equals("worker", StringComparison.CurrentCultureIgnoreCase));
+                    if (model.ProviderType == null)
+                    {
+                        return BadRequest(new { message = "Please Provide the Type Of Service" });
+                    }
+                    Console.WriteLine("Service Provider is being created right now , but not yet");
+
+
                     if (model.ProviderType.Equals("worker", StringComparison.CurrentCultureIgnoreCase))
                     {
                         if (model.Skill == null)
                         {
                             return BadRequest(new { message = "Please Add the Skill" });
                         }
+
                         var Worker = new Worker
                         {
                             User = UserRegisterationResult.User,
@@ -85,6 +91,7 @@ namespace EgyptOnline.Controllers
 
                             IsAvailable = true,
                         };
+
                         _context.Workers.Add(Worker);
                     }
                     else if (model.ProviderType.Equals("contractor", StringComparison.CurrentCultureIgnoreCase))
@@ -118,22 +125,65 @@ namespace EgyptOnline.Controllers
                             UserId = UserRegisterationResult.User!.Id,
                             Bio = model.Bio,
                             ProviderType = model.ProviderType,
-
+                            Owner = model.Owner,
                             Business = model.Business,
                             IsAvailable = true,
                         };
                         _context.Companies.Add(Company);
                     }
+                    else if (model.ProviderType.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase))
+                    {
+
+                        if (model.Business == null)
+                        {
+                            return BadRequest(new { message = "Please Add the Business" });
+                        }
+                        var MarketPlace = new MarketPlace
+                        {
+                            User = UserRegisterationResult.User,
+                            UserId = UserRegisterationResult.User!.Id,
+                            Bio = model.Bio,
+                            ProviderType = model.ProviderType,
+                            Business = model.Business,
+                            IsAvailable = true,
+                        };
+                        _context.MarketPlaces.Add(MarketPlace);
+                    }
+                    else if (model.ProviderType.Equals("engineer", StringComparison.CurrentCultureIgnoreCase))
+                    {
+
+                        if (model.Specialization == null)
+                        {
+                            return BadRequest(new { message = "Please Add the Specialization" });
+                        }
+                        var Engineer = new Engineer
+                        {
+                            User = UserRegisterationResult.User,
+                            UserId = UserRegisterationResult.User!.Id,
+                            Bio = model.Bio,
+                            ProviderType = model.ProviderType,
+
+                            Specialization = model.Specialization,
+                            IsAvailable = true,
+                        };
+                        _context.Engineers.Add(Engineer);
+                    }
                     else
                     {
                         return BadRequest(new { message = "Please Provide the Type Of Service" });
                     }
+                    await _context.SaveChangesAsync();
+                    return Ok(new { message = $"The Service Provider which is {model.ProviderType} is Created Successfully" });
+
+
+                }
+                else
+                {
+                    return BadRequest(new { message = "Please Provide a valid UserType" });
                 }
 
-                await _context.SaveChangesAsync();
 
 
-                return Ok(new { message = $"The Service Provider which is {model.ProviderType} is Created Successfully" });
 
             }
             catch (Exception ex)
@@ -141,7 +191,7 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = ex.Message });
             }
         }
-
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginWorkerDto model)
         {
@@ -151,11 +201,12 @@ namespace EgyptOnline.Controllers
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
                 {
-                    return Unauthorized("Invalid login attempt");
+                    return NotFound("This User hasn't been here before");
                 }
                 var AllUserDetails = await _context.Users.Include(u => u.ServiceProvider)
                     .Include(u => u.Subscription)
                     .FirstOrDefaultAsync(u => u.Id == user.Id);
+                Console.WriteLine(AllUserDetails.UserType.ToString());
                 UsersTypes UserRole;
 
                 if (AllUserDetails.UserType == "User")
@@ -176,19 +227,30 @@ namespace EgyptOnline.Controllers
                     {
                         UserRole = UsersTypes.Contractor;
                     }
+                    else if (AllUserDetails.ServiceProvider.ProviderType == "Marketplace")
+                    {
+                        UserRole = UsersTypes.Marketplace;
+                    }
+                    else if (AllUserDetails.ServiceProvider.ProviderType == "Engineer")
+                    {
+                        UserRole = UsersTypes.Engineer;
+                    }
                     else
                     {
                         return StatusCode(500, new { message = "Error while Fetching the User" });
                     }
                 }
-                var accessToken = _userService.GenerateJwtToken(user, UserRole);
+                Console.WriteLine(UserRole.ToString());
+                var accessToken = _userService.GenerateJwtToken(user, UserRole, TokensTypes.AccessToken);
+                var refreshToken = _userService.GenerateJwtToken(user, UserRole, TokensTypes.RefreshToken);
+
                 // var refreshToken = _userService.GenerateRefreshToken(user);
 
                 return Ok(new
                 {
                     message = "Login successful",
                     accessToken = accessToken,
-                    // refreshToken = refreshToken
+                    refreshToken = refreshToken
                 });
             }
             catch (Exception ex)
@@ -197,48 +259,63 @@ namespace EgyptOnline.Controllers
             }
         }
         [HttpPost("refresh")]
-        public IActionResult Refresh([FromBody] string refreshToken)
+        public async Task<IActionResult> Refresh([FromBody] string refreshToken)
         {
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(refreshToken);
+            try
+            {
 
-            if (jwtToken.ValidTo < DateTime.UtcNow)
+
+                ClaimsPrincipal principal = _userService.ValidateRefreshToken(refreshToken);
+
+                foreach (var c in principal.Claims)
+                {
+                    Console.WriteLine($"{c.Type} = {c.Value}");
+                }
+                var tokenType = principal.FindFirst("token_type")?.Value;
+                if (tokenType != null && tokenType != TokensTypes.RefreshToken.ToString())
+                    return Unauthorized("Invalid token type");
+
+                // Extract claims safely
+                var userId = principal.FindFirst("uid")?.Value;
+                var typeClaim = principal.FindFirst(ClaimTypes.Role)?.Value;
+                Console.WriteLine(userId);
+                Console.WriteLine("Type");
+
+                Console.WriteLine(typeClaim);
+                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(typeClaim))
+                    return Unauthorized("Invalid token claims");
+
+                // Find user asynchronously
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                    return Unauthorized("User not found");
+
+                // Parse role using enum directly (cleaner)
+                if (!Enum.TryParse<UsersTypes>(typeClaim, out UsersTypes userRole))
+                    return StatusCode(500, new { message = "Invalid user role" });
+
+                // Generate new access token
+                var newAccessToken = _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
+
+                return Ok(new
+                {
+                    AccessToken = newAccessToken,
+                    ExpiresIn = TimeSpan.FromMinutes(30).TotalSeconds
+                });
+            }
+            catch (SecurityTokenExpiredException)
+            {
                 return Unauthorized("Refresh token expired");
-
-            var userId = jwtToken.Claims.First(c => c.Type == "uid").Value;
-            var typeClaim = jwtToken.Claims.First(c => c.Type == "role").Value;
-
-
-            var user = _userManager.FindByIdAsync(userId).Result;
-            UsersTypes UserRole;
-            if (typeClaim == "User")
-            {
-                UserRole = UsersTypes.User;
             }
-            else if (typeClaim == "Worker")
+            catch (SecurityTokenException)
             {
-                UserRole = UsersTypes.Worker;
+                return Unauthorized("Invalid refresh token");
             }
-            else if (typeClaim == "Company")
+            catch (Exception ex)
             {
-                UserRole = UsersTypes.Company;
+                // Log the exception
+                return StatusCode(500, new { message = "Error processing refresh token" });
             }
-            else if (typeClaim == "Contractor")
-            {
-                UserRole = UsersTypes.Contractor;
-            }
-            else
-            {
-                return StatusCode(500, new { message = "Error while Fetching the User" });
-            }
-            var newAccessToken = _userService.GenerateJwtToken(user, UserRole);
-            var newRefreshToken = _userService.GenerateRefreshToken(user);
-
-            return Ok(new
-            {
-                AccessToken = newAccessToken,
-                RefreshToken = newRefreshToken
-            });
         }
         [HttpPost("request-otp")]
         public async Task<IActionResult> RequestOtp([FromBody] string phoneNumber)

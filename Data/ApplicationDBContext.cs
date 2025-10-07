@@ -20,6 +20,13 @@ namespace EgyptOnline.Data
         public DbSet<User> Users { get; set; }
         public DbSet<ServicesProvider> ServiceProviders { get; set; }
 
+        public DbSet<Engineer> Engineers { get; set; }
+
+        public DbSet<MarketPlace> MarketPlaces { get; set; }
+
+
+        public DbSet<Subscription> Subscriptions { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -28,6 +35,10 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<ServicesProvider>().ToTable("ServicesProviders");
             modelBuilder.Entity<Company>().ToTable("Companies");
             modelBuilder.Entity<Worker>().ToTable("Workers");
+            modelBuilder.Entity<MarketPlace>().ToTable("MarketPlaces");
+
+            modelBuilder.Entity<Engineer>().ToTable("Engineers");
+
 
 
         }

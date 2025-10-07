@@ -5,6 +5,8 @@ namespace EgyptOnline.Utilities
         User,
         Worker,
         Contractor,
-        Company
+        Company,
+        Engineer,
+        Marketplace
     }
 }

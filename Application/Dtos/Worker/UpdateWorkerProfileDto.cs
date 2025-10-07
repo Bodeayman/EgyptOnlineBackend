@@ -11,6 +11,11 @@ namespace EgyptOnline.Dtos
         public string? Skill { get; set; }
 
         public string? Specialization { get; set; }
+
+        public decimal ServicePricePerDay { get; set; } = 0;
+
+
+        public string? Owner { get; set; }
         public string? Business { get; set; }
         public string? ProviderType { get; set; } = "Worker";
     }

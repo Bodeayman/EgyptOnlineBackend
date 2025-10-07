@@ -19,6 +19,7 @@ namespace EgyptOnline.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
+
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IOTPService, SmsMisrOtpService>();
             services.AddScoped<ICDNService, ImageKitService>();
@@ -28,6 +29,9 @@ namespace EgyptOnline.Extensions
             services.AddScoped<CreditCardPaymentStrategy>();
             services.AddScoped<MobileWalletPaymentStrategy>();
             services.AddScoped<UserRegisterationService>();
+
+            services.AddScoped<UserSubscriptionServices>();
+
 
             services.AddHttpClient();
 
@@ -54,7 +58,8 @@ namespace EgyptOnline.Extensions
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(key)
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 
