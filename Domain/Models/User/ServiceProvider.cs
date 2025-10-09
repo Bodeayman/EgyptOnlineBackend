@@ -17,6 +17,5 @@ namespace EgyptOnline.Models
 
         public string ProviderType { get; set; } = "Worker";
 
-        public decimal ServicePricePerDay { get; set; } = 0;
     }
 }

@@ -27,7 +27,7 @@ namespace EgyptOnline.Dtos
         public string? Business { get; set; }
 
         public string? Owner { get; set; }
-
+        public decimal Pay { get; set; } = 0;
         //Contractor
         public string? Specialization { get; set; }
 

@@ -12,7 +12,7 @@ namespace EgyptOnline.Dtos
 
         public string? Specialization { get; set; }
 
-        public decimal ServicePricePerDay { get; set; } = 0;
+        public decimal Pay { get; set; } = 0;
 
 
         public string? Owner { get; set; }

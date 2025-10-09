@@ -5,12 +5,14 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 WORKDIR /src
 
-# Copy csproj and restore
-COPY *.csproj ./
+# Copy csproj and restore dependencies
+COPY ./*.csproj ./
 RUN dotnet restore
 
-# Copy the rest and publish
+# Copy the entire project (including Migrations/)
 COPY . ./
+
+# Publish
 RUN dotnet publish -c Release -o /app/publish
 
 # ========================
@@ -22,9 +24,7 @@ WORKDIR /app
 
 COPY --from=build /app/publish ./
 
-# Expose port
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
-# Start the app (migrations run via Program.cs)
 ENTRYPOINT ["dotnet", "EgyptOnline.dll"]

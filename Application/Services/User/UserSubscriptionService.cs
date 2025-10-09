@@ -11,20 +11,27 @@ namespace EgyptOnline.Services
         {
             _context = context;
         }
-        public Subscription AddSubscription(User user)
+        public Subscription? AddSubscriptionForANewUser(User user)
         {
-            Console.WriteLine("Subscription is added here");
-            Subscription Subscription = new Subscription
+            try
             {
-                User = user,
+                Console.WriteLine("Subscription is added here");
+                Subscription Subscription = new Subscription
+                {
+                    User = user,
 
-                UserId = user.Id,
-                StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddMonths(1)
-            };
-            _context.Subscriptions.Add(Subscription);
-            return Subscription;
-
+                    UserId = user.Id,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(1)
+                };
+                _context.Subscriptions.Add(Subscription);
+                return Subscription;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
         }
     }
 }

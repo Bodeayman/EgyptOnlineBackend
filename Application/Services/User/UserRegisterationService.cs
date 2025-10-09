@@ -56,7 +56,7 @@ namespace EgyptOnline.Services
                 }
                 Console.WriteLine("Subscription is returned here");
 
-                var sub = _userSubscription.AddSubscription(user);
+                var sub = _userSubscription.AddSubscriptionForANewUser(user);
                 if (sub == null)
                 {
                     return new UserRegisterationResult

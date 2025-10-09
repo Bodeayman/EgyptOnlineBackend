@@ -88,7 +88,7 @@ namespace EgyptOnline.Controllers
                             WorkerType = model.WorkerType,
                             Skill = model.Skill,
                             ProviderType = model.ProviderType,
-
+                            ServicePricePerDay = model.Pay,
                             IsAvailable = true,
                         };
 
@@ -162,7 +162,7 @@ namespace EgyptOnline.Controllers
                             UserId = UserRegisterationResult.User!.Id,
                             Bio = model.Bio,
                             ProviderType = model.ProviderType,
-
+                            Salary = model.Pay,
                             Specialization = model.Specialization,
                             IsAvailable = true,
                         };
