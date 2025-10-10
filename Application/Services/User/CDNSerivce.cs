@@ -5,45 +5,46 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EgyptOnline.Services
 {
-    public class ImageKitService : ICDNService
+    public class LocalStorageService : ICDNService
     {
-        private readonly ImagekitClient _imageKitClient;
-        private readonly IConfiguration _config;
+        private readonly string _storageRoot;
 
-        public ImageKitService(IConfiguration config)
+        public LocalStorageService(IConfiguration config)
         {
-            _config = config;
+            // Path inside the container where the volume is mounted
+            _storageRoot = config["LocalStorage:RootPath"] ?? "/app/images";
 
-
-            _imageKitClient = new ImagekitClient(
-                publicKey: config["CDN:PublicKey"],
-                privateKey: config["CDN:PrivateKey"],
-                urlEndPoint: config["CDN:URLEndPoint"]
-            );
+            // Ensure folder exists
+            if (!Directory.Exists(_storageRoot))
+            {
+                Directory.CreateDirectory(_storageRoot);
+            }
         }
-        public async Task<string> UploadImageAsync(byte[] fileBytes, string fileName, string folder = "/")
+
+        public async Task<string> UploadImageAsync(byte[] fileBytes, string fileName, string folder = "")
         {
             try
             {
-                var uploadRequest = new FileCreateRequest
+                // Combine root + optional folder
+                var targetFolder = Path.Combine(_storageRoot, folder.Trim('/'));
+                if (!Directory.Exists(targetFolder))
                 {
-                    file = fileBytes,
-                    fileName = fileName,
-                    folder = folder
-                };
+                    Directory.CreateDirectory(targetFolder);
+                }
 
-                var result = await _imageKitClient.UploadAsync(uploadRequest);
+                // Full path for the image
+                var filePath = Path.Combine(targetFolder, fileName);
 
+                await File.WriteAllBytesAsync(filePath, fileBytes);
 
-                if (result == null || string.IsNullOrEmpty(result.url))
-                    throw new Exception("ImageKit upload failed or returned null URL");
-
-                return result.url; // CDN URL
+                // Return path relative to your API or public URL path
+                // e.g., "/images/folder/fileName.jpg"
+                var relativePath = Path.Combine("/images", folder.Trim('/'), fileName).Replace("\\", "/");
+                return relativePath;
             }
             catch (Exception ex)
             {
-                // Log error if needed
-                throw new Exception($"Image upload failed: {ex.Message}", ex);
+                throw new Exception($"Local image upload failed: {ex.Message}", ex);
             }
         }
     }

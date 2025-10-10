@@ -11,12 +11,14 @@ namespace EgyptOnline.Services
         private readonly UserManager<User> _userManager;
         private readonly UserSubscriptionServices _userSubscription;
         private readonly ApplicationDbContext _context;
+        private readonly UserPointService _userPointService;
 
-        public UserRegisterationService(UserManager<User> userManager, UserSubscriptionServices userSubscription, ApplicationDbContext context)
+        public UserRegisterationService(UserManager<User> userManager, UserPointService userPointService, UserSubscriptionServices userSubscription, ApplicationDbContext context)
         {
             _userManager = userManager;
             _userSubscription = userSubscription;
             _context = context;
+            _userPointService = userPointService;
         }
         public async Task<UserRegisterationResult> RegisterUser(RegisterWorkerDto model)
         {
@@ -57,6 +59,20 @@ namespace EgyptOnline.Services
                 Console.WriteLine("Subscription is returned here");
 
                 var sub = _userSubscription.AddSubscriptionForANewUser(user);
+                bool pointsAdded = false;
+                if (model.ReferralUserName != null)
+                {
+                    pointsAdded =
+                 _userPointService.AddPointsToUser(model.ReferralUserName!);
+                    if (!pointsAdded)
+                    {
+                        return new UserRegisterationResult
+                        {
+                            Result = IdentityResult.Failed(new IdentityError { Description = "Referral User Name is invalid." }),
+                            User = null
+                        };
+                    }
+                }
                 if (sub == null)
                 {
                     return new UserRegisterationResult

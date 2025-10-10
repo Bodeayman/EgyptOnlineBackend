@@ -16,6 +16,8 @@ namespace EgyptOnline.Models
 
         public Subscription? Subscription { get; set; }
 
+        public int Points { get; set; } = 0;
+
 
 
     }

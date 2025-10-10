@@ -1,3 +1,5 @@
+using EgyptOnline.Utilities;
+
 namespace EgyptOnline.Dtos
 {
     public class ShowProfileDto
@@ -13,12 +15,14 @@ namespace EgyptOnline.Dtos
         public string? PhoneNumber { get; set; }
         public string? ImageUrl { get; set; }
         public string UserType { get; set; } = string.Empty;
+        public int Points { get; set; }
 
         // Subscription Information (if exists)
         public SubscriptionDto? Subscription { get; set; }
 
         // Service Provider Information (if user is a service provider)
         public ServiceProviderDto? ServiceProvider { get; set; }
+
     }
 
     public class SubscriptionDto

@@ -31,6 +31,8 @@ namespace EgyptOnline.Dtos
         //Contractor
         public string? Specialization { get; set; }
 
+        public string? ReferralUserName { get; set; }
+
 
     }
 }

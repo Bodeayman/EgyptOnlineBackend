@@ -22,15 +22,15 @@ namespace EgyptOnline.Extensions
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IOTPService, SmsMisrOtpService>();
-            services.AddScoped<ICDNService, ImageKitService>();
+            services.AddScoped<ICDNService, LocalStorageService>();
             services.AddScoped<IPaymentStrategy, MobileWalletPaymentStrategy>();
             services.AddScoped<IPaymentStrategy, CreditCardPaymentStrategy>();
             services.AddScoped<IPaymentService, PaymobService>();
             services.AddScoped<CreditCardPaymentStrategy>();
             services.AddScoped<MobileWalletPaymentStrategy>();
             services.AddScoped<UserRegisterationService>();
-
             services.AddScoped<UserSubscriptionServices>();
+            services.AddScoped<UserPointService>();
 
 
             services.AddHttpClient();

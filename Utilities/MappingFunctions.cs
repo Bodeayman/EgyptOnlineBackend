@@ -20,7 +20,9 @@ namespace EgyptOnline.Utilities
                 ImageUrl = user.ImageUrl,
                 UserType = user.UserType,
                 Subscription = user.Subscription?.ToSubscriptionDto(),
-                ServiceProvider = user.ServiceProvider?.ToServiceProviderDto()
+                ServiceProvider = user.ServiceProvider?.ToServiceProviderDto(),
+                Points = user.Points,
+
             };
 
             return dto;

@@ -345,7 +345,7 @@ namespace EgyptOnline.Controllers
                 await file.CopyToAsync(ms);
                 var fileBytes = ms.ToArray();
 
-                var url = await _cdnService.UploadImageAsync(fileBytes, file.FileName, "/user-uploads");
+                var url = await _cdnService.UploadImageAsync(fileBytes, file.FileName);
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
                 user.ImageUrl = url;
 
