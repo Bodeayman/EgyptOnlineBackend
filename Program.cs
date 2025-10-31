@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -136,6 +137,7 @@ try
     app.MapGet("/health", () => Results.Ok("Healthy"));
 
     Log.Information("Application started successfully on {Environment}", app.Environment.EnvironmentName);
+
     app.Run();
 }
 catch (Exception ex)

@@ -49,138 +49,128 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-
+                using var transaction = await _context.Database.BeginTransactionAsync();
                 UserRegisterationResult UserRegisterationResult = await _userRegisterationService.RegisterUser(model);
                 if (UserRegisterationResult.Result != IdentityResult.Success)
                 {
+                    await transaction.RollbackAsync();
                     return StatusCode(500, new { message = UserRegisterationResult.Result });
 
                 }
-                if (model.UserType == "User")
-                {
-                    /* This save operation will work here when the registerd one is a user , 
-                    so no need to check if the service provider is null or not */
-                    await _context.SaveChangesAsync();
-                    return StatusCode(201, new { message = "You registered successfully!" });
 
+                if (model.ProviderType == null)
+                {
+                    return BadRequest(new { message = "Please Provide the Type Of Service" });
                 }
-                else if (model.UserType == "SP")
+                Console.WriteLine("Service Provider is being created right now , but not yet");
+
+
+                if (model.ProviderType.Equals("worker", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    if (model.ProviderType == null)
+                    if (model.Skill == null)
                     {
-                        return BadRequest(new { message = "Please Provide the Type Of Service" });
+                        return BadRequest(new { message = "Please Add the Skill" });
                     }
-                    Console.WriteLine("Service Provider is being created right now , but not yet");
 
-
-                    if (model.ProviderType.Equals("worker", StringComparison.CurrentCultureIgnoreCase))
+                    var Worker = new Worker
                     {
-                        if (model.Skill == null)
-                        {
-                            return BadRequest(new { message = "Please Add the Skill" });
-                        }
+                        User = UserRegisterationResult.User,
+                        UserId = UserRegisterationResult.User!.Id,
+                        Bio = model.Bio,
+                        WorkerType = model.WorkerType,
+                        Skill = model.Skill,
+                        ProviderType = model.ProviderType,
+                        ServicePricePerDay = model.Pay,
+                        IsAvailable = true,
+                    };
 
-                        var Worker = new Worker
-                        {
-                            User = UserRegisterationResult.User,
-                            UserId = UserRegisterationResult.User!.Id,
-                            Bio = model.Bio,
-                            WorkerType = model.WorkerType,
-                            Skill = model.Skill,
-                            ProviderType = model.ProviderType,
-                            ServicePricePerDay = model.Pay,
-                            IsAvailable = true,
-                        };
+                    _context.Workers.Add(Worker);
+                }
+                else if (model.ProviderType.Equals("contractor", StringComparison.CurrentCultureIgnoreCase))
+                {
 
-                        _context.Workers.Add(Worker);
-                    }
-                    else if (model.ProviderType.Equals("contractor", StringComparison.CurrentCultureIgnoreCase))
+                    if (model.Specialization == null)
                     {
-
-                        if (model.Specialization == null)
-                        {
-                            return BadRequest(new { message = "Please Add the Specialization" });
-                        }
-                        var Contractor = new Contractor
-                        {
-                            User = UserRegisterationResult.User,
-                            UserId = UserRegisterationResult.User!.Id,
-                            Bio = model.Bio,
-                            Specialization = model.Specialization,
-                            ProviderType = model.ProviderType,
-                            IsAvailable = true,
-                        };
-                        _context.Contractors.Add(Contractor);
+                        return BadRequest(new { message = "Please Add the Specialization" });
                     }
-                    else if (model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase))
+                    var Contractor = new Contractor
                     {
+                        User = UserRegisterationResult.User,
+                        UserId = UserRegisterationResult.User!.Id,
+                        Bio = model.Bio,
+                        Specialization = model.Specialization,
+                        ProviderType = model.ProviderType,
+                        IsAvailable = true,
+                    };
+                    _context.Contractors.Add(Contractor);
+                }
+                else if (model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase))
+                {
 
-                        if (model.Business == null)
-                        {
-                            return BadRequest(new { message = "Please Add the Business" });
-                        }
-                        var Company = new Company
-                        {
-                            User = UserRegisterationResult.User,
-                            UserId = UserRegisterationResult.User!.Id,
-                            Bio = model.Bio,
-                            ProviderType = model.ProviderType,
-                            Owner = model.Owner,
-                            Business = model.Business,
-                            IsAvailable = true,
-                        };
-                        _context.Companies.Add(Company);
-                    }
-                    else if (model.ProviderType.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase))
+                    if (model.Business == null)
                     {
-
-                        if (model.Business == null)
-                        {
-                            return BadRequest(new { message = "Please Add the Business" });
-                        }
-                        var MarketPlace = new MarketPlace
-                        {
-                            User = UserRegisterationResult.User,
-                            UserId = UserRegisterationResult.User!.Id,
-                            Bio = model.Bio,
-                            ProviderType = model.ProviderType,
-                            Business = model.Business,
-                            IsAvailable = true,
-                        };
-                        _context.MarketPlaces.Add(MarketPlace);
+                        return BadRequest(new { message = "Please Add the Business" });
                     }
-                    else if (model.ProviderType.Equals("engineer", StringComparison.CurrentCultureIgnoreCase))
+                    var Company = new Company
                     {
+                        User = UserRegisterationResult.User,
+                        UserId = UserRegisterationResult.User!.Id,
+                        Bio = model.Bio,
+                        ProviderType = model.ProviderType,
+                        Owner = model.Owner,
+                        Business = model.Business,
+                        IsAvailable = true,
+                    };
+                    _context.Companies.Add(Company);
+                }
+                else if (model.ProviderType.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase))
+                {
 
-                        if (model.Specialization == null)
-                        {
-                            return BadRequest(new { message = "Please Add the Specialization" });
-                        }
-                        var Engineer = new Engineer
-                        {
-                            User = UserRegisterationResult.User,
-                            UserId = UserRegisterationResult.User!.Id,
-                            Bio = model.Bio,
-                            ProviderType = model.ProviderType,
-                            Salary = model.Pay,
-                            Specialization = model.Specialization,
-                            IsAvailable = true,
-                        };
-                        _context.Engineers.Add(Engineer);
-                    }
-                    else
+                    if (model.Business == null)
                     {
-                        return BadRequest(new { message = "Please Provide the Type Of Service" });
+                        return BadRequest(new { message = "Please Add the Business" });
                     }
-                    await _context.SaveChangesAsync();
-                    return Ok(new { message = $"The Service Provider which is {model.ProviderType} is Created Successfully" });
+                    var MarketPlace = new MarketPlace
+                    {
+                        User = UserRegisterationResult.User,
+                        UserId = UserRegisterationResult.User!.Id,
+                        Bio = model.Bio,
+                        ProviderType = model.ProviderType,
+                        Business = model.Business,
+                        IsAvailable = true,
+                    };
+                    _context.MarketPlaces.Add(MarketPlace);
+                }
+                else if (model.ProviderType.Equals("engineer", StringComparison.CurrentCultureIgnoreCase))
+                {
 
-
+                    if (model.Specialization == null)
+                    {
+                        return BadRequest(new { message = "Please Add the Specialization" });
+                    }
+                    var Engineer = new Engineer
+                    {
+                        User = UserRegisterationResult.User,
+                        UserId = UserRegisterationResult.User!.Id,
+                        Bio = model.Bio,
+                        ProviderType = model.ProviderType,
+                        Salary = model.Pay,
+                        Specialization = model.Specialization,
+                        IsAvailable = true,
+                    };
+                    _context.Engineers.Add(Engineer);
                 }
                 else
                 {
-                    return BadRequest(new { message = "Please Provide a valid UserType" });
+                    return BadRequest(new { message = "Please Provide the Type Of Service" });
                 }
+                await _context.SaveChangesAsync();
+
+
+                // Transaction is done here
+                await transaction.CommitAsync();
+                return Ok(new { message = $"The Service Provider which is {model.ProviderType} is Created Successfully" });
+
 
 
 
@@ -320,15 +310,21 @@ namespace EgyptOnline.Controllers
         [HttpPost("request-otp")]
         public async Task<IActionResult> RequestOtp([FromBody] string phoneNumber)
         {
+            try
+            {
+                Console.WriteLine(phoneNumber);
+                var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+                if (user == null) return NotFound("User not found");
+                await _smsOtpService.SendOtpAsync(phoneNumber, false);
+                // SendOtpAsync()
 
-            Console.WriteLine(phoneNumber);
-            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
-            if (user == null) return NotFound("User not found");
-            await _smsOtpService.SendOtpAsync(phoneNumber, false);
-            // SendOtpAsync()
 
-
-            return Ok("OTP sent");
+                return Ok("OTP sent");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error: " + ex.Message });
+            }
         }
         [Authorize]
         [HttpPost("upload-profile-image")]
@@ -336,48 +332,87 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                // Get user ID from claims
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
 
-                if (file == null || file.Length == 0)
-                    return BadRequest("No file uploaded.");
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { Message = "User not authenticated" });
+                }
 
+                // Validate file
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(new { Message = "No file uploaded" });
+                }
+
+                // Validate file type
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest(new { Message = "Invalid file type. Allowed: jpg, jpeg, png, gif, webp" });
+                }
+
+                // Validate file size (5MB max)
+                if (file.Length > 5 * 1024 * 1024)
+                {
+                    return BadRequest(new { Message = "File too large. Maximum size: 5MB" });
+                }
+
+                // Find user
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    return NotFound(new { Message = "User not found" });
+                }
+
+                // Generate unique filename
+                var uniqueFileName = $"{userId}_{Guid.NewGuid()}{extension}";
+
+                // Convert file to bytes
                 using var ms = new MemoryStream();
                 await file.CopyToAsync(ms);
                 var fileBytes = ms.ToArray();
 
-                var url = await _cdnService.UploadImageAsync(fileBytes, file.FileName);
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                user.ImageUrl = url;
+                // Delete old image if exists
+                if (!string.IsNullOrEmpty(user.ImageUrl))
+                {
+                    try
+                    {
+                        await _cdnService.DeleteImageAsync(user.ImageUrl);
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
 
+                // Upload new image
+                var imageUrl = await _cdnService.UploadImageAsync(fileBytes, uniqueFileName, "profiles");
+
+                // Update user record
+                user.ImageUrl = imageUrl;
                 await _context.SaveChangesAsync();
-                return Ok(new { Url = url });
+
+
+                return Ok(new
+                {
+                    Message = "Profile image uploaded successfully",
+                    Url = imageUrl,
+                    FileName = uniqueFileName
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal Server Error {ex.Message}");
+                return StatusCode(500, new { message = "Internal server error: " + ex.Message });
+
             }
-
-
         }
-
 
 
 
     }
 }
 
-/*
-{
-  "fullName": "Ayman",
-  "email": "ayman@gmail.com",
-  "phoneNumber": "01143512531",
-  "password": "Bode@999Bode",
-  "userType": "SP",
-  "location": "string",
-  "bio": "string",
-  "skill": "string",
-  "specialization": "string",
-  "business": "string",
-  "providerType": "string"
-}
-*/

@@ -24,15 +24,7 @@ namespace EgyptOnline.Services
         {
             try
             {
-                string UserType;
-                if (model.UserType == "User")
-                {
-                    UserType = "User";
-                }
-                else
-                {
-                    UserType = "SP";
-                }
+
                 string UserName = Helper.GenerateUserName(model.FirstName, model.LastName);
                 var user = new
                 User
@@ -40,7 +32,7 @@ namespace EgyptOnline.Services
                     UserName = UserName,
                     Email = model.Email,
                     PhoneNumber = model.PhoneNumber,
-                    UserType = model.UserType,
+                    UserType = "SP",
                     FirstName = model.FirstName,
                     Location = model.Location,
                     LastName = model.LastName,

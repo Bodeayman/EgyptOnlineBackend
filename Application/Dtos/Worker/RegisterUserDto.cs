@@ -11,7 +11,7 @@ namespace EgyptOnline.Dtos
         public required string PhoneNumber { get; set; } = string.Empty;
         public required string Password { get; set; } = string.Empty;
 
-        public required string UserType { get; set; } = "User";
+
 
         public required string Location { get; set; }
         //SP related
