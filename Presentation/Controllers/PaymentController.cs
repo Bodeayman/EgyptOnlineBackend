@@ -5,6 +5,7 @@ using EgyptOnline.Data;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
 using EgyptOnline.Models;
+using EgyptOnline.Services;
 using EgyptOnline.Strategies;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Mvc;
@@ -21,19 +22,22 @@ namespace EgyptOnline.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IUserService _userService;
 
+        private readonly UserSubscriptionServices _userSubscriptionService;
+
         private readonly IPaymentService _paymentService;
         private readonly CreditCardPaymentStrategy _creditCardStrategy;
         private readonly MobileWalletPaymentStrategy _mobileWalletStrategy;
 
 
         public PaymentController(ApplicationDbContext context, IUserService service, IPaymentService paymentService, CreditCardPaymentStrategy creditCardStrategy,
-        MobileWalletPaymentStrategy mobileWalletStrategy)
+        MobileWalletPaymentStrategy mobileWalletStrategy, UserSubscriptionServices userSubscription)
         {
             _paymentService = paymentService;
             _context = context;
             _userService = service;
             _creditCardStrategy = creditCardStrategy;
             _mobileWalletStrategy = mobileWalletStrategy;
+            _userSubscriptionService = userSubscription;
 
         }
 
@@ -112,16 +116,25 @@ namespace EgyptOnline.Controllers
 
                 if (success)
                 {
-                    bool workerFound = await _context.Workers.AnyAsync(p => p.UserId == userId);
-                    if (workerFound)
+                    User UserFound = await _context.Users.Include(U => U.ServiceProvider).FirstOrDefaultAsync(p => p.Id == userId);
+                    if (UserFound != null)
                     {
 
-                        Worker worker = await _context.Workers.FirstAsync(p => p.UserId == userId);
-                        worker.IsAvailable = true;
+                        await _userSubscriptionService.RenewSubscription(UserFound);
+                        UserFound.ServiceProvider!.IsAvailable = true;
                         await _context.SaveChangesAsync();
-                        return Ok(worker);
+                        return Ok(new
+                        {
+                            message = "Subscription Renewed Successfully",
+                            User = UserFound,
+                            OrderId = orderId
+                        });
                     }
-                    return Ok(new { message = "Payment processed successfully", orderId });
+                    else
+                    {
+                        return BadRequest(new { message = "The User is not found while paying this" });
+                    }
+
                 }
                 else
                 {

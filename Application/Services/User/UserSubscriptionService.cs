@@ -1,6 +1,7 @@
 using EgyptOnline.Data;
 using EgyptOnline.Dtos;
 using EgyptOnline.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace EgyptOnline.Services
 {
@@ -26,6 +27,22 @@ namespace EgyptOnline.Services
                 };
                 _context.Subscriptions.Add(Subscription);
                 return Subscription;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+        public async Task<Subscription?> RenewSubscription(User user)
+        {
+            try
+            {
+                Console.WriteLine("Subscription is added here");
+
+                var FoundSubscription = await _context.Subscriptions.FirstOrDefaultAsync(U => U.UserId == user.Id);
+                FoundSubscription.EndDate = DateTime.UtcNow.AddMonths(1);
+                return FoundSubscription;
             }
             catch (Exception ex)
             {
