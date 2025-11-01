@@ -8,6 +8,9 @@ namespace EgyptOnline.Models
 
         public string? LastName { get; set; }
         public string? ImageUrl { get; set; }
+
+
+        //Not needed for now
         public required string UserType { get; set; } = "User";
 
         public string? Location { get; set; } = "Unknown";

@@ -16,3 +16,4 @@ docker-compose.yaml
 Dockerfile
 *.log
 *.txt
+*.conf

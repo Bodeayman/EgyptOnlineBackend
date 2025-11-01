@@ -70,6 +70,9 @@ namespace EgyptOnline.Controllers
                 result.Select(
                 w => new
                 {
+                    w.User.FirstName,
+                    w.User.LastName,
+                    w.User.ImageUrl,
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
@@ -122,6 +125,9 @@ namespace EgyptOnline.Controllers
                 result.Select(
                 w => new
                 {
+                    w.User.FirstName,
+                    w.User.LastName,
+                    w.User.ImageUrl,
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
@@ -175,6 +181,9 @@ namespace EgyptOnline.Controllers
                 result.Select(
                 w => new
                 {
+                    w.User.FirstName,
+                    w.User.LastName,
+                    w.User.ImageUrl,
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
@@ -227,6 +236,9 @@ namespace EgyptOnline.Controllers
                 result.Select(
                 w => new
                 {
+                    w.User.FirstName,
+                    w.User.LastName,
+                    w.User.ImageUrl,
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
@@ -279,6 +291,9 @@ namespace EgyptOnline.Controllers
                 result.Select(
                 w => new
                 {
+                    w.User.FirstName,
+                    w.User.LastName,
+                    w.User.ImageUrl,
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
