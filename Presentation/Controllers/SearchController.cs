@@ -49,13 +49,30 @@ namespace EgyptOnline.Controllers
                         workers = workers.Where(w => w.User.UserName != null && w.User.UserName.Contains(filter.FullName));
                     }
 
-                    if (!string.IsNullOrEmpty(filter.Location))
+
+                    if (filter.LocationCoords != null)
                     {
-                        workers = workers.Where(w => w.User.Location != null && w.User.Location.Contains(filter.Location));
-                    }
-                    else
-                    {
-                        workers = workers.Where(w => w.User.Location.Contains(UserLocation));
+                        double rangeKm = 10;
+                        double lat = filter.LocationCoords.Latitude;
+                        double lon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;                 // km per degree lat approx.
+                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
+                        double rangeSq = rangeKm * rangeKm;
+
+                        workers = workers.Where(u =>
+                            (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            ) * (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            )
+                            +
+                            (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            ) * (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            )
+                            <= rangeSq
+                        );
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))
@@ -107,9 +124,30 @@ namespace EgyptOnline.Controllers
                         companies = companies.Where(w => w.User.UserName != null && w.User.UserName.Contains(filter.FullName));
                     }
 
-                    if (!string.IsNullOrEmpty(filter.Location))
+
+                    if (filter.LocationCoords != null)
                     {
-                        companies = companies.Where(w => w.User.Location != null && w.User.Location.Contains(filter.Location));
+                        double rangeKm = 10;
+                        double lat = filter.LocationCoords.Latitude;
+                        double lon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;                 // km per degree lat approx.
+                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
+                        double rangeSq = rangeKm * rangeKm;
+
+                        companies = companies.Where(u =>
+                            (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            ) * (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            )
+                            +
+                            (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            ) * (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            )
+                            <= rangeSq
+                        );
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))
@@ -156,6 +194,8 @@ namespace EgyptOnline.Controllers
             {
 
                 var contractors = _context.Contractors.Include(w => w.User).AsQueryable();
+                var userId = User?.FindFirst("uid")?.Value;
+                var UserFound = await _context.Users.FirstOrDefaultAsync(User => User.Id == userId);
                 if (filter != null)
                 {
                     if (!string.IsNullOrEmpty(filter.FullName))
@@ -163,9 +203,31 @@ namespace EgyptOnline.Controllers
                         contractors = contractors.Where(w => w.User.UserName != null && w.User.UserName.Contains(filter.FullName));
                     }
 
-                    if (!string.IsNullOrEmpty(filter.Location))
+
+
+                    if (filter.LocationCoords != null)
                     {
-                        contractors = contractors.Where(w => w.User.Location != null && w.User.Location.Contains(filter.Location));
+                        double rangeKm = 10;
+                        double lat = filter.LocationCoords.Latitude;
+                        double lon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;                 // km per degree lat approx.
+                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
+                        double rangeSq = rangeKm * rangeKm;
+
+                        contractors = contractors.Where(u =>
+                            (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            ) * (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            )
+                            +
+                            (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            ) * (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            )
+                            <= rangeSq
+                        );
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))
@@ -218,9 +280,29 @@ namespace EgyptOnline.Controllers
                         marketplaces = marketplaces.Where(w => w.User.UserName != null && w.User.UserName.Contains(filter.FullName));
                     }
 
-                    if (!string.IsNullOrEmpty(filter.Location))
+                    if (filter.LocationCoords != null)
                     {
-                        marketplaces = marketplaces.Where(w => w.User.Location != null && w.User.Location.Contains(filter.Location));
+                        double rangeKm = 10;
+                        double lat = filter.LocationCoords.Latitude;
+                        double lon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;                 // km per degree lat approx.
+                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
+                        double rangeSq = rangeKm * rangeKm;
+
+                        marketplaces = marketplaces.Where(u =>
+                            (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            ) * (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            )
+                            +
+                            (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            ) * (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            )
+                            <= rangeSq
+                        );
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))
@@ -273,9 +355,30 @@ namespace EgyptOnline.Controllers
                         engineers = engineers.Where(w => w.User.UserName != null && w.User.UserName.Contains(filter.FullName));
                     }
 
-                    if (!string.IsNullOrEmpty(filter.Location))
+
+                    if (filter.LocationCoords != null)
                     {
-                        engineers = engineers.Where(w => w.User.Location != null && w.User.Location.Contains(filter.Location));
+                        double rangeKm = 10;
+                        double lat = filter.LocationCoords.Latitude;
+                        double lon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;                 // km per degree lat approx.
+                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
+                        double rangeSq = rangeKm * rangeKm;
+
+                        engineers = engineers.Where(u =>
+                            (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            ) * (
+                                (u.User.LocationCoords.Latitude - lat) * factor
+                            )
+                            +
+                            (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            ) * (
+                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
+                            )
+                            <= rangeSq
+                        );
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))

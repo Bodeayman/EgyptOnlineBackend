@@ -39,6 +39,12 @@ namespace EgyptOnline.Data
 
             modelBuilder.Entity<Engineer>().ToTable("Engineers");
 
+            modelBuilder.Entity<User>()
+            .HasOne(u => u.LocationCoords)
+            .WithOne(l => l.User)
+            .HasForeignKey<LocationCoords>(l => l.UserId);
+
+
 
 
         }

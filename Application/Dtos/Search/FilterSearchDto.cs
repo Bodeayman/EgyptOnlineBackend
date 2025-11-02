@@ -1,3 +1,4 @@
+using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 
 namespace EgyptOnline.Dtos
@@ -9,6 +10,8 @@ namespace EgyptOnline.Dtos
 
         public WorkerTypes? WorkerType { get; set; } = WorkerTypes.PerDay;
         public string? Location { get; set; } = string.Empty;
+
+        public LocationCoords? LocationCoords { get; set; }
 
         public int PageNumber { get; set; } = 1;
     }

@@ -1,4 +1,6 @@
+using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace EgyptOnline.Utilities
 {
@@ -40,5 +42,36 @@ namespace EgyptOnline.Utilities
             var newListOfUsers = ListOfUsers.Skip(PageSize * (PageNumber - 1)).Take(PageSize);
             return newListOfUsers;
         }
+
+
+        public static IQueryable<T> ReturnUsersInSameRange<T>(
+     IQueryable<T> users,
+     LocationCoords locationCoords,
+     double rangeKm = 10
+ ) where T : class, IHasLocation
+        {
+            double lat = locationCoords.Latitude;
+            double lon = locationCoords.Longitude;
+            double factor = 111.32;                 // km per degree lat approx.
+            double cosLat = Math.Cos(lat * Math.PI / 180.0);
+            double rangeSq = rangeKm * rangeKm;
+
+            return users.Where(u =>
+                (
+                    (u.LocationCoords.Latitude - lat) * factor
+                ) * (
+                    (u.LocationCoords.Latitude - lat) * factor
+                )
+                +
+                (
+                    (u.LocationCoords.Longitude - lon) * factor * cosLat
+                ) * (
+                    (u.LocationCoords.Longitude - lon) * factor * cosLat
+                )
+                <= rangeSq
+            );
+        }
+
+
     }
 }
