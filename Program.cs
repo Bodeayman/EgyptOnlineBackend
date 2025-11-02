@@ -76,6 +76,8 @@ try
         app.UseSwagger();
         app.UseSwaggerUI();
         app.UseDeveloperExceptionPage(); // full details only in dev
+        app.UseMiddleware<SubscriptionCheckMiddleware>();
+
     }
     else
     {

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using EgyptOnline.Utilities;
 
 namespace EgyptOnline.Dtos
@@ -7,7 +8,16 @@ namespace EgyptOnline.Dtos
         public required string FirstName { get; set; } = string.Empty;
 
         public string? LastName { get; set; }
+
+
+
+        //The Annotations check the data during the runtime
+        [EmailAddress]
         public required string Email { get; set; } = string.Empty;
+
+
+        //For the Egyptain Phone Number
+        [RegularExpression(@"^\+20\d{9}$", ErrorMessage = "Phone number must start with +20 and contain 11 digits total.")]
         public required string PhoneNumber { get; set; } = string.Empty;
         public required string Password { get; set; } = string.Empty;
 
