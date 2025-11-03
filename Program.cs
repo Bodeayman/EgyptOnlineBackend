@@ -71,12 +71,13 @@ try
 
     // ---------- Middleware ----------
 
+
+
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
         app.UseSwaggerUI();
         app.UseDeveloperExceptionPage(); // full details only in dev
-        app.UseMiddleware<SubscriptionCheckMiddleware>();
 
     }
     else
@@ -130,6 +131,7 @@ try
     app.UseRouting();
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseMiddleware<SubscriptionCheckMiddleware>();
 
     // ---------- Serilog Request Logging ----------
     app.UseSerilogRequestLogging();

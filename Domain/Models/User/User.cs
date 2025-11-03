@@ -15,7 +15,6 @@ namespace EgyptOnline.Models
 
         public string? Location { get; set; } = "Unknown";
 
-        public int LocationCoordsId { get; set; }
 
         public required LocationCoords LocationCoords { get; set; }
 

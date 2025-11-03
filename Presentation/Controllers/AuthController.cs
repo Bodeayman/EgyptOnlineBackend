@@ -191,7 +191,7 @@ namespace EgyptOnline.Controllers
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
                 {
-                    return NotFound("This User hasn't been here before");
+                    return NotFound(new { message = "The Email or the password is not found" });
                 }
                 var AllUserDetails = await _context.Users.Include(u => u.ServiceProvider)
                     .Include(u => u.Subscription)

@@ -80,6 +80,8 @@ namespace EgyptOnline.Controllers
                         workers = workers.Where(w => w.Skill != null && w.Skill.Contains(filter.Profession));
                     }
                 }
+                workers = _context.Workers.Where(market => market.IsAvailable);
+
                 workers = Helper.PaginateUsers(workers, filter!.PageNumber, Constants.PAGE_SIZE);
                 var result = await workers.ToListAsync();
                 return Ok(
@@ -155,6 +157,8 @@ namespace EgyptOnline.Controllers
                         companies = companies.Where(w => w.Business != null && w.Business.Contains(filter.Profession));
                     }
                 }
+                companies = _context.Companies.Where(market => market.IsAvailable);
+
                 companies = Helper.PaginateUsers(companies, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var result = await companies.ToListAsync();
@@ -235,6 +239,8 @@ namespace EgyptOnline.Controllers
                         contractors = contractors.Where(w => w.Specialization != null && w.Specialization.Contains(filter.Profession));
                     }
                 }
+                contractors = _context.Contractors.Where(market => market.IsAvailable);
+
                 contractors = Helper.PaginateUsers(contractors, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var result = await contractors.ToListAsync();
@@ -310,6 +316,7 @@ namespace EgyptOnline.Controllers
                         marketplaces = marketplaces.Where(w => w.Business != null && w.Business.Contains(filter.Profession));
                     }
                 }
+                marketplaces = _context.MarketPlaces.Where(market => market.IsAvailable);
                 marketplaces = Helper.PaginateUsers(marketplaces, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var result = await marketplaces.ToListAsync();
@@ -346,8 +353,13 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                Console.WriteLine("Fetching good 1");
+                var engineers = _context.Engineers
+                .Include(w => w.User)
+                .Include(w => w.User.ServiceProvider)
+                .AsQueryable();
+                Console.WriteLine("Fetching good 2");
 
-                var engineers = _context.Engineers.Include(w => w.User).AsQueryable();
                 if (filter != null)
                 {
                     if (!string.IsNullOrEmpty(filter.FullName))
@@ -386,6 +398,8 @@ namespace EgyptOnline.Controllers
                         engineers = engineers.Where(w => w.Specialization != null && w.Specialization.Contains(filter.Profession));
                     }
                 }
+                engineers = _context.Engineers.Where(market => market.IsAvailable);
+
                 engineers = Helper.PaginateUsers(engineers, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var result = await engineers.ToListAsync();

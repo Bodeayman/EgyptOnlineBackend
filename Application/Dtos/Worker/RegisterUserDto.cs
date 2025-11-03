@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 
 namespace EgyptOnline.Dtos
@@ -20,6 +21,8 @@ namespace EgyptOnline.Dtos
         [RegularExpression(@"^\+20\d{9}$", ErrorMessage = "Phone number must start with +20 and contain 11 digits total.")]
         public required string PhoneNumber { get; set; } = string.Empty;
         public required string Password { get; set; } = string.Empty;
+
+        public LocationCoords? LocationCoords { get; set; }
 
         public string? UserType { get; set; } = "SP";
 

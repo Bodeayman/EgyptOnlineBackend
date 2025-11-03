@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 
@@ -10,6 +11,7 @@ namespace EgyptOnline.Dtos
 
         public WorkerTypes? WorkerType { get; set; } = WorkerTypes.PerDay;
         public string? Location { get; set; } = string.Empty;
+
 
         public LocationCoords? LocationCoords { get; set; }
 

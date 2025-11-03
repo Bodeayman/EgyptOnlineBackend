@@ -39,6 +39,11 @@ namespace EgyptOnline.Services
                     NormalizedUserName = model.Email.ToUpperInvariant(),
                     NormalizedEmail = model.Email.ToUpperInvariant(),
                     SecurityStamp = Guid.NewGuid().ToString("D"),
+                    LocationCoords = new LocationCoords
+                    {
+                        Latitude = model.LocationCoords.Latitude,
+                        Longitude = model.LocationCoords.Longitude
+                    }
                 };
                 if (await _userManager.FindByEmailAsync(model.Email) != null)
                 {
