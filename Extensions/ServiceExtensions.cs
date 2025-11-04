@@ -9,6 +9,7 @@ using EgyptOnline.Repositories;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Application.Interfaces;
 using EgyptOnline.Strategies;
+using Microsoft.AspNetCore.Mvc;
 /*
 This file is for adding functionalies to program.cs instead of packing everything in one file
 like adding authentication and swagger configuration
@@ -35,6 +36,16 @@ namespace EgyptOnline.Extensions
 
             services.AddHttpClient();
 
+            return services;
+        }
+        public static IServiceCollection ApiVersioningSettings(this IServiceCollection services)
+        {
+            services.AddApiVersioning(options =>
+            {
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.ReportApiVersions = true;
+            });
             return services;
         }
 

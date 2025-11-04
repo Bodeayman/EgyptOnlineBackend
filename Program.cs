@@ -47,6 +47,7 @@ try
 
     // Modular service registrations
     builder.Services.AddApplicationServices();
+    builder.Services.ApiVersioningSettings();
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddSwaggerWithJwt();
 
@@ -131,7 +132,7 @@ try
     app.UseRouting();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.UseMiddleware<SubscriptionCheckMiddleware>();
+    // app.UseMiddleware<SubscriptionCheckMiddleware>();
 
     // ---------- Serilog Request Logging ----------
     app.UseSerilogRequestLogging();
