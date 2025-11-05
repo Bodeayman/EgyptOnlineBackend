@@ -31,11 +31,22 @@ namespace EgyptOnline.Controllers
             _userService = userService;
         }
         //Search for the workers based on the things that you want
-        [HttpPost("worker")]
+        private async Task<bool> CheckSubscription()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+            var user = await _context.Users.Include(U => U.Subscription).Include(U => U.ServiceProvider).FirstOrDefaultAsync(U => U.Id == userId);
+            return user?.ServiceProvider?.IsAvailable ?? false;
+        }
+        [HttpPost("workers")]
         public async Task<IActionResult> SearchWorkers([FromBody] FilterSearchDto? filter)
         {
             try
             {
+                bool UserSubscribed = await CheckSubscription();
+                if (!UserSubscribed)
+                {
+                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                }
                 string UserLocation = await _userService.GetUserLocation(User);
                 Console.WriteLine("User locations is {0}", UserLocation);
                 var workers = _context.Workers.Include(w => w.User).AsQueryable();
@@ -81,7 +92,9 @@ namespace EgyptOnline.Controllers
                         workers = workers.Where(w => w.Skill != null && w.Skill.Contains(filter.Profession));
                     }
                 }
-                workers = _context.Workers.Where(market => market.IsAvailable);
+
+                //Don't need to show
+                workers = workers.Where(market => market.IsAvailable);
 
                 workers = Helper.PaginateUsers(workers, filter!.PageNumber, Constants.PAGE_SIZE);
                 var result = await workers.ToListAsync();
@@ -96,14 +109,12 @@ namespace EgyptOnline.Controllers
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
-                    w.IsAvailable,
                     w.User.Location,
                     w.Skill,
                     w.Bio,
                     w.ProviderType,
                 }
                 )
-
                 .ToList()
 
                 );
@@ -118,7 +129,11 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-
+                bool UserSubscribed = await CheckSubscription();
+                if (!UserSubscribed)
+                {
+                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                }
                 var companies = _context.Companies.Include(w => w.User).AsQueryable();
                 if (filter != null)
                 {
@@ -158,7 +173,7 @@ namespace EgyptOnline.Controllers
                         companies = companies.Where(w => w.Business != null && w.Business.Contains(filter.Profession));
                     }
                 }
-                companies = _context.Companies.Where(market => market.IsAvailable);
+                companies = companies.Where(market => market.IsAvailable);
 
                 companies = Helper.PaginateUsers(companies, filter!.PageNumber, Constants.PAGE_SIZE);
 
@@ -174,7 +189,6 @@ namespace EgyptOnline.Controllers
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
-                    w.IsAvailable,
                     w.User.Location,
                     w.Business,
                     w.Bio,
@@ -197,7 +211,11 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-
+                bool UserSubscribed = await CheckSubscription();
+                if (!UserSubscribed)
+                {
+                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                }
                 var contractors = _context.Contractors.Include(w => w.User).AsQueryable();
                 var userId = User?.FindFirst("uid")?.Value;
                 var UserFound = await _context.Users.FirstOrDefaultAsync(User => User.Id == userId);
@@ -240,7 +258,7 @@ namespace EgyptOnline.Controllers
                         contractors = contractors.Where(w => w.Specialization != null && w.Specialization.Contains(filter.Profession));
                     }
                 }
-                contractors = _context.Contractors.Where(market => market.IsAvailable);
+                contractors = contractors.Where(market => market.IsAvailable);
 
                 contractors = Helper.PaginateUsers(contractors, filter!.PageNumber, Constants.PAGE_SIZE);
 
@@ -256,7 +274,6 @@ namespace EgyptOnline.Controllers
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
-                    w.IsAvailable,
                     w.User.Location,
                     w.Specialization,
                     w.Bio,
@@ -278,7 +295,11 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-
+                bool UserSubscribed = await CheckSubscription();
+                if (!UserSubscribed)
+                {
+                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                }
                 var marketplaces = _context.MarketPlaces.Include(w => w.User).AsQueryable();
                 if (filter != null)
                 {
@@ -317,7 +338,7 @@ namespace EgyptOnline.Controllers
                         marketplaces = marketplaces.Where(w => w.Business != null && w.Business.Contains(filter.Profession));
                     }
                 }
-                marketplaces = _context.MarketPlaces.Where(market => market.IsAvailable);
+                marketplaces = marketplaces.Where(market => market.IsAvailable);
                 marketplaces = Helper.PaginateUsers(marketplaces, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var result = await marketplaces.ToListAsync();
@@ -332,7 +353,6 @@ namespace EgyptOnline.Controllers
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
-                    w.IsAvailable,
                     w.User.Location,
                     w.Business,
                     w.Bio,
@@ -354,10 +374,16 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                bool UserSubscribed = await CheckSubscription();
+                Console.WriteLine("The user subscription model is working fine");
+                if (!UserSubscribed)
+                {
+                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                }
                 Console.WriteLine("Fetching good 1");
                 var engineers = _context.Engineers
                 .Include(w => w.User)
-                .Include(w => w.User.ServiceProvider)
+
                 .AsQueryable();
                 Console.WriteLine("Fetching good 2");
 
@@ -399,11 +425,20 @@ namespace EgyptOnline.Controllers
                         engineers = engineers.Where(w => w.Specialization != null && w.Specialization.Contains(filter.Profession));
                     }
                 }
-                engineers = _context.Engineers.Where(market => market.IsAvailable);
-
+                engineers = engineers.Where(market => market.IsAvailable);
                 engineers = Helper.PaginateUsers(engineers, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var result = await engineers.ToListAsync();
+
+                foreach (var engineer in result)
+                {
+                    Console.WriteLine(engineer.Bio);
+                }
+
+
+
+                // The problem in fetching the data and return the engineers here
+
                 return Ok(
 
                 result.Select(
@@ -415,9 +450,7 @@ namespace EgyptOnline.Controllers
                     w.User.UserName,
                     w.User.Email,
                     w.User.PhoneNumber,
-                    w.IsAvailable,
                     w.User.Location,
-                    w.Specialization,
                     w.Bio,
                     w.ProviderType,
                 }

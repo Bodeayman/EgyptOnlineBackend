@@ -5,10 +5,12 @@ namespace EgyptOnline.Models
         public int Id { get; set; }
         public required string UserId { get; set; }
         public required User User { get; set; }
-        public DateTime EndDate { get; set; }
-        public DateTime StartDate { get; set; }
 
-        public bool IsActive => EndDate > DateTime.UtcNow;
+        public DateOnly EndDate { get; set; }
+        public DateOnly StartDate { get; set; }
+
+        // Note: IsActive now uses DateOnly
+        public bool IsActive => EndDate > DateOnly.FromDateTime(DateTime.UtcNow);
 
 
     }

@@ -189,10 +189,23 @@ namespace EgyptOnline.Controllers
             try
             {
 
-                var user = await _userManager.FindByEmailAsync(model.Email);
+
+                var user = await _context.Users
+                .Include(u => u.Subscription)
+                .Include(u => u.ServiceProvider)
+                .FirstOrDefaultAsync(u => u.Email == model.Email);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
                 {
                     return NotFound(new { message = "The Email or the password is not found" });
+                }
+                // Including it in every function that related to that controller
+                if (!user.ServiceProvider.IsAvailable)
+                {
+                    return Unauthorized(new
+                    {
+                        message = "Your subscription has expired",
+                        LastDate = user.Subscription.EndDate.ToString()
+                    });
                 }
                 var AllUserDetails = await _context.Users.Include(u => u.ServiceProvider)
                     .Include(u => u.Subscription)
@@ -278,9 +291,20 @@ namespace EgyptOnline.Controllers
 
                 // Find user asynchronously
                 var user = await _userManager.FindByIdAsync(userId);
+
                 if (user == null)
                     return Unauthorized("User not found");
 
+
+
+                if (!user.ServiceProvider.IsAvailable)
+                {
+                    return Unauthorized(new
+                    {
+                        message = "Your subscription has expired",
+                        LastDate = user.Subscription.EndDate.ToString()
+                    });
+                }
                 // Parse role using enum directly (cleaner)
                 if (!Enum.TryParse<UsersTypes>(typeClaim, out UsersTypes userRole))
                     return StatusCode(500, new { message = "Invalid user role" });
@@ -313,8 +337,9 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                Console.WriteLine(phoneNumber);
+
                 var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+
                 if (user == null) return NotFound("User not found");
                 await _smsOtpService.SendOtpAsync(phoneNumber, false);
                 // SendOtpAsync()
@@ -333,6 +358,9 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+
+
+                // I need to get the User itself here , but it's not found , i don't know the serverity
                 // Get user ID from claims
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
 

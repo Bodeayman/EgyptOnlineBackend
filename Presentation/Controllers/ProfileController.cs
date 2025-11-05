@@ -47,6 +47,15 @@ namespace EgyptOnline.Controllers
                     .Include(u => u.Subscription)
                     .FirstOrDefaultAsync(u => u.Id == userId);
 
+                if (!user.ServiceProvider.IsAvailable)
+                {
+                    return Unauthorized(new
+                    {
+                        message = "Your subscription has expired",
+                        LastDate = user.Subscription.EndDate.ToString()
+                    });
+                }
+
                 if (user == null)
                     return NotFound();
 
@@ -76,6 +85,15 @@ namespace EgyptOnline.Controllers
                 }
 
                 var user = await _userManager.FindByIdAsync(userId);
+
+                if (!user.ServiceProvider.IsAvailable)
+                {
+                    return Unauthorized(new
+                    {
+                        message = "Your subscription has expired",
+                        LastDate = user.Subscription.EndDate.ToString()
+                    });
+                }
                 if (user == null)
                 {
                     return NotFound(new { messag = "User not found" });

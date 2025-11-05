@@ -46,6 +46,7 @@ try
         .AddDefaultTokenProviders();
 
     // Modular service registrations
+    builder.Services.AddHostedService<SubscriptionCheckerService>();
     builder.Services.AddApplicationServices();
     builder.Services.ApiVersioningSettings();
     builder.Services.AddJwtAuthentication(builder.Configuration);

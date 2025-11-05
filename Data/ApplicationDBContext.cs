@@ -38,7 +38,13 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<MarketPlace>().ToTable("MarketPlaces");
 
             modelBuilder.Entity<Engineer>().ToTable("Engineers");
+            modelBuilder.Entity<Subscription>()
+                  .Property(s => s.StartDate)
+                  .HasColumnType("date");
 
+            modelBuilder.Entity<Subscription>()
+                .Property(s => s.EndDate)
+                .HasColumnType("date");
             modelBuilder.Entity<User>()
        .OwnsOne(u => u.LocationCoords, loc =>
        {

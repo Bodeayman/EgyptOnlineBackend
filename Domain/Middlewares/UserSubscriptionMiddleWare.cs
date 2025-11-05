@@ -47,7 +47,7 @@ public class SubscriptionCheckMiddleware
             if (user != null)
             {
                 Console.WriteLine("Checking subscription...");
-                if (user.Subscription.EndDate < DateTime.Now)
+                if (user.Subscription.EndDate < DateOnly.FromDateTime(DateTime.Now))
                 {
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     user.ServiceProvider.IsAvailable = false;
