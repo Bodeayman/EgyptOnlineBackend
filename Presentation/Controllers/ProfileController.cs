@@ -77,14 +77,19 @@ namespace EgyptOnline.Controllers
             try
             {
                 /* Authentication Stage Check*/
-
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
                 {
                     return Unauthorized(new { message = "User ID not found in token" });
                 }
-
-                var user = await _userManager.FindByIdAsync(userId);
+                var user = await _context.Users
+    .Include(u => u.ServiceProvider)
+    .Include(u => u.Subscription)
+    .FirstOrDefaultAsync(u => u.Id == userId);
 
                 if (!user.ServiceProvider.IsAvailable)
                 {
@@ -98,6 +103,9 @@ namespace EgyptOnline.Controllers
                 {
                     return NotFound(new { messag = "User not found" });
                 }
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+
 
 
                 /* End of Authentcation the User is added*/
@@ -107,7 +115,6 @@ namespace EgyptOnline.Controllers
 
                 user.FirstName = model.FirstName ?? user.FirstName;
                 user.LastName = model.LastName ?? user.LastName;
-                user.Location = model.Location ?? user.Location;
 
 
 
@@ -115,58 +122,54 @@ namespace EgyptOnline.Controllers
                 /* Update the Service Provider Data */
 
 
-                if (user.UserType == "SP")
+
+
+                if (user == null && user.UserType != "SP")
                 {
-                    var serviceProvider = await _context.ServiceProviders
-                 .FirstOrDefaultAsync(sp => sp.UserId == userId);
-
-
-                    if (serviceProvider == null && user.UserType != "User")
-                    {
-                        return NotFound(new { message = "The Service Provider is not found here" });
-                    }
-
-
-                    serviceProvider.Bio = model.Bio ?? serviceProvider.Bio;
-
-
-                    if (serviceProvider.ProviderType == "Worker")
-                    {
-                        var worker = await _context.Workers.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
-                        worker.ServicePricePerDay = model.Pay;
-
-                        worker!.Skill = model.Skill;
-                    }
-                    else if (serviceProvider.ProviderType == "Contractor")
-                    {
-                        var contractor = await _context.Contractors.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
-
-                        contractor!.Specialization = model.Specialization ?? contractor.Specialization;
-                    }
-                    else if (serviceProvider.ProviderType == "Company")
-                    {
-                        var company = await _context.Companies.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
-                        company!.Owner = model.Owner ?? company.Owner;
-                        company!.Business = model.Business ?? company.Business;
-                    }
-                    else if (serviceProvider.ProviderType == "Marketplace")
-                    {
-                        var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
-                        marketPlace!.Business = model.Business ?? marketPlace.Business;
-                    }
-                    else if (serviceProvider.ProviderType == "Engineer")
-                    {
-                        var engineer = await _context.Engineers.FirstOrDefaultAsync(s => serviceProvider.Id == s.Id);
-                        engineer!.Salary = model.Pay;
-                        engineer!.Specialization = model.Specialization ?? engineer.Specialization;
-                    }
-                    else
-                    {
-                        return BadRequest(new { message = "Put a correct ServiceProvider Name" });
-                    }
-
+                    return NotFound(new { message = "The Service Provider is not found here" });
                 }
 
+
+                user.ServiceProvider.Bio = model.Bio ?? user.ServiceProvider.Bio;
+
+
+                if (user.ServiceProvider.ProviderType == "Worker")
+                {
+                    var worker = await _context.Workers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
+                    worker.ServicePricePerDay = model.Pay;
+
+                    worker!.Skill = model.Skill;
+                }
+                else if (user.ServiceProvider.ProviderType == "Contractor")
+                {
+                    var contractor = await _context.Contractors.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
+                    contractor.Salary = model.Pay;
+
+                    contractor!.Specialization = model.Specialization ?? contractor.Specialization;
+                }
+                else if (user.ServiceProvider.ProviderType == "Company")
+                {
+                    var company = await _context.Companies.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
+                    company!.Owner = model.Owner ?? company.Owner;
+                    company!.Business = model.Business ?? company.Business;
+                }
+                else if (user.ServiceProvider.ProviderType == "Marketplace")
+                {
+                    var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
+                    marketPlace!.Business = model.Business ?? marketPlace.Business;
+                }
+                else if (user.ServiceProvider.ProviderType == "Engineer")
+                {
+                    var engineer = await _context.Engineers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
+                    engineer!.Salary = model.Pay;
+                    engineer!.Specialization = model.Specialization ?? engineer.Specialization;
+                }
+                else
+                {
+                    return BadRequest(new { message = "Put a correct ServiceProvider Name" });
+                }
+
+                await transaction.CommitAsync();
                 await _context.SaveChangesAsync();
 
                 return Ok(new { message = "Your Profile has been updated Successfully" });

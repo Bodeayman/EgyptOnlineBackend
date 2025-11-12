@@ -5,7 +5,7 @@ namespace EgyptOnline.Dtos
     public class ShowProfileDto
     {
         // User Information
-        public string Id { get; set; } = string.Empty;
+        // public string Id { get; set; } = string.Empty;
         public string? UserName { get; set; }
         public string? FirstName { get; set; }
 
@@ -16,6 +16,8 @@ namespace EgyptOnline.Dtos
         public string? ImageUrl { get; set; }
         public string UserType { get; set; } = string.Empty;
         public int Points { get; set; }
+
+
 
         // Subscription Information (if exists)
         public SubscriptionDto? Subscription { get; set; }
@@ -37,12 +39,17 @@ namespace EgyptOnline.Dtos
     {
         public int Id { get; set; }
         public bool IsAvailable { get; set; }
-        public string? Location { get; set; }
         public string? Bio { get; set; }
         public string ProviderType { get; set; } = string.Empty;
 
-        // Dynamic specialization field based on provider type
-        public string? Specialization { get; set; }
-        public string? SpecializationType { get; set; } // "Skill", "Expertise", "Services", etc.
+        public string? Specialization { get; set; } = string.Empty; // skill here please 
+
+        public decimal Pay { get; set; }
+        public string? Business { get; set; } = string.Empty;
+        public string? Owner { get; set; } = string.Empty;
+        public WorkerTypes WorkerTypes { get; set; } = WorkerTypes.PerPay;
+
+
+        // public string? SpecializationType { get; set; } // "Skill", "Expertise", "Services", etc.
     }
 }

@@ -9,7 +9,6 @@ namespace EgyptOnline.Utilities
         {
             var dto = new ShowProfileDto
             {
-                Id = user.Id,
                 UserName = user.UserName,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
@@ -22,6 +21,7 @@ namespace EgyptOnline.Utilities
                 Subscription = user.Subscription?.ToSubscriptionDto(),
                 ServiceProvider = user.ServiceProvider?.ToServiceProviderDto(),
                 Points = user.Points,
+
 
             };
 
@@ -41,12 +41,15 @@ namespace EgyptOnline.Utilities
 
         private static ServiceProviderDto ToServiceProviderDto(this ServicesProvider serviceProvider)
         {
+            Console.WriteLine(serviceProvider.GetType());
+
             var dto = new ServiceProviderDto
             {
                 Id = serviceProvider.Id,
                 IsAvailable = serviceProvider.IsAvailable,
                 Bio = serviceProvider.Bio,
-                ProviderType = serviceProvider.ProviderType
+                ProviderType = serviceProvider.ProviderType,
+
             };
 
             // Set specialization based on provider type
@@ -54,21 +57,28 @@ namespace EgyptOnline.Utilities
             {
                 case Worker worker:
                     dto.Specialization = worker.Skill;
-                    dto.SpecializationType = "Skill";
+                    dto.Pay = worker.ServicePricePerDay;
+                    dto.WorkerTypes = worker.WorkerType;
                     break;
                 case Contractor contractor:
                     // Assuming Contractor has an Expertise property
-                    dto.Specialization = contractor.GetType().GetProperty("Expertise")?.GetValue(contractor)?.ToString();
-                    dto.SpecializationType = "Expertise";
+                    dto.Pay = contractor.Salary;
+                    dto.Specialization = contractor.Specialization;
                     break;
                 case Company company:
                     // Assuming Company has a Services property
-                    dto.Specialization = company.GetType().GetProperty("Services")?.GetValue(company)?.ToString();
-                    dto.SpecializationType = "Services";
+                    dto.Owner = company.Owner;
+                    dto.Business = company.Business;
+                    break;
+                case Engineer engineer:
+                    dto.Specialization = engineer.Specialization;
+                    dto.Pay = engineer.Salary;
+                    break;
+                case MarketPlace marketPlace:
+                    dto.Business = marketPlace.Business;
                     break;
                 default:
                     dto.Specialization = null;
-                    dto.SpecializationType = null;
                     break;
             }
 
