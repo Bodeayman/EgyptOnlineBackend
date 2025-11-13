@@ -116,6 +116,11 @@ namespace EgyptOnline.Controllers
                 user.FirstName = model.FirstName ?? user.FirstName;
                 user.LastName = model.LastName ?? user.LastName;
 
+                // I want him to generate the name only if the first name or last name is changed
+                if (model.FirstName != null || model.LastName != null && user.FirstName == model.FirstName && user.LastName == model.LastName)
+                {
+                    user.UserName = Helper.GenerateUserName(user.FirstName, user.LastName);
+                }
 
 
 
@@ -157,6 +162,8 @@ namespace EgyptOnline.Controllers
                 {
                     var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
                     marketPlace!.Business = model.Business ?? marketPlace.Business;
+                    marketPlace!.Owner = model.Owner ?? marketPlace.Owner;
+
                 }
                 else if (user.ServiceProvider.ProviderType == "Engineer")
                 {

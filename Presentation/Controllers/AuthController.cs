@@ -139,6 +139,7 @@ namespace EgyptOnline.Controllers
                         ProviderType = model.ProviderType,
                         Business = model.Business,
                         IsAvailable = true,
+                        Owner = model.Owner,
                     };
                     _context.MarketPlaces.Add(MarketPlace);
                 }
@@ -219,6 +220,7 @@ namespace EgyptOnline.Controllers
                 }
                 else
                 {
+                    Console.WriteLine(AllUserDetails.ServiceProvider.ProviderType);
                     if (AllUserDetails.ServiceProvider.ProviderType == "Worker")
                     {
                         UserRole = UsersTypes.Worker;

@@ -61,32 +61,34 @@ namespace EgyptOnline.Controllers
                         workers = workers.Where(w => w.User.UserName != null && w.User.UserName.Contains(filter.FullName));
                     }
 
-
                     if (filter.LocationCoords != null)
                     {
+                        double userLat = filter.LocationCoords.Latitude;
+                        double userLon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;
+                        double cosLat = Math.Cos(userLat * Math.PI / 180.0);
                         double rangeKm = 10;
-                        double lat = filter.LocationCoords.Latitude;
-                        double lon = filter.LocationCoords.Longitude;
-                        double factor = 111.32;                 // km per degree lat approx.
-                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
                         double rangeSq = rangeKm * rangeKm;
 
-                        workers = workers.Where(u =>
-                            (
-                                (u.User.LocationCoords.Latitude - lat) * factor
-                            ) * (
-                                (u.User.LocationCoords.Latitude - lat) * factor
+                        workers = workers
+                            .Where(u =>
+                                (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                +
+                                (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                <= rangeSq
                             )
-                            +
-                            (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            ) * (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            )
-                            <= rangeSq
-                        );
+                            .Select(u => new
+                            {
+                                Contractors = u,
+                                Distance = Math.Sqrt(
+                                    (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                    +
+                                    (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                )
+                            })
+                            .OrderBy(x => x.Distance)  // <-- sort by closest
+                            .Select(x => x.Contractors);
                     }
-
                     if (!string.IsNullOrEmpty(filter.Profession))
                     {
                         workers = workers.Where(w => w.Skill != null && w.Skill.Contains(filter.Profession));
@@ -98,26 +100,23 @@ namespace EgyptOnline.Controllers
 
                 workers = Helper.PaginateUsers(workers, filter!.PageNumber, Constants.PAGE_SIZE);
                 var result = await workers.ToListAsync();
-                return Ok(
-
-                result.Select(
-                w => new
+                return Ok(result.Select(w => new
                 {
-                    w.User.FirstName,
-                    w.User.LastName,
-                    w.User.ImageUrl,
-                    w.User.UserName,
-                    w.User.Email,
-                    w.User.PhoneNumber,
-                    w.User.Location,
-                    w.Skill,
-                    w.Bio,
-                    w.ProviderType,
-                }
-                )
-                .ToList()
+                    name = $"{w.User.FirstName} {w.User.LastName}",
+                    skill = w.Skill,
+                    location = w.User.Location,
+                    pay = w.ServicePricePerDay,
+                    owner = (string?)null, // workers don't have owners
+                    imageUrl = w.User.ImageUrl,
+                    isCompany = false,
+                    workerType = 1,
+                    mobileNumber = w.User.PhoneNumber,
+                    email = w.User.Email,
+                    locationOfServiceArea = w.User.Location,
+                    typeOfService = w.ProviderType?.ToString(),
+                    aboutMe = w.Bio
+                }).ToList());
 
-                );
             }
             catch (Exception ex)
             {
@@ -145,27 +144,31 @@ namespace EgyptOnline.Controllers
 
                     if (filter.LocationCoords != null)
                     {
+                        double userLat = filter.LocationCoords.Latitude;
+                        double userLon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;
+                        double cosLat = Math.Cos(userLat * Math.PI / 180.0);
                         double rangeKm = 10;
-                        double lat = filter.LocationCoords.Latitude;
-                        double lon = filter.LocationCoords.Longitude;
-                        double factor = 111.32;                 // km per degree lat approx.
-                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
                         double rangeSq = rangeKm * rangeKm;
 
-                        companies = companies.Where(u =>
-                            (
-                                (u.User.LocationCoords.Latitude - lat) * factor
-                            ) * (
-                                (u.User.LocationCoords.Latitude - lat) * factor
+                        companies = companies
+                            .Where(u =>
+                                (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                +
+                                (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                <= rangeSq
                             )
-                            +
-                            (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            ) * (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            )
-                            <= rangeSq
-                        );
+                            .Select(u => new
+                            {
+                                Contractors = u,
+                                Distance = Math.Sqrt(
+                                    (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                    +
+                                    (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                )
+                            })
+                            .OrderBy(x => x.Distance)  // <-- sort by closest
+                            .Select(x => x.Contractors);
                     }
 
                     if (!string.IsNullOrEmpty(filter.Profession))
@@ -178,27 +181,24 @@ namespace EgyptOnline.Controllers
                 companies = Helper.PaginateUsers(companies, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var result = await companies.ToListAsync();
-                return Ok(
-
-                result.Select(
-                w => new
+                return Ok(result.Select(w => new
                 {
-                    w.User.FirstName,
-                    w.User.LastName,
-                    w.User.ImageUrl,
-                    w.User.UserName,
-                    w.User.Email,
-                    w.User.PhoneNumber,
-                    w.User.Location,
-                    w.Business,
-                    w.Bio,
-                    w.ProviderType,
-                }
-                )
+                    name = $"{w.User.FirstName} {w.User.LastName}",
+                    skill = w.Business,
+                    location = w.User.Location,
+                    pay = 0,
+                    owner = w.Owner, // include owner for companies
+                    imageUrl = w.User.ImageUrl,
+                    isCompany = true,
 
-                .ToList()
+                    workerType = 1,
+                    mobileNumber = w.User.PhoneNumber,
+                    email = w.User.Email,
+                    locationOfServiceArea = w.User.Location,
+                    typeOfService = w.ProviderType?.ToString(),
+                    aboutMe = w.Bio
+                }).ToList());
 
-                );
             }
             catch (Exception ex)
             {
@@ -230,29 +230,32 @@ namespace EgyptOnline.Controllers
 
                     if (filter.LocationCoords != null)
                     {
+                        double userLat = filter.LocationCoords.Latitude;
+                        double userLon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;
+                        double cosLat = Math.Cos(userLat * Math.PI / 180.0);
                         double rangeKm = 10;
-                        double lat = filter.LocationCoords.Latitude;
-                        double lon = filter.LocationCoords.Longitude;
-                        double factor = 111.32;                 // km per degree lat approx.
-                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
                         double rangeSq = rangeKm * rangeKm;
 
-                        contractors = contractors.Where(u =>
-                            (
-                                (u.User.LocationCoords.Latitude - lat) * factor
-                            ) * (
-                                (u.User.LocationCoords.Latitude - lat) * factor
+                        contractors = contractors
+                            .Where(u =>
+                                (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                +
+                                (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                <= rangeSq
                             )
-                            +
-                            (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            ) * (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            )
-                            <= rangeSq
-                        );
+                            .Select(u => new
+                            {
+                                Contractors = u,
+                                Distance = Math.Sqrt(
+                                    (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                    +
+                                    (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                )
+                            })
+                            .OrderBy(x => x.Distance)  // <-- sort by closest
+                            .Select(x => x.Contractors);
                     }
-
                     if (!string.IsNullOrEmpty(filter.Profession))
                     {
                         contractors = contractors.Where(w => w.Specialization != null && w.Specialization.Contains(filter.Profession));
@@ -268,16 +271,20 @@ namespace EgyptOnline.Controllers
                 result.Select(
                 w => new
                 {
-                    w.User.FirstName,
-                    w.User.LastName,
-                    w.User.ImageUrl,
-                    w.User.UserName,
-                    w.User.Email,
-                    w.User.PhoneNumber,
-                    w.User.Location,
-                    w.Specialization,
-                    w.Bio,
-                    w.ProviderType,
+                    name = $"{w.User.FirstName} {w.User.LastName}",
+                    skill = w.Specialization,
+                    location = w.User.Location,
+                    pay = w.Salary,
+                    owner = (string?)null, // contractors don't have owners
+                    imageUrl = w.User.ImageUrl,
+                    isCompany = false,
+
+                    workerType = 1,
+                    mobileNumber = w.User.PhoneNumber,
+                    email = w.User.Email,
+                    locationOfServiceArea = w.User.Location,
+                    typeOfService = w.ProviderType?.ToString(),
+                    aboutMe = w.Bio
                 }
                 )
 
@@ -310,28 +317,33 @@ namespace EgyptOnline.Controllers
 
                     if (filter.LocationCoords != null)
                     {
+                        double userLat = filter.LocationCoords.Latitude;
+                        double userLon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;
+                        double cosLat = Math.Cos(userLat * Math.PI / 180.0);
                         double rangeKm = 10;
-                        double lat = filter.LocationCoords.Latitude;
-                        double lon = filter.LocationCoords.Longitude;
-                        double factor = 111.32;                 // km per degree lat approx.
-                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
                         double rangeSq = rangeKm * rangeKm;
 
-                        marketplaces = marketplaces.Where(u =>
-                            (
-                                (u.User.LocationCoords.Latitude - lat) * factor
-                            ) * (
-                                (u.User.LocationCoords.Latitude - lat) * factor
+                        marketplaces = marketplaces
+                            .Where(u =>
+                                (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                +
+                                (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                <= rangeSq
                             )
-                            +
-                            (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            ) * (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            )
-                            <= rangeSq
-                        );
+                            .Select(u => new
+                            {
+                                Marketplace = u,
+                                Distance = Math.Sqrt(
+                                    (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                    +
+                                    (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                )
+                            })
+                            .OrderBy(x => x.Distance)  // <-- sort by closest
+                            .Select(x => x.Marketplace); // unwrap the marketplace object
                     }
+
 
                     if (!string.IsNullOrEmpty(filter.Profession))
                     {
@@ -347,16 +359,19 @@ namespace EgyptOnline.Controllers
                 result.Select(
                 w => new
                 {
-                    w.User.FirstName,
-                    w.User.LastName,
-                    w.User.ImageUrl,
-                    w.User.UserName,
-                    w.User.Email,
-                    w.User.PhoneNumber,
-                    w.User.Location,
-                    w.Business,
-                    w.Bio,
-                    w.ProviderType,
+                    name = $"{w.User.FirstName} {w.User.LastName}",
+                    skill = w.Business,
+                    location = w.User.Location,
+                    pay = 0,
+                    owner = w.Owner, // include owner
+                    imageUrl = w.User.ImageUrl,
+                    isCompany = true,
+                    workerType = 1,
+                    mobileNumber = w.User.PhoneNumber,
+                    email = w.User.Email,
+                    locationOfServiceArea = w.User.Location,
+                    typeOfService = w.ProviderType?.ToString(),
+                    aboutMe = w.Bio
                 }
                 )
 
@@ -397,29 +412,32 @@ namespace EgyptOnline.Controllers
 
                     if (filter.LocationCoords != null)
                     {
+                        double userLat = filter.LocationCoords.Latitude;
+                        double userLon = filter.LocationCoords.Longitude;
+                        double factor = 111.32;
+                        double cosLat = Math.Cos(userLat * Math.PI / 180.0);
                         double rangeKm = 10;
-                        double lat = filter.LocationCoords.Latitude;
-                        double lon = filter.LocationCoords.Longitude;
-                        double factor = 111.32;                 // km per degree lat approx.
-                        double cosLat = Math.Cos(lat * Math.PI / 180.0);
                         double rangeSq = rangeKm * rangeKm;
 
-                        engineers = engineers.Where(u =>
-                            (
-                                (u.User.LocationCoords.Latitude - lat) * factor
-                            ) * (
-                                (u.User.LocationCoords.Latitude - lat) * factor
+                        engineers = engineers
+                            .Where(u =>
+                                (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                +
+                                (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                <= rangeSq
                             )
-                            +
-                            (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            ) * (
-                                (u.User.LocationCoords.Longitude - lon) * factor * cosLat
-                            )
-                            <= rangeSq
-                        );
+                            .Select(u => new
+                            {
+                                Contractors = u,
+                                Distance = Math.Sqrt(
+                                    (u.User.LocationCoords.Latitude - userLat) * factor * ((u.User.LocationCoords.Latitude - userLat) * factor)
+                                    +
+                                    (u.User.LocationCoords.Longitude - userLon) * factor * cosLat * ((u.User.LocationCoords.Longitude - userLon) * factor * cosLat)
+                                )
+                            })
+                            .OrderBy(x => x.Distance)  // <-- sort by closest
+                            .Select(x => x.Contractors);
                     }
-
                     if (!string.IsNullOrEmpty(filter.Profession))
                     {
                         engineers = engineers.Where(w => w.Specialization != null && w.Specialization.Contains(filter.Profession));
@@ -444,15 +462,20 @@ namespace EgyptOnline.Controllers
                 result.Select(
                 w => new
                 {
-                    w.User.FirstName,
-                    w.User.LastName,
-                    w.User.ImageUrl,
-                    w.User.UserName,
-                    w.User.Email,
-                    w.User.PhoneNumber,
-                    w.User.Location,
-                    w.Bio,
-                    w.ProviderType,
+                    name = $"{w.User.FirstName} {w.User.LastName}",
+                    skill = w.Specialization,
+                    location = w.User.Location,
+                    pay = w.Salary,
+                    owner = (string?)null, // engineers don't have owners
+                    imageUrl = w.User.ImageUrl,
+                    isCompany = false,
+
+                    workerType = 1,
+                    mobileNumber = w.User.PhoneNumber,
+                    email = w.User.Email,
+                    locationOfServiceArea = w.User.Location,
+                    typeOfService = w.ProviderType?.ToString(),
+                    aboutMe = w.Bio
                 }
                 )
 
@@ -465,6 +488,29 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = $"Internal Error Message {ex.Message}" });
             }
         }
+        [HttpPost("providers")]
+        public async Task<IActionResult> GetAllProvidersByPoint()
+        {
+            try
+            {
+                var users = await _context.Users
+                    .Include(u => u.ServiceProvider)
+                    .Where(u => u.ServiceProvider != null)
+                    .OrderByDescending(u => u.Points)
+                    .Select(u => new
+                    {
+                        u.ImageUrl,
+                        FullName = $"{u.FirstName} {u.LastName}",
+                        Specialization = u.ServiceProvider.ProviderType,
+                    })
+                    .ToListAsync();
 
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Internal server error: {ex.Message}" });
+            }
+        }
     }
 }

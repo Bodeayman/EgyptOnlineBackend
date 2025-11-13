@@ -76,6 +76,7 @@ namespace EgyptOnline.Utilities
                     break;
                 case MarketPlace marketPlace:
                     dto.Business = marketPlace.Business;
+                    dto.Owner = marketPlace.Owner;
                     break;
                 default:
                     dto.Specialization = null;
