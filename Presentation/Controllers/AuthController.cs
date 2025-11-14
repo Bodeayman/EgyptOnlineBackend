@@ -81,7 +81,7 @@ namespace EgyptOnline.Controllers
                         WorkerType = model.WorkerType,
                         Skill = model.Skill,
                         ProviderType = model.ProviderType,
-                        ServicePricePerDay = model.Pay,
+                        ServicePricePerDay = model.Pay ?? 0,
                         IsAvailable = true,
                     };
 
@@ -156,7 +156,7 @@ namespace EgyptOnline.Controllers
                         UserId = UserRegisterationResult.User!.Id,
                         Bio = model.Bio,
                         ProviderType = model.ProviderType,
-                        Salary = model.Pay,
+                        Salary = model.Pay ?? 0,
                         Specialization = model.Specialization,
                         IsAvailable = true,
                     };
@@ -211,40 +211,32 @@ namespace EgyptOnline.Controllers
                 var AllUserDetails = await _context.Users.Include(u => u.ServiceProvider)
                     .Include(u => u.Subscription)
                     .FirstOrDefaultAsync(u => u.Id == user.Id);
-                Console.WriteLine(AllUserDetails.UserType.ToString());
                 UsersTypes UserRole;
 
-                if (AllUserDetails.UserType == "User")
+
+                if (AllUserDetails.ServiceProvider.ProviderType == "Worker")
                 {
-                    UserRole = UsersTypes.User;
+                    UserRole = UsersTypes.Worker;
+                }
+                else if (AllUserDetails.ServiceProvider.ProviderType == "Company")
+                {
+                    UserRole = UsersTypes.Company;
+                }
+                else if (AllUserDetails.ServiceProvider.ProviderType == "Contractor")
+                {
+                    UserRole = UsersTypes.Contractor;
+                }
+                else if (AllUserDetails.ServiceProvider.ProviderType == "Marketplace")
+                {
+                    UserRole = UsersTypes.Marketplace;
+                }
+                else if (AllUserDetails.ServiceProvider.ProviderType == "Engineer")
+                {
+                    UserRole = UsersTypes.Engineer;
                 }
                 else
                 {
-                    Console.WriteLine(AllUserDetails.ServiceProvider.ProviderType);
-                    if (AllUserDetails.ServiceProvider.ProviderType == "Worker")
-                    {
-                        UserRole = UsersTypes.Worker;
-                    }
-                    else if (AllUserDetails.ServiceProvider.ProviderType == "Company")
-                    {
-                        UserRole = UsersTypes.Company;
-                    }
-                    else if (AllUserDetails.ServiceProvider.ProviderType == "Contractor")
-                    {
-                        UserRole = UsersTypes.Contractor;
-                    }
-                    else if (AllUserDetails.ServiceProvider.ProviderType == "Marketplace")
-                    {
-                        UserRole = UsersTypes.Marketplace;
-                    }
-                    else if (AllUserDetails.ServiceProvider.ProviderType == "Engineer")
-                    {
-                        UserRole = UsersTypes.Engineer;
-                    }
-                    else
-                    {
-                        return StatusCode(500, new { message = "Error while Fetching the User" });
-                    }
+                    return StatusCode(500, new { message = "Error while Fetching the User" });
                 }
                 Console.WriteLine(UserRole.ToString());
                 var accessToken = _userService.GenerateJwtToken(user, UserRole, TokensTypes.AccessToken);
@@ -356,57 +348,44 @@ namespace EgyptOnline.Controllers
         }
         [Authorize]
         [HttpPost("upload-profile-image")]
+
+
         public async Task<IActionResult> UploadProfileImage(IFormFile file)
         {
             try
             {
-
-
-                // I need to get the User itself here , but it's not found , i don't know the serverity
-                // Get user ID from claims
+                // Get authenticated user ID
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
-
                 if (string.IsNullOrEmpty(userId))
-                {
                     return Unauthorized(new { Message = "User not authenticated" });
-                }
 
-                // Validate file
+                // Validate file presence
                 if (file == null || file.Length == 0)
-                {
                     return BadRequest(new { Message = "No file uploaded" });
-                }
 
                 // Validate file type
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
                 var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
                 if (!allowedExtensions.Contains(extension))
-                {
                     return BadRequest(new { Message = "Invalid file type. Allowed: jpg, jpeg, png, gif, webp" });
-                }
 
                 // Validate file size (5MB max)
-                if (file.Length > 5 * 1024 * 1024)
-                {
-                    return BadRequest(new { Message = "File too large. Maximum size: 5MB" });
-                }
+                const int maxFileSize = 5 * 1024 * 1024;
+                if (file.Length > maxFileSize)
+                    return BadRequest(new { Message = "File too large. Maximum size is 5MB" });
 
-                // Find user
+                // Get user from database
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-
                 if (user == null)
-                {
                     return NotFound(new { Message = "User not found" });
+
+                // Read file bytes
+                byte[] fileBytes;
+                using (var ms = new MemoryStream())
+                {
+                    await file.CopyToAsync(ms);
+                    fileBytes = ms.ToArray();
                 }
-
-                // Generate unique filename
-                var uniqueFileName = $"{userId}_{Guid.NewGuid()}{extension}";
-
-                // Convert file to bytes
-                using var ms = new MemoryStream();
-                await file.CopyToAsync(ms);
-                var fileBytes = ms.ToArray();
 
                 // Delete old image if exists
                 if (!string.IsNullOrEmpty(user.ImageUrl))
@@ -417,31 +396,33 @@ namespace EgyptOnline.Controllers
                     }
                     catch (Exception ex)
                     {
+                        // Log but don't fail the upload
+                        Console.WriteLine($"Failed to delete old image: {ex.Message}");
                     }
                 }
+
+                // Generate unique filename
+                var uniqueFileName = $"user_{userId}_{Guid.NewGuid()}{extension}";
 
                 // Upload new image
                 var imageUrl = await _cdnService.UploadImageAsync(fileBytes, uniqueFileName, "profiles");
 
-                // Update user record
+                // Update user in database
                 user.ImageUrl = imageUrl;
                 await _context.SaveChangesAsync();
-
 
                 return Ok(new
                 {
                     Message = "Profile image uploaded successfully",
-                    Url = imageUrl,
-                    FileName = uniqueFileName
+                    ImageUrl = imageUrl
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error: " + ex.Message });
-
+                Console.WriteLine($"Error uploading profile image: {ex.Message}");
+                return StatusCode(500, new { Message = "Failed to upload profile image. Please try again." });
             }
         }
-
 
 
     }

@@ -11,12 +11,14 @@ namespace EgyptOnline.Models
 
 
         //Not needed for now
-        public required string UserType { get; set; } = "User";
 
-        public string? Location { get; set; } = "Unknown";
+        public required string Governorate { get; set; } = "Unknown";
+        public required string City { get; set; } = "Unknown";
+        public string? District { get; set; } = "Unknown";
 
 
-        public required LocationCoords LocationCoords { get; set; }
+
+        // public required LocationCoords LocationCoords { get; set; }
 
         public ServicesProvider? ServiceProvider { get; set; }
 

@@ -124,6 +124,7 @@ namespace EgyptOnline.Services
         }
         public async Task<string> GetUserLocation(ClaimsPrincipal User)
         {
+            /*
             var UserId = GetUserID(User);
             if (UserId == null)
             {
@@ -133,7 +134,11 @@ namespace EgyptOnline.Services
             User user = await _context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
             Console.WriteLine($"User locaitons is {user.Location}");
             return user.Location ?? "";
+            */
+
+            return "Nothing to return really";
         }
+
 
     }
 

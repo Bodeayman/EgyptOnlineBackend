@@ -45,12 +45,6 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<Subscription>()
                 .Property(s => s.EndDate)
                 .HasColumnType("date");
-            modelBuilder.Entity<User>()
-       .OwnsOne(u => u.LocationCoords, loc =>
-       {
-           loc.Property(l => l.Latitude).HasColumnName("Latitude");
-           loc.Property(l => l.Longitude).HasColumnName("Longitude");
-       });
 
 
 

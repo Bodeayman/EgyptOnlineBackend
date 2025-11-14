@@ -10,37 +10,41 @@ namespace EgyptOnline.Services
         private readonly string _imageServerBaseUrl;
         private readonly ILogger<LocalStorageService> _logger;
 
-        public LocalStorageService(
-            IConfiguration config,
-            ILogger<LocalStorageService> logger)
+        public LocalStorageService(IConfiguration config, ILogger<LocalStorageService> logger)
         {
-            _storageRoot = config["LocalStorage:RootPath"] ?? "/app/images";
-            _imageServerBaseUrl = config["ImageServer:BaseUrl"] ?? "http://nginx";
+            _storageRoot = config["LocalStorage:RootPath"] ??
+                           Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+
+            _imageServerBaseUrl = config["ImageServer:BaseUrl"] ??
+                                 "http://localhost:5095/images";
+
             _logger = logger;
 
-            // Ensure root directory exists
-            if (!Directory.Exists(_storageRoot))
+            try
             {
                 Directory.CreateDirectory(_storageRoot);
-                _logger.LogInformation("Created storage root directory: {StorageRoot}", _storageRoot);
+                _logger.LogInformation("Storage root directory: {StorageRoot}", _storageRoot);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create storage root directory: {StorageRoot}", _storageRoot);
+                throw;
             }
         }
-
-        public async Task<string> UploadImageAsync(byte[] fileBytes, string fileName, string folder = "")
+        public async Task<string> UploadImageAsync(byte[] fileBytes, string fileName, string folder = "images")
         {
             try
             {
+                if (fileBytes == null || fileBytes.Length == 0)
+                    throw new ArgumentException("File bytes cannot be empty");
+
                 // Sanitize inputs
                 fileName = SanitizeFileName(fileName);
                 folder = SanitizeFolder(folder);
 
-                // Create target folder
+                // Ensure target folder exists
                 var targetFolder = Path.Combine(_storageRoot, folder);
-                if (!Directory.Exists(targetFolder))
-                {
-                    Directory.CreateDirectory(targetFolder);
-                    _logger.LogInformation("Created folder: {Folder}", targetFolder);
-                }
+                Directory.CreateDirectory(targetFolder);
 
                 // Full file path
                 var filePath = Path.Combine(targetFolder, fileName);
@@ -48,18 +52,18 @@ namespace EgyptOnline.Services
                 // Write file
                 await File.WriteAllBytesAsync(filePath, fileBytes);
 
-                // Construct URL that Nginx will serve
-                var relativePath = string.IsNullOrEmpty(folder)
-                    ? fileName
-                    : $"{folder}/{fileName}";
+                // FIX: Remove wwwroot from the path when constructing URL
+                var relativePath = Path.Combine(folder, fileName).Replace("\\", "/");
 
-                var imageUrl = $"{_imageServerBaseUrl}/images/{relativePath}";
+                // Remove 'wwwroot/' or 'wwwroot\' from the beginning if present
+                if (relativePath.StartsWith("wwwroot/") || relativePath.StartsWith("wwwroot\\"))
+                {
+                    relativePath = relativePath.Substring(8); // Remove "wwwroot/"
+                }
 
-                _logger.LogInformation(
-                    "Image uploaded successfully. Path: {FilePath}, URL: {ImageUrl}",
-                    filePath,
-                    imageUrl
-                );
+                var imageUrl = $"{_imageServerBaseUrl}/{relativePath}";
+
+                _logger.LogInformation("Image uploaded successfully: {FilePath} -> {ImageUrl}", filePath, imageUrl);
 
                 return imageUrl;
             }
@@ -69,33 +73,23 @@ namespace EgyptOnline.Services
                 throw new Exception($"Image upload failed: {ex.Message}", ex);
             }
         }
-
         public Task DeleteImageAsync(string imageUrl)
         {
             try
             {
-                if (string.IsNullOrEmpty(imageUrl))
-                {
-                    return Task.CompletedTask;
-                }
+                if (string.IsNullOrEmpty(imageUrl)) return Task.CompletedTask;
 
-                // Extract relative path from URL
-                // URL format: http://nginx/images/profiles/user123_guid.jpg
                 var uri = new Uri(imageUrl);
-                var relativePath = uri.AbsolutePath
-                    .Replace("/images/", "")
-                    .TrimStart('/');
-
+                var relativePath = uri.AbsolutePath.Replace("/images/", "").TrimStart('/');
                 var fullPath = Path.Combine(_storageRoot, relativePath);
 
-                // Security check: ensure path is within storage root
+                // Security check
                 var normalizedPath = Path.GetFullPath(fullPath);
                 var normalizedRoot = Path.GetFullPath(_storageRoot);
-
                 if (!normalizedPath.StartsWith(normalizedRoot))
                 {
-                    _logger.LogWarning("Attempted path traversal attack: {Path}", fullPath);
-                    throw new UnauthorizedAccessException("Invalid file path");
+                    _logger.LogWarning("Path traversal attempt: {Path}", fullPath);
+                    return Task.CompletedTask;
                 }
 
                 if (File.Exists(fullPath))
@@ -111,7 +105,6 @@ namespace EgyptOnline.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting image: {ImageUrl}", imageUrl);
-                // Don't throw - deletion failures shouldn't break the app
             }
 
             return Task.CompletedTask;
@@ -119,28 +112,20 @@ namespace EgyptOnline.Services
 
         private string SanitizeFileName(string fileName)
         {
-            // Remove path separators and dangerous characters
             var invalidChars = Path.GetInvalidFileNameChars();
-            var sanitized = string.Join("_", fileName.Split(invalidChars));
-
-            // Ensure it's just the filename, no path
-            return Path.GetFileName(sanitized);
+            return string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
         }
 
         private string SanitizeFolder(string folder)
         {
-            if (string.IsNullOrWhiteSpace(folder))
-            {
-                return string.Empty;
-            }
+            if (string.IsNullOrWhiteSpace(folder)) return "images";
 
-            // Remove dangerous characters and path traversal attempts
-            return folder
-                .Trim('/', '\\')
-                .Replace("..", "")
-                .Replace("\\", "")
-                .Replace(":", "")
-                .Trim();
+            // Split by slashes and sanitize each folder segment
+            var segments = folder.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries)
+                                 .Select(s => string.Join("_", s.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)))
+                                 .Where(s => !string.IsNullOrWhiteSpace(s));
+
+            return segments.Any() ? Path.Combine(segments.ToArray()) : "images";
         }
     }
 }

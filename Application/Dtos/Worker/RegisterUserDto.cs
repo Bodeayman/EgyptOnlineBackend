@@ -22,11 +22,15 @@ namespace EgyptOnline.Dtos
     public required string PhoneNumber { get; set; } = string.Empty;
     public required string Password { get; set; } = string.Empty;
 
-    public LocationCoords? LocationCoords { get; set; }
 
-    public string? UserType { get; set; } = "SP";
 
-    public required string Location { get; set; }
+
+    //insteadd of the location i want to add the governorate and the city and the district
+    public required string Governorate { get; set; }
+    public required string City { get; set; }
+    public string? District { get; set; }
+
+
     //SP related
     public string? Bio { get; set; }
 
@@ -40,7 +44,7 @@ namespace EgyptOnline.Dtos
     public string? Business { get; set; }
 
     public string? Owner { get; set; }
-    public required decimal Pay { get; set; } = 0;
+    public decimal? Pay { get; set; } = 0;
     //Contractor
     public string? Specialization { get; set; }
 

@@ -129,9 +129,9 @@ namespace EgyptOnline.Controllers
 
 
 
-                if (user == null && user.UserType != "SP")
+                if (user == null || user.ServiceProvider == null)
                 {
-                    return NotFound(new { message = "The Service Provider is not found here" });
+                    return NotFound(new { message = "The Service Provider related to this user is not found" });
                 }
 
 

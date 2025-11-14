@@ -11,20 +11,18 @@ namespace EgyptOnline.Dtos
 
         public string? LastName { get; set; }
         public string? Email { get; set; }
-        public string? Location { get; set; }
         public string? PhoneNumber { get; set; }
         public string? ImageUrl { get; set; }
-        public string UserType { get; set; } = string.Empty;
         public int Points { get; set; }
 
 
 
-        // Subscription Information (if exists)
         public SubscriptionDto? Subscription { get; set; }
 
-        // Service Provider Information (if user is a service provider)
         public ServiceProviderDto? ServiceProvider { get; set; }
-
+        public required string Governorate { get; set; }
+        public required string City { get; set; }
+        public required string District { get; set; }
     }
 
     public class SubscriptionDto

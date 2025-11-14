@@ -32,18 +32,15 @@ namespace EgyptOnline.Services
                     UserName = UserName,
                     Email = model.Email,
                     PhoneNumber = model.PhoneNumber,
-                    UserType = "SP",
                     FirstName = model.FirstName,
-                    Location = model.Location,
+                    Governorate = model.Governorate,
+                    City = model.City,
+                    District = model.District,
                     LastName = model.LastName,
                     NormalizedUserName = model.Email.ToUpperInvariant(),
                     NormalizedEmail = model.Email.ToUpperInvariant(),
                     SecurityStamp = Guid.NewGuid().ToString("D"),
-                    LocationCoords = new LocationCoords
-                    {
-                        Latitude = model.LocationCoords.Latitude,
-                        Longitude = model.LocationCoords.Longitude
-                    }
+
                 };
                 if (await _userManager.FindByEmailAsync(model.Email) != null)
                 {
