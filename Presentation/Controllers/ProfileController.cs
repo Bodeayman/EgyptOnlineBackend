@@ -115,12 +115,11 @@ namespace EgyptOnline.Controllers
 
                 user.FirstName = model.FirstName ?? user.FirstName;
                 user.LastName = model.LastName ?? user.LastName;
+                user.Governorate = model.Governorate ?? user.Governorate;
+                user.City = model.City ?? user.City;
+                user.District = model.District ?? user.District;
 
-                // I want him to generate the name only if the first name or last name is changed
-                if (model.FirstName != null || model.LastName != null && user.FirstName == model.FirstName && user.LastName == model.LastName)
-                {
-                    user.UserName = Helper.GenerateUserName(user.FirstName, user.LastName);
-                }
+                // The UserName of the user should be consistent even after we change the first name and the last name
 
 
 
@@ -143,33 +142,26 @@ namespace EgyptOnline.Controllers
                     var worker = await _context.Workers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
                     worker.ServicePricePerDay = model.Pay;
 
-                    worker!.Skill = model.Skill;
                 }
                 else if (user.ServiceProvider.ProviderType == "Contractor")
                 {
                     var contractor = await _context.Contractors.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
                     contractor.Salary = model.Pay;
 
-                    contractor!.Specialization = model.Specialization ?? contractor.Specialization;
                 }
                 else if (user.ServiceProvider.ProviderType == "Company")
                 {
                     var company = await _context.Companies.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
-                    company!.Owner = model.Owner ?? company.Owner;
-                    company!.Business = model.Business ?? company.Business;
                 }
                 else if (user.ServiceProvider.ProviderType == "Marketplace")
                 {
                     var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
-                    marketPlace!.Business = model.Business ?? marketPlace.Business;
-                    marketPlace!.Owner = model.Owner ?? marketPlace.Owner;
 
                 }
                 else if (user.ServiceProvider.ProviderType == "Engineer")
                 {
                     var engineer = await _context.Engineers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
                     engineer!.Salary = model.Pay;
-                    engineer!.Specialization = model.Specialization ?? engineer.Specialization;
                 }
                 else
                 {

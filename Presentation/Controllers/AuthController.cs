@@ -12,6 +12,7 @@ using EgyptOnline.Data;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.AspNetCore.Identity.Data;
 namespace EgyptOnline.Controllers
 {
 
@@ -189,126 +190,142 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-
-
                 var user = await _context.Users
-                .Include(u => u.Subscription)
-                .Include(u => u.ServiceProvider)
-                .FirstOrDefaultAsync(u => u.Email == model.Email);
+                    .Include(u => u.Subscription)
+                    .Include(u => u.ServiceProvider)
+                    .FirstOrDefaultAsync(u => u.Email == model.Email);
+
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
-                {
-                    return NotFound(new { message = "The Email or the password is not found" });
-                }
-                // Including it in every function that related to that controller
+                    return NotFound(new { message = "The Email or password is incorrect" });
+
                 if (!user.ServiceProvider.IsAvailable)
-                {
                     return Unauthorized(new
                     {
                         message = "Your subscription has expired",
-                        LastDate = user.Subscription.EndDate.ToString()
+                        LastDate = user.Subscription?.EndDate.ToString()
                     });
-                }
-                var AllUserDetails = await _context.Users.Include(u => u.ServiceProvider)
-                    .Include(u => u.Subscription)
-                    .FirstOrDefaultAsync(u => u.Id == user.Id);
-                UsersTypes UserRole;
 
+                // Determine user role from ProviderType
+                if (!Enum.TryParse<UsersTypes>(user.ServiceProvider.ProviderType, out UsersTypes userRole))
+                {
+                    return StatusCode(500, new { message = "Error while fetching the user role" });
+                }
 
-                if (AllUserDetails.ServiceProvider.ProviderType == "Worker")
-                {
-                    UserRole = UsersTypes.Worker;
-                }
-                else if (AllUserDetails.ServiceProvider.ProviderType == "Company")
-                {
-                    UserRole = UsersTypes.Company;
-                }
-                else if (AllUserDetails.ServiceProvider.ProviderType == "Contractor")
-                {
-                    UserRole = UsersTypes.Contractor;
-                }
-                else if (AllUserDetails.ServiceProvider.ProviderType == "Marketplace")
-                {
-                    UserRole = UsersTypes.Marketplace;
-                }
-                else if (AllUserDetails.ServiceProvider.ProviderType == "Engineer")
-                {
-                    UserRole = UsersTypes.Engineer;
-                }
-                else
-                {
-                    return StatusCode(500, new { message = "Error while Fetching the User" });
-                }
-                Console.WriteLine(UserRole.ToString());
-                var accessToken = _userService.GenerateJwtToken(user, UserRole, TokensTypes.AccessToken);
-                var refreshToken = _userService.GenerateJwtToken(user, UserRole, TokensTypes.RefreshToken);
+                // Generate access token
+                var accessToken = _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
 
-                // var refreshToken = _userService.GenerateRefreshToken(user);
+                // Generate refresh token and save in DB
+                var refreshTokenString = _userService.GenerateJwtToken(user, userRole, TokensTypes.RefreshToken);
+
+                var refreshToken = new RefreshToken
+                {
+                    Token = refreshTokenString,
+                    UserId = user.Id,
+                    Expires = DateTime.UtcNow.AddDays(30), // Set your desired refresh token expiry
+                    Created = DateTime.UtcNow,
+                    IsRevoked = false
+                };
+
+                _context.RefreshTokens.Add(refreshToken);
+                await _context.SaveChangesAsync();
 
                 return Ok(new
                 {
                     message = "Login successful",
                     accessToken = accessToken,
-                    refreshToken = refreshToken
+                    refreshToken = refreshTokenString
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Internal server error: " + ex.Message);
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
             }
         }
-        [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh([FromBody] string refreshToken)
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
         {
+            var user = await _userManager.GetUserAsync(User); // logged-in user
+            Console.WriteLine(model.CurrentPassword);
+            if (!await _userManager.CheckPasswordAsync(user, model.CurrentPassword))
+                return BadRequest(new { message = "Current password is incorrect" });
+
+            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            return Ok(new { message = "Password changed successfully" });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequest refreshRequest)
+        {
+            if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
+                return BadRequest("Refresh token is required");
+
             try
             {
+                // Step 1: Find the refresh token in the database
+                var storedToken = await _context.RefreshTokens
+                    .Include(rt => rt.User) // Include user for generating new access token
+                    .ThenInclude(u => u.ServiceProvider)
+                    .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
 
+                if (storedToken == null)
+                    return Unauthorized("Invalid refresh token");
 
-                ClaimsPrincipal principal = _userService.ValidateRefreshToken(refreshToken);
+                if (storedToken.IsRevoked || storedToken.Expires < DateTime.UtcNow)
+                    return Unauthorized("Refresh token is expired or revoked");
 
-                foreach (var c in principal.Claims)
-                {
-                    Console.WriteLine($"{c.Type} = {c.Value}");
-                }
-                var tokenType = principal.FindFirst("token_type")?.Value;
-                if (tokenType != null && tokenType != TokensTypes.RefreshToken.ToString())
-                    return Unauthorized("Invalid token type");
-
-                // Extract claims safely
-                var userId = principal.FindFirst("uid")?.Value;
-                var typeClaim = principal.FindFirst(ClaimTypes.Role)?.Value;
-                Console.WriteLine(userId);
-                Console.WriteLine("Type");
-
-                Console.WriteLine(typeClaim);
-                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(typeClaim))
-                    return Unauthorized("Invalid token claims");
-
-                // Find user asynchronously
-                var user = await _userManager.FindByIdAsync(userId);
-
+                var user = storedToken.User;
                 if (user == null)
                     return Unauthorized("User not found");
-
-
 
                 if (!user.ServiceProvider.IsAvailable)
                 {
                     return Unauthorized(new
                     {
                         message = "Your subscription has expired",
-                        LastDate = user.Subscription.EndDate.ToString()
+                        LastDate = user.Subscription?.EndDate.ToString()
                     });
                 }
-                // Parse role using enum directly (cleaner)
-                if (!Enum.TryParse<UsersTypes>(typeClaim, out UsersTypes userRole))
-                    return StatusCode(500, new { message = "Invalid user role" });
 
-                // Generate new access token
-                var newAccessToken = _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
+                // Optional: revoke the old refresh token to enforce single use
+                storedToken.IsRevoked = true;
+                storedToken.Revoked = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
 
+                // Step 2: Generate a new access token
+                var userRoleClaim = user.UserName; // Replace with actual role claim
+                var newAccessToken = _userService.GenerateJwtToken(
+                    user,
+                    UsersTypes.Company, // Example: replace with real enum from user's role
+                    TokensTypes.AccessToken
+                );
+
+                // Optional: generate a new refresh token
+                var newRefreshTokenString = _userService.GenerateJwtToken(
+                    user,
+                    UsersTypes.Company,
+                    TokensTypes.RefreshToken
+                );
+
+                var newRefreshToken = new RefreshToken
+                {
+                    Token = newRefreshTokenString,
+                    UserId = user.Id,
+                    Expires = DateTime.UtcNow.AddDays(30),
+                    Created = DateTime.UtcNow,
+                    IsRevoked = false
+                };
+                _context.RefreshTokens.Add(newRefreshToken);
+                await _context.SaveChangesAsync();
+
+                // Step 3: Return new tokens to client
                 return Ok(new
                 {
                     AccessToken = newAccessToken,
+                    RefreshToken = newRefreshTokenString,
                     ExpiresIn = TimeSpan.FromMinutes(30).TotalSeconds
                 });
             }
@@ -322,10 +339,50 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                // Log the exception
-                return StatusCode(500, new { message = "Error processing refresh token" });
+                return StatusCode(500, new
+                {
+                    message = "Error processing refresh token",
+                    errorMessage = ex.Message
+                });
             }
         }
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] RefreshRequest refreshRequest)
+        {
+            if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
+                return BadRequest("Refresh token is required");
+
+            try
+            {
+                // Step 1: Find the refresh token in the database
+                var storedToken = await _context.RefreshTokens
+                    .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
+
+                if (storedToken == null)
+                    return NotFound("Refresh token not found");
+
+                // Step 2: Revoke the token
+                storedToken.IsRevoked = true;
+                storedToken.Revoked = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                // Step 3: Optionally, you can also clear other active tokens for this user
+                // var userTokens = _context.RefreshTokens.Where(t => t.UserId == storedToken.UserId && !t.IsRevoked);
+                // foreach(var token in userTokens) { token.IsRevoked = true; token.Revoked = DateTime.UtcNow; }
+                // await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Logout successful, refresh token revoked" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error logging out",
+                    errorMessage = ex.Message
+                });
+            }
+        }
+
         [HttpPost("request-otp")]
         public async Task<IActionResult> RequestOtp([FromBody] string phoneNumber)
         {

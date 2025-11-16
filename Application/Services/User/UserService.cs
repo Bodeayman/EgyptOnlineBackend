@@ -6,6 +6,7 @@ using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -87,22 +88,15 @@ namespace EgyptOnline.Services
 
             return userId;
         }
-
-        public ClaimsPrincipal ValidateRefreshToken(string refreshToken)
+        public ClaimsPrincipal ValidateRefreshToken(RefreshRequest refreshRequest)
         {
+            if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
+                return null;
+
+            var token = refreshRequest.RefreshToken;
+
             var handler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_config["Jwt:RefreshKey"]);
-            // ✅ DEBUG: Inspect raw token before validation
-            var jwt = handler.ReadJwtToken(refreshToken);
-            Console.WriteLine("----- RAW TOKEN DEBUG -----");
-            Console.WriteLine($"Alg:     {jwt.Header.Alg}");
-            Console.WriteLine($"Issuer:  {jwt.Issuer}");
-            Console.WriteLine($"Audience:{jwt.Audiences.FirstOrDefault()}");
-            foreach (var c in jwt.Claims)
-            {
-                Console.WriteLine($"{c.Type} = {c.Value}");
-            }
-            Console.WriteLine("----------------------------");
 
             var validationParameters = new TokenValidationParameters
             {
@@ -116,12 +110,17 @@ namespace EgyptOnline.Services
                 ClockSkew = TimeSpan.Zero
             };
 
-            // This validates signature AND expiration
-            return handler.ValidateToken(refreshToken, validationParameters, out SecurityToken validatedToken);
-
-
-
+            try
+            {
+                var principal = handler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+                return principal;
+            }
+            catch
+            {
+                return null; // invalid or expired token
+            }
         }
+
         public async Task<string> GetUserLocation(ClaimsPrincipal User)
         {
             /*

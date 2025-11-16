@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 using EgyptOnline.Models;
 using EgyptOnline.Utilities;
@@ -17,7 +18,9 @@ namespace EgyptOnline.Dtos
         public string? District { get; set; } = string.Empty;
 
 
-
+        [DefaultValue(1)]
         public int PageNumber { get; set; } = 1;
+
+        public bool? BasedOnPoints { get; set; } = false;
     }
 }

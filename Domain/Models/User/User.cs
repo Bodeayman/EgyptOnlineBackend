@@ -19,7 +19,7 @@ namespace EgyptOnline.Models
 
 
         // public required LocationCoords LocationCoords { get; set; }
-
+        public List<RefreshToken>? RefreshTokens { get; set; }
         public ServicesProvider? ServiceProvider { get; set; }
 
         public Subscription? Subscription { get; set; }

@@ -24,8 +24,12 @@ namespace EgyptOnline.Services
         {
             try
             {
-
-                string UserName = Helper.GenerateUserName(model.FirstName, model.LastName);
+                Console.WriteLine("Sending the model right now");
+                foreach (var prop in model.GetType().GetProperties())
+                {
+                    Console.WriteLine($"{prop.Name}: {prop.GetValue(model)}");
+                }
+                string UserName = Helper.GenerateUserName(model.FirstName, model.LastName ?? "");
                 var user = new
                 User
                 {
@@ -57,7 +61,8 @@ namespace EgyptOnline.Services
                 if (model.ReferralUserName != null)
                 {
                     pointsAdded =
-                 _userPointService.AddPointsToUser(model.ReferralUserName!);
+                 _userPointService.AddPointsToUser(model.ReferralUserName);
+                    Console.WriteLine(model.ReferralUserName);
                     if (!pointsAdded)
                     {
                         return new UserRegisterationResult

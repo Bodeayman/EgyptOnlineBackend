@@ -11,12 +11,11 @@ namespace EgyptOnline.Dtos
         public decimal Pay { get; set; } = 0;
 
 
-        public string? Owner { get; set; }
 
-        public string? Skill { get; set; }
 
-        public string? Specialization { get; set; }
-        public string? Business { get; set; }
-        public string? ProviderType { get; set; } = "Worker";
+
+        public string? Governorate { get; set; }
+        public string? City { get; set; }
+        public string? District { get; set; }
     }
 }
