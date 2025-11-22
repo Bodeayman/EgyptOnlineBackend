@@ -61,7 +61,7 @@ namespace EgyptOnline.Controllers
                 governorate = x.User.Governorate,
                 city = x.User.City,
                 district = x.User.District,
-                pay = pay,
+                pay = isCompany ? 0 : pay,
                 owner = isCompany ? x.Owner : (string?)null,
                 imageUrl = x.User.ImageUrl,
                 isCompany = isCompany,
@@ -69,7 +69,9 @@ namespace EgyptOnline.Controllers
                 mobileNumber = x.User.PhoneNumber,
                 email = x.User.Email,
                 typeOfService = x.ProviderType?.ToString(),
-                aboutMe = x.Bio
+                aboutMe = x.Bio,
+                Points = x.User.Points
+
             };
         }
 
@@ -87,7 +89,7 @@ namespace EgyptOnline.Controllers
                 {
                     if (filter.BasedOnPoints == true)
                     {
-                        workers = workers.OrderByDescending(w => w.User.Points).Take(10);
+                        workers = workers.OrderByDescending(w => w.User.Points).ThenBy(w => Guid.NewGuid()).Take(Constants.SEARCH_PAGE_SIZE);
                         var list = await workers.ToListAsync();
                         return Ok(list.Select(w => MapResult(w, false, Convert.ToInt32(filter.WorkerType), w.ServicePricePerDay)).ToList());
                     }
@@ -113,10 +115,10 @@ namespace EgyptOnline.Controllers
                     if (!string.IsNullOrEmpty(filter.Profession))
                         workers = workers.Where(w => w.Skill != null && w.Skill.Contains(filter.Profession));
                 }
-
                 workers = workers.Where(w => w.IsAvailable);
-                workers = Helper.PaginateUsers(workers, filter!.PageNumber, Constants.PAGE_SIZE);
 
+                workers = Helper.PaginateUsers(workers, filter!.PageNumber, Constants.PAGE_SIZE);
+                workers = workers.OrderBy(w => Guid.NewGuid());
                 var finalList = await workers.ToListAsync();
                 return Ok(finalList.Select(w => MapResult(w, false, Convert.ToInt32(filter.WorkerType), w.ServicePricePerDay)).ToList());
             }
@@ -138,7 +140,7 @@ namespace EgyptOnline.Controllers
 
                 if (filter != null && filter.BasedOnPoints == true)
                 {
-                    companies = companies.OrderByDescending(c => c.User.Points).Take(10);
+                    companies = companies.OrderByDescending(c => c.User.Points).ThenBy(w => Guid.NewGuid()).Take(Constants.SEARCH_PAGE_SIZE);
                     var list = await companies.ToListAsync();
                     return Ok(list.Select(c => MapResult(c, true, 1, 0)).ToList());
                 }
@@ -166,7 +168,7 @@ namespace EgyptOnline.Controllers
 
                 companies = companies.Where(c => c.IsAvailable);
                 companies = Helper.PaginateUsers(companies, filter!.PageNumber, Constants.PAGE_SIZE);
-
+                companies = companies.OrderBy(c => Guid.NewGuid());
                 var finalList = await companies.ToListAsync();
                 return Ok(finalList.Select(c => MapResult(c, true, 1, 0)).ToList());
             }
@@ -189,7 +191,7 @@ namespace EgyptOnline.Controllers
 
                 if (filter != null && filter.BasedOnPoints == true)
                 {
-                    contractors = contractors.OrderByDescending(c => c.User.Points).Take(10);
+                    contractors = contractors.OrderByDescending(c => c.User.Points).ThenBy(w => Guid.NewGuid()).Take(Constants.SEARCH_PAGE_SIZE);
                     var list = await contractors.ToListAsync();
                     return Ok(list.Select(c => MapResult(c, false, 1, c.Salary)).ToList());
                 }
@@ -212,7 +214,7 @@ namespace EgyptOnline.Controllers
 
                 contractors = contractors.Where(c => c.IsAvailable);
                 contractors = Helper.PaginateUsers(contractors, filter!.PageNumber, Constants.PAGE_SIZE);
-
+                contractors = contractors.OrderBy(c => Guid.NewGuid());
                 var finalList = await contractors.ToListAsync();
                 return Ok(finalList.Select(c => MapResult(c, false, 1, c.Salary)).ToList());
             }
@@ -234,7 +236,7 @@ namespace EgyptOnline.Controllers
 
                 if (filter != null && filter.BasedOnPoints == true)
                 {
-                    marketplaces = marketplaces.OrderByDescending(m => m.User.Points).Take(10);
+                    marketplaces = marketplaces.OrderByDescending(m => m.User.Points).ThenBy(w => Guid.NewGuid()).Take(Constants.SEARCH_PAGE_SIZE);
                     var list = await marketplaces.ToListAsync();
                     return Ok(list.Select(m => MapResult(m, true, 1, 0)).ToList());
                 }
@@ -257,7 +259,7 @@ namespace EgyptOnline.Controllers
 
                 marketplaces = marketplaces.Where(m => m.IsAvailable);
                 marketplaces = Helper.PaginateUsers(marketplaces, filter!.PageNumber, Constants.PAGE_SIZE);
-
+                marketplaces = marketplaces.OrderBy(m => Guid.NewGuid());
                 var finalList = await marketplaces.ToListAsync();
                 return Ok(finalList.Select(m => MapResult(m, true, 1, 0)).ToList());
             }
@@ -279,7 +281,7 @@ namespace EgyptOnline.Controllers
 
                 if (filter != null && filter.BasedOnPoints == true)
                 {
-                    engineers = engineers.OrderByDescending(e => e.User.Points).Take(10);
+                    engineers = engineers.OrderByDescending(e => e.User.Points).ThenBy(w => Guid.NewGuid()).Take(Constants.SEARCH_PAGE_SIZE);
                     var list = await engineers.ToListAsync();
                     return Ok(list.Select(e => MapResult(e, false, 1, e.Salary)).ToList());
                 }
@@ -302,6 +304,7 @@ namespace EgyptOnline.Controllers
 
                 engineers = engineers.Where(e => e.IsAvailable);
                 engineers = Helper.PaginateUsers(engineers, filter!.PageNumber, Constants.PAGE_SIZE);
+                engineers = engineers.OrderBy(e => Guid.NewGuid());
 
                 var finalList = await engineers.ToListAsync();
                 return Ok(finalList.Select(e => MapResult(e, false, 1, e.Salary)).ToList());

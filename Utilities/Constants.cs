@@ -9,5 +9,6 @@ namespace EgyptOnline.Utilities
 
 
         public const int PAGE_SIZE = 15;
+        public const int SEARCH_PAGE_SIZE = 30;
     }
 }

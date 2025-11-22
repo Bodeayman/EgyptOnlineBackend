@@ -13,6 +13,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.AspNetCore.Identity.Data;
+using System.Text.RegularExpressions;
+using System.Transactions;
 namespace EgyptOnline.Controllers
 {
 
@@ -27,23 +29,25 @@ namespace EgyptOnline.Controllers
         private readonly UserRegisterationService _userRegisterationService;
         private readonly IOTPService _smsOtpService;
 
-        private readonly ICDNService _cdnService;
+        private readonly UserImageService _userImageService;
 
         private readonly ApplicationDbContext _context;
 
-        public AuthController(UserManager<User> userManager, UserRegisterationService userRegisterationService, IUserService service, IOTPService sms, ApplicationDbContext context, ICDNService CDNService)
+        public AuthController(UserManager<User> userManager, UserRegisterationService userRegisterationService, IUserService service, IOTPService sms, ApplicationDbContext context, UserImageService userImageService)
         {
             _userRegisterationService = userRegisterationService;
             _userService = service;
             _smsOtpService = sms;
             _context = context;
-            _cdnService = CDNService;
+            _userImageService = userImageService;
             _userManager = userManager;
         }
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterWorkerDto model)
+        public async Task<IActionResult> Register([FromBody] RegisterWorkerDto model, IFormFile image)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
             try
             {
 
@@ -51,8 +55,15 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                UserRegisterationResult UserRegisterationResult = await _userRegisterationService.RegisterUser(model);
+                if (image.FileName == null)
+                {
+                    return BadRequest(new { message = "Please Upload a Profile Image" });
+                }
+                if (model.Pay < 100)
+                {
+                    return BadRequest(new { message = "The Pay/Service Price must be at least 100 EGP" });
+                }
+                UserRegisterationResult UserRegisterationResult = await _userRegisterationService.RegisterUser(model, image);
                 if (UserRegisterationResult.Result != IdentityResult.Success)
                 {
                     await transaction.RollbackAsync();
@@ -103,6 +114,7 @@ namespace EgyptOnline.Controllers
                         Specialization = model.Specialization,
                         ProviderType = model.ProviderType,
                         IsAvailable = true,
+                        Salary = model.Pay ?? 0,
                     };
                     _context.Contractors.Add(Contractor);
                 }
@@ -140,6 +152,7 @@ namespace EgyptOnline.Controllers
                         ProviderType = model.ProviderType,
                         Business = model.Business,
                         IsAvailable = true,
+
                         Owner = model.Owner,
                     };
                     _context.MarketPlaces.Add(MarketPlace);
@@ -167,11 +180,26 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(new { message = "Please Provide the Type Of Service" });
                 }
-                await _context.SaveChangesAsync();
 
+
+                await _context.SaveChangesAsync();
+                try
+                {
+                    var imageUrl = await _userImageService.UploadUserImageAsync(UserRegisterationResult.User, image);
+                    UserRegisterationResult.User.ImageUrl = imageUrl;
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    // Optionally return partial success message
+                    return Ok(new { message = $"Registration succeeded but image upload failed: {ex.Message}" });
+                }
 
                 // Transaction is done here
                 await transaction.CommitAsync();
+
+                // await Login(new LoginWorkerDto { Email = model.Email, Password = model.Password });
                 return Ok(new { message = $"The Service Provider which is {model.ProviderType} is Created Successfully" });
 
 
@@ -181,6 +209,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return StatusCode(500, new { message = ex.Message });
             }
         }
@@ -190,38 +219,65 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                var user = await _context.Users
-                    .Include(u => u.Subscription)
-                    .Include(u => u.ServiceProvider)
-                    .FirstOrDefaultAsync(u => u.Email == model.Email);
 
+
+
+                var input = model.Email.Trim();
+                User user = null;
+                if (Helper.IsEmail(input))
+                {
+
+                    user = await _context.Users
+                        .Include(u => u.Subscription)
+                        .Include(u => u.ServiceProvider)
+                        .FirstOrDefaultAsync(u => u.Email == input);
+                }
+                //Egyptain Server
+                else if (Helper.IsPhone(input))
+                {
+                    Console.WriteLine("Reached here after phone check");
+
+                    string phoneNumber = $"+20{input.Substring(1)}";
+                    Console.WriteLine(phoneNumber);
+                    user = await _context.Users
+                        .Include(u => u.Subscription)
+                        .Include(u => u.ServiceProvider)
+                        .FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+                }
+                else
+                {
+                    return BadRequest(new { message = "Invalid email or phone format" });
+                }
+                // Check user existence and password
+                Console.WriteLine(user.Id);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
-                    return NotFound(new { message = "The Email or password is incorrect" });
+                    return NotFound(new { message = "The Email/Phone or password is incorrect" });
 
+                // Check subscription availability
                 if (!user.ServiceProvider.IsAvailable)
+                {
                     return Unauthorized(new
                     {
                         message = "Your subscription has expired",
                         LastDate = user.Subscription?.EndDate.ToString()
                     });
+                }
 
-                // Determine user role from ProviderType
+                // Determine user role
                 if (!Enum.TryParse<UsersTypes>(user.ServiceProvider.ProviderType, out UsersTypes userRole))
                 {
                     return StatusCode(500, new { message = "Error while fetching the user role" });
                 }
 
-                // Generate access token
+                // Generate tokens
                 var accessToken = _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
-
-                // Generate refresh token and save in DB
                 var refreshTokenString = _userService.GenerateJwtToken(user, userRole, TokensTypes.RefreshToken);
 
                 var refreshToken = new RefreshToken
                 {
                     Token = refreshTokenString,
                     UserId = user.Id,
-                    Expires = DateTime.UtcNow.AddDays(30), // Set your desired refresh token expiry
+                    Expires = DateTime.UtcNow.AddDays(30),
                     Created = DateTime.UtcNow,
                     IsRevoked = false
                 };
@@ -232,9 +288,10 @@ namespace EgyptOnline.Controllers
                 return Ok(new
                 {
                     message = "Login successful",
-                    accessToken = accessToken,
+                    accessToken,
                     refreshToken = refreshTokenString
                 });
+
             }
             catch (Exception ex)
             {
@@ -414,74 +471,28 @@ namespace EgyptOnline.Controllers
                 // Get authenticated user ID
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (string.IsNullOrEmpty(userId))
-                    return Unauthorized(new { Message = "User not authenticated" });
+                    return Unauthorized();
 
-                // Validate file presence
-                if (file == null || file.Length == 0)
-                    return BadRequest(new { Message = "No file uploaded" });
-
-                // Validate file type
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                if (!allowedExtensions.Contains(extension))
-                    return BadRequest(new { Message = "Invalid file type. Allowed: jpg, jpeg, png, gif, webp" });
-
-                // Validate file size (5MB max)
-                const int maxFileSize = 5 * 1024 * 1024;
-                if (file.Length > maxFileSize)
-                    return BadRequest(new { Message = "File too large. Maximum size is 5MB" });
-
-                // Get user from database
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                if (user == null)
-                    return NotFound(new { Message = "User not found" });
+                if (user == null) return NotFound();
 
-                // Read file bytes
-                byte[] fileBytes;
-                using (var ms = new MemoryStream())
+                try
                 {
-                    await file.CopyToAsync(ms);
-                    fileBytes = ms.ToArray();
+                    var imageUrl = await _userImageService.UploadUserImageAsync(user, file);
+                    return Ok(new { Message = "Profile image uploaded successfully", ImageUrl = imageUrl });
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { Message = ex.Message });
                 }
 
-                // Delete old image if exists
-                if (!string.IsNullOrEmpty(user.ImageUrl))
-                {
-                    try
-                    {
-                        await _cdnService.DeleteImageAsync(user.ImageUrl);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log but don't fail the upload
-                        Console.WriteLine($"Failed to delete old image: {ex.Message}");
-                    }
-                }
-
-                // Generate unique filename
-                var uniqueFileName = $"user_{userId}_{Guid.NewGuid()}{extension}";
-
-                // Upload new image
-                var imageUrl = await _cdnService.UploadImageAsync(fileBytes, uniqueFileName, "profiles");
-
-                // Update user in database
-                user.ImageUrl = imageUrl;
-                await _context.SaveChangesAsync();
-
-                return Ok(new
-                {
-                    Message = "Profile image uploaded successfully",
-                    ImageUrl = imageUrl
-                });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error uploading profile image: {ex.Message}");
-                return StatusCode(500, new { Message = "Failed to upload profile image. Please try again." });
+                return StatusCode(500, new { message = "Internal server error: " + ex.Message });
             }
         }
-
-
     }
 }
+
 

@@ -1,10 +1,11 @@
+using System.Text.RegularExpressions;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace EgyptOnline.Utilities
 {
-    public static class Helper
+    public static partial class Helper
     {
 
         private readonly static Random _random = new Random();
@@ -16,21 +17,20 @@ namespace EgyptOnline.Utilities
 
             // Remove spaces and make lowercase
             string cleanFirst = firstName?.Trim().Replace(" ", "").ToLower() ?? "";
-            string cleanLast = lastName?.Trim().Replace(" ", "").ToLower() ?? "";
 
             // Base username
-            string username = cleanFirst + cleanLast;
+            string username = $"{cleanFirst}_";
 
             // If username is empty, fallback to "user" + random 6 digits
             if (!string.IsNullOrEmpty(username))
             {
-                username += _random.Next(100, 999).ToString();
+                username += _random.Next(0, 999999).ToString();
 
             }
             else
             {
                 // Append 3 random digits to reduce chance of duplicates
-                username = "user" + _random.Next(100000, 999999).ToString();
+                username = "user" + _random.Next(0, 999999).ToString();
 
             }
 
@@ -71,7 +71,22 @@ namespace EgyptOnline.Utilities
                 <= rangeSq
             );
         }
+        public static bool IsEmail(string input)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(input);
+                return addr.Address == input;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
-
+        public static bool IsPhone(string input) =>
+            MyRegex().IsMatch(input);
+        [GeneratedRegex(@"^\+?[0-9]{7,15}$")]
+        private static partial Regex MyRegex();
     }
 }

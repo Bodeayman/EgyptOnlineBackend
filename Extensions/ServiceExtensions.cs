@@ -20,7 +20,7 @@ namespace EgyptOnline.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-
+            services.AddScoped<UserImageService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IOTPService, SmsMisrOtpService>();
             services.AddScoped<ICDNService, LocalStorageService>();
