@@ -15,44 +15,52 @@ namespace EgyptOnline.Services
             _cdnService = cdnService;
         }
 
-        public async Task<string> UploadUserImageAsync(User user, IFormFile file)
+        public async Task<string?> UploadUserImageAsync(User user, IFormFile file)
         {
-            if (file == null || file.Length == 0)
-                throw new ArgumentException("No file uploaded");
-
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(extension))
-                throw new ArgumentException("Invalid file type");
-
-            const int maxFileSize = 5 * 1024 * 1024;
-            if (file.Length > maxFileSize)
-                throw new ArgumentException("File too large");
-
-            // Read file bytes
-            byte[] fileBytes;
-            using (var ms = new MemoryStream())
+            try
             {
-                await file.CopyToAsync(ms);
-                fileBytes = ms.ToArray();
-            }
+                if (file == null || file.Length == 0)
+                    throw new ArgumentException("No file uploaded");
 
-            // Delete old image if exists
-            if (!string.IsNullOrEmpty(user.ImageUrl))
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                    throw new ArgumentException("Invalid file type");
+
+                const int maxFileSize = 5 * 1024 * 1024;
+                if (file.Length > maxFileSize)
+                    throw new ArgumentException("File too large");
+
+                // Read file bytes
+                byte[] fileBytes;
+                using (var ms = new MemoryStream())
+                {
+                    await file.CopyToAsync(ms);
+                    fileBytes = ms.ToArray();
+                }
+
+                // Delete old image if exists
+                if (!string.IsNullOrEmpty(user.ImageUrl))
+                {
+                    try { await _cdnService.DeleteImageAsync(user.ImageUrl); }
+                    catch { /* log but ignore */ }
+                }
+
+                // Upload new image
+                var uniqueFileName = $"user_{user.Id}_{Guid.NewGuid()}{extension}";
+                var imageUrl = await _cdnService.UploadImageAsync(fileBytes, uniqueFileName, "profiles");
+
+                // Update user entity
+                user.ImageUrl = imageUrl;
+                await _context.SaveChangesAsync();
+
+                return imageUrl;
+            }
+            catch (Exception ex)
             {
-                try { await _cdnService.DeleteImageAsync(user.ImageUrl); }
-                catch { /* log but ignore */ }
+                // Log exception
+                return null;
             }
-
-            // Upload new image
-            var uniqueFileName = $"user_{user.Id}_{Guid.NewGuid()}{extension}";
-            var imageUrl = await _cdnService.UploadImageAsync(fileBytes, uniqueFileName, "profiles");
-
-            // Update user entity
-            user.ImageUrl = imageUrl;
-            await _context.SaveChangesAsync();
-
-            return imageUrl;
         }
     }
 

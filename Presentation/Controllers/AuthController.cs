@@ -44,13 +44,21 @@ namespace EgyptOnline.Controllers
         }
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterWorkerDto model)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Register([FromForm] RegisterWorkerDto model, [FromForm] IFormFile imageFile)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-
+                if (imageFile == null)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Please upload a profile image.",
+                        errorCode = UserErrors.ImageIsNull.ToString()
+                    });
+                }
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
@@ -58,7 +66,11 @@ namespace EgyptOnline.Controllers
 
                 if (model.Pay < 100)
                 {
-                    return BadRequest(new { message = "The Pay/Service Price must be at least 100 EGP" });
+                    return BadRequest(new
+                    {
+                        message = "The Pay/Service Price must be at least 100 EGP",
+                        errorCode = UserErrors.InvalidPaymentValue.ToString()
+                    });
                 }
                 UserRegisterationResult UserRegisterationResult = await _userRegisterationService.RegisterUser(model);
                 if (UserRegisterationResult.Result != IdentityResult.Success)
@@ -91,7 +103,7 @@ namespace EgyptOnline.Controllers
                         User = UserRegisterationResult.User,
                         UserId = UserRegisterationResult.User!.Id,
                         Bio = model.Bio,
-                        WorkerType = model.WorkerType,
+                        WorkerType = (WorkerTypes)model.WorkerType,
                         Skill = model.Skill,
                         ProviderType = model.ProviderType,
                         ServicePricePerDay = model.Pay ?? 0,
@@ -184,7 +196,18 @@ namespace EgyptOnline.Controllers
 
 
                 await _context.SaveChangesAsync();
+                string? imageUrl = null;
 
+                imageUrl = await _userImageService.UploadUserImageAsync(UserRegisterationResult.User, imageFile);
+                if (imageUrl == null)
+                {
+                    await transaction.RollbackAsync();
+                    return StatusCode(500, new
+                    {
+                        message = "Error uploading profile image",
+                        errorCode = UserErrors.GeneralError.ToString()
+                    });
+                }
 
                 // Transaction is done here
                 await transaction.CommitAsync();

@@ -56,6 +56,7 @@ namespace EgyptOnline.Controllers
 
             return new
             {
+                userName = x.User.UserName,
                 name = $"{x.User.FirstName} {x.User.LastName}",
                 skill = skill,
                 governorate = x.User.Governorate,

@@ -8,6 +8,8 @@ EgyptOnline.sln
 appsettings.json
 appsettings.Development.json
 appsettings.Production.json
+googlekey.json
+
 EgyptOnline.csproj
 EgyptOnline.http
 Migrations/

@@ -6,55 +6,52 @@ namespace EgyptOnline.Dtos
 {
   public class RegisterWorkerDto
   {
-    public required string FirstName { get; set; } = string.Empty;
+    [Required]
+    public string FirstName { get; set; } = string.Empty;
 
     public string? LastName { get; set; }
 
+    [Required, EmailAddress]
+    public string Email { get; set; } = string.Empty;
 
+    [Required]
+    public string PhoneNumber { get; set; } = string.Empty;
 
-    //The Annotations check the data during the runtime
-    [EmailAddress]
-    public required string Email { get; set; } = string.Empty;
+    [Required]
+    public string Password { get; set; } = string.Empty;
 
+    [Required]
+    public string Governorate { get; set; } = string.Empty;
 
-    //For the Egyptain Phone Number
-    // [RegularExpression(@"^\+20\d{10}$", ErrorMessage = "Phone number must start with +20 and contain 11 digits total.")]
-    public required string PhoneNumber { get; set; } = string.Empty;
-    public required string Password { get; set; } = string.Empty;
+    [Required]
+    public string City { get; set; } = string.Empty;
 
-
-
-
-    //insteadd of the location i want to add the governorate and the city and the district
-    public required string Governorate { get; set; }
-    public required string City { get; set; }
     public string? District { get; set; }
 
-
-    //SP related
     public string? Bio { get; set; }
 
     public string? ProviderType { get; set; } = "Worker";
 
-    //Worker
+    // Worker
     public string? Skill { get; set; }
-    public WorkerTypes WorkerType { get; set; } = WorkerTypes.PerDay;
 
-    //Company
+    // WorkerType as int for Swagger
+    public int WorkerType { get; set; } = 0; // 0 = PerDay, 1 = Fixed
+
+    // Company
     public string? Business { get; set; }
-
     public string? Owner { get; set; }
 
     public decimal? Pay { get; set; } = 0;
-    //Contractor
+
+    // Contractor
     public string? Specialization { get; set; }
 
     public string? ReferralUserName { get; set; } = null;
 
     public bool IsOAuth { get; set; } = false;
     public string? GoogleId { get; set; } = null;
-
-
   }
+
 }
 

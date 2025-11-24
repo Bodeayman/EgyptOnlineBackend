@@ -5,7 +5,10 @@ namespace EgyptOnline.Utilities
         GeneralError,
         ReferralUserNotFound,
         PhoneNumberAlreadyExists,
-        EmailAlreadyExists
+        EmailAlreadyExists,
+
+        InvalidPaymentValue,
+        ImageIsNull
 
     }
 }
