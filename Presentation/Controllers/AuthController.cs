@@ -44,7 +44,7 @@ namespace EgyptOnline.Controllers
         }
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterWorkerDto model, IFormFile image)
+        public async Task<IActionResult> Register([FromBody] RegisterWorkerDto model)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -55,19 +55,20 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                if (image.FileName == null)
-                {
-                    return BadRequest(new { message = "Please Upload a Profile Image" });
-                }
+
                 if (model.Pay < 100)
                 {
                     return BadRequest(new { message = "The Pay/Service Price must be at least 100 EGP" });
                 }
-                UserRegisterationResult UserRegisterationResult = await _userRegisterationService.RegisterUser(model, image);
+                UserRegisterationResult UserRegisterationResult = await _userRegisterationService.RegisterUser(model);
                 if (UserRegisterationResult.Result != IdentityResult.Success)
                 {
                     await transaction.RollbackAsync();
-                    return StatusCode(500, new { message = UserRegisterationResult.Result });
+                    return StatusCode(500, new
+                    {
+                        message = UserRegisterationResult.Result.Errors.First().Description,
+                        errorCode = UserRegisterationResult.Result.Errors.First().Code
+                    });
 
                 }
 
@@ -183,18 +184,7 @@ namespace EgyptOnline.Controllers
 
 
                 await _context.SaveChangesAsync();
-                try
-                {
-                    var imageUrl = await _userImageService.UploadUserImageAsync(UserRegisterationResult.User, image);
-                    UserRegisterationResult.User.ImageUrl = imageUrl;
-                    await _context.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    // Optionally return partial success message
-                    return Ok(new { message = $"Registration succeeded but image upload failed: {ex.Message}" });
-                }
+
 
                 // Transaction is done here
                 await transaction.CommitAsync();
@@ -277,7 +267,7 @@ namespace EgyptOnline.Controllers
                 {
                     Token = refreshTokenString,
                     UserId = user.Id,
-                    Expires = DateTime.UtcNow.AddDays(30),
+                    Expires = DateTime.UtcNow.AddDays(14),
                     Created = DateTime.UtcNow,
                     IsRevoked = false
                 };
@@ -371,7 +361,7 @@ namespace EgyptOnline.Controllers
                 {
                     Token = newRefreshTokenString,
                     UserId = user.Id,
-                    Expires = DateTime.UtcNow.AddDays(30),
+                    Expires = DateTime.UtcNow.AddDays(14),
                     Created = DateTime.UtcNow,
                     IsRevoked = false
                 };

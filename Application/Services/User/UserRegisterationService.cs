@@ -22,7 +22,7 @@ namespace EgyptOnline.Services
             _context = context;
             _userPointService = userPointService;
         }
-        public async Task<UserRegisterationResult> RegisterUser(RegisterWorkerDto model, IFormFile image)
+        public async Task<UserRegisterationResult> RegisterUser(RegisterWorkerDto model)
         {
             try
             {
@@ -60,7 +60,12 @@ namespace EgyptOnline.Services
                 {
                     return new UserRegisterationResult
                     {
-                        Result = IdentityResult.Failed(new IdentityError { Description = "The email has been used before." }),
+                        Result = IdentityResult.Failed(new IdentityError
+                        {
+                            Description = "The email has been used before.",
+                            Code = UserErrors.EmailAlreadyExists.ToString()
+                        }
+                        ),
                         User = null
                     };
                 }
@@ -68,7 +73,7 @@ namespace EgyptOnline.Services
                 {
                     return new UserRegisterationResult
                     {
-                        Result = IdentityResult.Failed(new IdentityError { Description = "The phone number has been used before." }),
+                        Result = IdentityResult.Failed(new IdentityError { Description = "The phone number has been used before.", Code = UserErrors.PhoneNumberAlreadyExists.ToString() }),
                         User = null
                     };
                 }
@@ -85,7 +90,7 @@ namespace EgyptOnline.Services
                     {
                         return new UserRegisterationResult
                         {
-                            Result = IdentityResult.Failed(new IdentityError { Description = "Referral User Name is invalid." }),
+                            Result = IdentityResult.Failed(new IdentityError { Description = "Referral User Name is invalid.", Code = UserErrors.ReferralUserNotFound.ToString() }),
                             User = null
                         };
                     }
@@ -95,7 +100,7 @@ namespace EgyptOnline.Services
                 {
                     return new UserRegisterationResult
                     {
-                        Result = IdentityResult.Failed(new IdentityError { Description = "User creation failed." }),
+                        Result = IdentityResult.Failed(new IdentityError { Description = "User creation failed.", Code = UserErrors.GeneralError.ToString() }),
                         User = null
                     };
                 }
@@ -108,7 +113,7 @@ namespace EgyptOnline.Services
                 {
                     return new UserRegisterationResult
                     {
-                        Result = IdentityResult.Failed(new IdentityError { Description = "User creation failed." }),
+                        Result = IdentityResult.Failed(new IdentityError { Description = "User creation failed.", Code = UserErrors.GeneralError.ToString() }),
                         User = null
                     };
                 }

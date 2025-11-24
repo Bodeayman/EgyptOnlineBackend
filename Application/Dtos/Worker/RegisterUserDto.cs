@@ -55,7 +55,6 @@ namespace EgyptOnline.Dtos
     public string? GoogleId { get; set; } = null;
 
 
-
   }
 }
 
