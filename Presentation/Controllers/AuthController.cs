@@ -244,7 +244,11 @@ namespace EgyptOnline.Controllers
                 await transaction.CommitAsync();
 
                 // await Login(new LoginWorkerDto { Email = model.Email, Password = model.Password });
-                return Ok(new { message = $"The Service Provider which is {model.ProviderType} is Created Successfully" });
+                return Ok(new
+                {
+                    message = $"The Service Provider which is {model.ProviderType} is Created Successfully",
+                    expiryDate = DateTime.UtcNow.AddMonths(1).ToString("o")
+                });
 
 
 
@@ -267,7 +271,9 @@ namespace EgyptOnline.Controllers
 
 
                 var input = model.Email.Trim();
+                Console.WriteLine(input);
                 User user = null;
+                Console.WriteLine("Maybe here");
                 if (Helper.IsEmail(input))
                 {
 
@@ -275,6 +281,11 @@ namespace EgyptOnline.Controllers
                         .Include(u => u.Subscription)
                         .Include(u => u.ServiceProvider)
                         .FirstOrDefaultAsync(u => u.Email == input);
+                    if (user == null)
+                    {
+                        return BadRequest(new { message = "This User is not found", errorCode = UserErrors.UserIsNotFound.ToString() });
+
+                    }
                 }
                 //Egyptain Server
                 else if (Helper.IsPhone(input))
@@ -287,6 +298,11 @@ namespace EgyptOnline.Controllers
                         .Include(u => u.Subscription)
                         .Include(u => u.ServiceProvider)
                         .FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+                    if (user == null)
+                    {
+                        return BadRequest(new { message = "This User is not found", errorCode = UserErrors.UserIsNotFound.ToString() });
+
+                    }
                 }
                 else
                 {
@@ -296,13 +312,14 @@ namespace EgyptOnline.Controllers
                 Console.WriteLine(user.Id);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
                     return NotFound(new { message = "The Email/Phone or password is incorrect" });
+                Console.WriteLine("What happns");
 
                 // Check subscription availability
                 if (!user.ServiceProvider.IsAvailable)
                 {
                     return Unauthorized(new
                     {
-                        message = "Your subscription has expired",
+                        message = $"Your subscription has expired in {user.Subscription?.EndDate.ToString()}",
                         errorCode = UserErrors.SubscriptionInvalid.ToString(),
                         LastDate = user.Subscription?.EndDate.ToString()
                     });
@@ -313,10 +330,12 @@ namespace EgyptOnline.Controllers
                 {
                     return StatusCode(500, new { message = "Error while fetching the user role" });
                 }
+                Console.WriteLine("What happns 1");
 
                 // Generate tokens
                 var accessToken = _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
                 var refreshTokenString = _userService.GenerateJwtToken(user, userRole, TokensTypes.RefreshToken);
+                Console.WriteLine("What happns 2");
 
                 var refreshToken = new RefreshToken
                 {
@@ -326,8 +345,9 @@ namespace EgyptOnline.Controllers
                     Created = DateTime.UtcNow,
                     IsRevoked = false
                 };
-
+                Console.WriteLine("What happns 3");
                 _context.RefreshTokens.Add(refreshToken);
+
                 await _context.SaveChangesAsync();
 
                 return Ok(new

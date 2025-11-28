@@ -36,7 +36,7 @@ public class SubscriptionCheckerService : BackgroundService
 
                 foreach (var user in users)
                 {
-                    if (user.Subscription.EndDate <= today)
+                    if (user.Subscription.EndDate < today)
                     {
 
                         // Revoke refresh tokens
@@ -74,7 +74,7 @@ public class SubscriptionCheckerService : BackgroundService
 
             // Wait for 10 seconds for testing
             var now = DateTime.UtcNow;
-            var nextMidnight = now.Date.AddDays(1); // next midnight UTC
+            var nextMidnight = now.Date.AddMonths(1); // next midnight UTC
             var delay = nextMidnight - now;
 
             // Safety: if somehow delay is zero or negative, wait 1 minute instead
