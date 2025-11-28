@@ -51,6 +51,21 @@ namespace EgyptOnline.Controllers
 
             try
             {
+                var phoneRegex = new Regex(@"^(010|011|012|015)\d{8}$");
+
+                if (!phoneRegex.IsMatch(model.PhoneNumber))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Validation failed",
+                        errorCode = "InvalidInput",
+                        errors = new
+                        {
+                            PhoneNumber = "Phone number must start with 010, 011, 012, or 015 and be 11 digits long"
+                        }
+                    });
+                }
                 if (imageFile == null)
                 {
                     return BadRequest(new
@@ -61,10 +76,26 @@ namespace EgyptOnline.Controllers
                 }
                 if (!ModelState.IsValid)
                 {
-                    return BadRequest(ModelState);
+                    // Collect all validation errors
+                    var errors = ModelState
+                        .Where(x => x.Value.Errors.Count > 0)
+                        .ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                        );
+
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Validation failed",
+                        errorCode = "InvalidInput"
+                    });
                 }
 
-                if (model.Pay < 100)
+                if (model.Pay < 100 &&
+                 !model.ProviderType.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase) &&
+                 !model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase)
+                 )
                 {
                     return BadRequest(new
                     {
@@ -272,6 +303,7 @@ namespace EgyptOnline.Controllers
                     return Unauthorized(new
                     {
                         message = "Your subscription has expired",
+                        errorCode = UserErrors.SubscriptionInvalid.ToString(),
                         LastDate = user.Subscription?.EndDate.ToString()
                     });
                 }
@@ -337,9 +369,14 @@ namespace EgyptOnline.Controllers
             {
                 // Step 1: Find the refresh token in the database
                 var storedToken = await _context.RefreshTokens
-                    .Include(rt => rt.User) // Include user for generating new access token
-                    .ThenInclude(u => u.ServiceProvider)
-                    .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
+     .Include(rt => rt.User)
+     .ThenInclude(u => u.ServiceProvider)
+     .Include(rt => rt.User.Subscription)   // <-- IMPORTANT
+     .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
+
+
+
+
 
                 if (storedToken == null)
                     return Unauthorized("Invalid refresh token");
@@ -350,7 +387,7 @@ namespace EgyptOnline.Controllers
                 var user = storedToken.User;
                 if (user == null)
                     return Unauthorized("User not found");
-
+                Console.WriteLine(user.UserName);
                 if (!user.ServiceProvider.IsAvailable)
                 {
                     return Unauthorized(new
@@ -361,22 +398,25 @@ namespace EgyptOnline.Controllers
                 }
 
                 // Optional: revoke the old refresh token to enforce single use
+
                 storedToken.IsRevoked = true;
                 storedToken.Revoked = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                Console.WriteLine("Working before saving");
 
+                await _context.SaveChangesAsync();
+                Console.WriteLine("Working before crashing");
                 // Step 2: Generate a new access token
-                var userRoleClaim = user.UserName; // Replace with actual role claim
+                // Replace with actual role claim
+                Console.WriteLine(Helper.GetUserType(user));
                 var newAccessToken = _userService.GenerateJwtToken(
                     user,
-                    UsersTypes.Company, // Example: replace with real enum from user's role
+                    Helper.GetUserType(user),
                     TokensTypes.AccessToken
                 );
 
-                // Optional: generate a new refresh token
                 var newRefreshTokenString = _userService.GenerateJwtToken(
                     user,
-                    UsersTypes.Company,
+                     Helper.GetUserType(user),
                     TokensTypes.RefreshToken
                 );
 
@@ -429,7 +469,7 @@ namespace EgyptOnline.Controllers
                     .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
 
                 if (storedToken == null)
-                    return NotFound("Refresh token not found");
+                    return NotFound(new { message = "Refresh token not found" });
 
                 // Step 2: Revoke the token
                 storedToken.IsRevoked = true;

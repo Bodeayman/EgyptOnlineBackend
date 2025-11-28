@@ -6,9 +6,12 @@ namespace EgyptOnline.Utilities
         ReferralUserNotFound,
         PhoneNumberAlreadyExists,
         EmailAlreadyExists,
-
+        InvalidEmail,
+        InvalidPhoneNumber,
         InvalidPaymentValue,
-        ImageIsNull
+        ImageIsNull,
+        SubscriptionInvalid,
+        InvalidInput
 
     }
 }

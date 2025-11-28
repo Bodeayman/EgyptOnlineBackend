@@ -4,6 +4,7 @@ Properties/
 .vscode/
 .idea/
 Logs/
+wwwroot/images/profiles
 EgyptOnline.sln
 appsettings.json
 appsettings.Development.json

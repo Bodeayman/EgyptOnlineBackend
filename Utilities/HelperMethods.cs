@@ -10,6 +10,16 @@ namespace EgyptOnline.Utilities
 
         private readonly static Random _random = new Random();
 
+        public static UsersTypes GetUserType(User user)
+        {
+            // Determine user role
+            if (!Enum.TryParse<UsersTypes>(user.ServiceProvider.ProviderType, out UsersTypes userRole))
+            {
+                return UsersTypes.Worker;
+            }
+            return userRole;
+        }
+
         public static string GenerateUserName(string firstName, string lastName)
         {
             if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName))
@@ -89,4 +99,6 @@ namespace EgyptOnline.Utilities
         [GeneratedRegex(@"^\+?[0-9]{7,15}$")]
         private static partial Regex MyRegex();
     }
+
+
 }

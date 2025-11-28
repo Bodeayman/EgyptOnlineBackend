@@ -82,7 +82,11 @@ namespace EgyptOnline.Controllers
             try
             {
                 if (!await CheckSubscription())
-                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                    return Unauthorized(new
+                    {
+                        message = "Your Subscription period Expired",
+                        errorCode = UserErrors.SubscriptionInvalid.ToString()
+                    });
 
                 var workers = _context.Workers.Include(w => w.User).AsQueryable();
 
@@ -135,7 +139,11 @@ namespace EgyptOnline.Controllers
             try
             {
                 if (!await CheckSubscription())
-                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                    return Unauthorized(new
+                    {
+                        message = "Your Subscription period Expired",
+                        errorCode = UserErrors.SubscriptionInvalid.ToString()
+                    });
 
                 var companies = _context.Companies.Include(c => c.User).AsQueryable();
 
@@ -186,7 +194,11 @@ namespace EgyptOnline.Controllers
             try
             {
                 if (!await CheckSubscription())
-                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                    return Unauthorized(new
+                    {
+                        message = "Your Subscription period Expired",
+                        errorCode = UserErrors.SubscriptionInvalid.ToString()
+                    });
 
                 var contractors = _context.Contractors.Include(c => c.User).AsQueryable();
 
@@ -231,7 +243,12 @@ namespace EgyptOnline.Controllers
             try
             {
                 if (!await CheckSubscription())
-                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                    return Unauthorized(new
+                    {
+                        message = "Your Subscription period Expired",
+                        errorCode = UserErrors.SubscriptionInvalid.ToString(),
+
+                    });
 
                 var marketplaces = _context.MarketPlaces.Include(m => m.User).AsQueryable();
 
@@ -276,7 +293,11 @@ namespace EgyptOnline.Controllers
             try
             {
                 if (!await CheckSubscription())
-                    return Unauthorized(new { message = "Your Subscription period Expired" });
+                    return Unauthorized(new
+                    {
+                        message = "Your Subscription period Expired",
+                        errorCode = UserErrors.SubscriptionInvalid.ToString()
+                    });
 
                 var engineers = _context.Engineers.Include(e => e.User).AsQueryable();
 

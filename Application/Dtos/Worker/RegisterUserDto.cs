@@ -14,8 +14,11 @@ namespace EgyptOnline.Dtos
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
 
+
     [Required]
+
     public string PhoneNumber { get; set; } = string.Empty;
+
 
     [Required]
     public string Password { get; set; } = string.Empty;
@@ -43,7 +46,6 @@ namespace EgyptOnline.Dtos
     public string? Owner { get; set; }
 
     public decimal? Pay { get; set; } = 0;
-
     // Contractor
     public string? Specialization { get; set; }
 

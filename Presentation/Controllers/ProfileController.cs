@@ -52,6 +52,8 @@ namespace EgyptOnline.Controllers
                     return Unauthorized(new
                     {
                         message = "Your subscription has expired",
+                        errorCode = UserErrors.SubscriptionInvalid.ToString()
+,
                         LastDate = user.Subscription.EndDate.ToString()
                     });
                 }
@@ -96,7 +98,8 @@ namespace EgyptOnline.Controllers
                     return Unauthorized(new
                     {
                         message = "Your subscription has expired",
-                        LastDate = user.Subscription.EndDate.ToString()
+                        LastDate = user.Subscription.EndDate.ToString(),
+                        errorCode = UserErrors.SubscriptionInvalid.ToString()
                     });
                 }
                 if (user == null)
