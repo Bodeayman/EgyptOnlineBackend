@@ -81,13 +81,16 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                Console.WriteLine("Coming overhere");
+
                 if (!await CheckSubscription())
+                {
                     return Unauthorized(new
                     {
                         message = "Your Subscription period Expired",
                         errorCode = UserErrors.SubscriptionInvalid.ToString()
                     });
-
+                }
                 var workers = _context.Workers.Include(w => w.User).AsQueryable();
 
                 if (filter != null)

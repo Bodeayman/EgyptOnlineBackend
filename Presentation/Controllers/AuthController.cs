@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.AspNetCore.Identity.Data;
 using System.Text.RegularExpressions;
 using System.Transactions;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 namespace EgyptOnline.Controllers
 {
 
@@ -247,7 +248,7 @@ namespace EgyptOnline.Controllers
                 return Ok(new
                 {
                     message = $"The Service Provider which is {model.ProviderType} is Created Successfully",
-                    expiryDate = DateTime.UtcNow.AddMonths(1).ToString("o")
+                    expiryDate = UserRegisterationResult.User.Subscription.EndDate
                 });
 
 
@@ -321,7 +322,8 @@ namespace EgyptOnline.Controllers
                     {
                         message = $"Your subscription has expired in {user.Subscription?.EndDate.ToString()}",
                         errorCode = UserErrors.SubscriptionInvalid.ToString(),
-                        LastDate = user.Subscription?.EndDate.ToString()
+                        LastDate = user.Subscription?.EndDate,
+                        subscriptionExpiry = user.Subscription?.EndDate
                     });
                 }
 
@@ -341,7 +343,7 @@ namespace EgyptOnline.Controllers
                 {
                     Token = refreshTokenString,
                     UserId = user.Id,
-                    Expires = DateTime.UtcNow.AddDays(14),
+                    Expires = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
                     Created = DateTime.UtcNow,
                     IsRevoked = false
                 };
@@ -354,7 +356,8 @@ namespace EgyptOnline.Controllers
                 {
                     message = "Login successful",
                     accessToken,
-                    refreshToken = refreshTokenString
+                    refreshToken = refreshTokenString,
+                    subscriptionExpiry = user.Subscription.EndDate
                 });
 
             }
@@ -382,8 +385,10 @@ namespace EgyptOnline.Controllers
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest refreshRequest)
         {
+            Console.WriteLine("INitailizationg");
             if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
                 return BadRequest("Refresh token is required");
+            Console.WriteLine("INitailization2");
 
             try
             {
@@ -397,12 +402,12 @@ namespace EgyptOnline.Controllers
 
 
 
-
+                Console.WriteLine("Unauthrozied refresing");
                 if (storedToken == null)
                     return Unauthorized("Invalid refresh token");
 
                 if (storedToken.IsRevoked || storedToken.Expires < DateTime.UtcNow)
-                    return Unauthorized("Refresh token is expired or revoked");
+                    return Unauthorized(new { message = "Refresh token is expired or revoked", errorCode = "SubscriptionInvalid" });
 
                 var user = storedToken.User;
                 if (user == null)
@@ -413,6 +418,7 @@ namespace EgyptOnline.Controllers
                     return Unauthorized(new
                     {
                         message = "Your subscription has expired",
+                        ErrorCode = "SubscriptionInvalid",
                         LastDate = user.Subscription?.EndDate.ToString()
                     });
                 }
@@ -444,7 +450,7 @@ namespace EgyptOnline.Controllers
                 {
                     Token = newRefreshTokenString,
                     UserId = user.Id,
-                    Expires = DateTime.UtcNow.AddDays(14),
+                    Expires = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
                     Created = DateTime.UtcNow,
                     IsRevoked = false
                 };

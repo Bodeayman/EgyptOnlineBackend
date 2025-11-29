@@ -50,8 +50,8 @@ namespace EgyptOnline.Services
                 Console.WriteLine(userRole.ToString());
                 Console.WriteLine(userRole);
                 var expiry = TokenType == TokensTypes.RefreshToken
-                    ? DateTime.UtcNow.AddDays(14)
-                    : DateTime.UtcNow.AddMinutes(30);
+                  ? DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
+                  : DateTime.UtcNow.AddMinutes(TokenPeriod.ACCESS_TOKEN_MINS);
                 var claims = new[]
                 {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
