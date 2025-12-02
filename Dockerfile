@@ -5,15 +5,16 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 WORKDIR /src
 
-# Copy csproj and restore dependencies
+# Copy csproj and restore dependencies (allows layer caching)
 COPY ./*.csproj ./
 RUN dotnet restore
 
-# Copy the entire project (including Migrations/)
+# Copy everything else
 COPY . ./
 
-# Publish
-RUN dotnet publish -c Release -o /app/publish
+# Publish to /src/out
+RUN dotnet publish -c Release -o /src/out
+
 
 # ========================
 # Step 2: Runtime stage
@@ -22,8 +23,13 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 
 WORKDIR /app
 
-COPY --from=build /app/publish ./
+# Create uploads directory with proper permissions
+RUN mkdir -p /app/uploads && chmod 755 /app/uploads
 
+# Copy output from build stage
+COPY --from=build /src/out ./
+
+# Use 8080 to match your Dockerfile
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 

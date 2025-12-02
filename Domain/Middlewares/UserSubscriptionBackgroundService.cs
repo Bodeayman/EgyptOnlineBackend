@@ -31,14 +31,12 @@ public class SubscriptionCheckerService : BackgroundService
                                     .ToListAsync(stoppingToken);
                 Console.WriteLine($"Checking {users.Count} users at {DateTime.UtcNow}");
 
-                var today = DateOnly.FromDateTime(DateTime.UtcNow); // use UTC for consistency
-
+                var today = EgyptTimeHelper.TodayInEgypt(); // Get today's date in Egypt
 
                 foreach (var user in users)
                 {
                     if (user.Subscription.EndDate < today)
                     {
-
                         // Revoke refresh tokens
                         if (user.RefreshTokens != null)
                         {
@@ -57,7 +55,6 @@ public class SubscriptionCheckerService : BackgroundService
                             db.Entry(user.ServiceProvider).State = EntityState.Modified;
                         }
 
-                        // Optional: mark the user entity as modified (not always needed)
                         db.Entry(user).State = EntityState.Modified;
                     }
                 }
@@ -65,32 +62,25 @@ public class SubscriptionCheckerService : BackgroundService
                 // Save all changes
                 await db.SaveChangesAsync(stoppingToken);
                 Console.WriteLine("Database updated successfully");
-
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in SubscriptionCheckerService: {ex.Message}");
             }
 
-            // Wait for 10 seconds for testing
-            var now = DateTime.UtcNow;
-            var nextMidnight = now.Date.AddMonths(1); // next midnight UTC
-            var delay = nextMidnight - now;
+            // Calculate delay until next midnight in Egypt
+            var nowEgypt = EgyptTimeHelper.NowInEgypt();
+            var tomorrowMidnightEgypt = nowEgypt.Date.AddDays(1);
+            var tomorrowMidnightUtc = EgyptTimeHelper.ToUtc(tomorrowMidnightEgypt);
 
-            // Safety: if somehow delay is zero or negative, wait 1 minute instead
+            var delay = tomorrowMidnightUtc - DateTime.UtcNow;
+
             if (delay <= TimeSpan.Zero)
                 delay = TimeSpan.FromMinutes(1);
+
+            Console.WriteLine($"Next check at: {tomorrowMidnightEgypt} Egypt time (in {delay.TotalHours:F2} hours)");
 
             await Task.Delay(delay, stoppingToken);
         }
     }
 }
-
-
-
-// In production, replace with:
-// var now = DateTime.UtcNow;
-// var nextMidnight = now.Date.AddDays(1);
-// var delay = nextMidnight - now;
-// if (delay <= TimeSpan.Zero) delay = TimeSpan.FromSeconds(1);
-// await Task.Delay(delay, stoppingToken);

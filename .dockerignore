@@ -48,3 +48,7 @@ yarn-error.log
 # Git / version control
 .git/
 .gitignore
+
+# Additional files
+images/files
+wwwroot/images/profiles

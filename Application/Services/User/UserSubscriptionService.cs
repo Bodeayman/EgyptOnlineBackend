@@ -22,8 +22,8 @@ namespace EgyptOnline.Services
                     User = user,
 
                     UserId = user.Id,
-                    StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                    EndDate = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1)
+                    StartDate = EgyptTimeHelper.TodayInEgypt(),
+                    EndDate = EgyptTimeHelper.TodayInEgypt().AddMonths(1)
                 };
                 _context.Subscriptions.Add(Subscription);
                 return Subscription;
@@ -41,7 +41,7 @@ namespace EgyptOnline.Services
                 Console.WriteLine("Subscription is added here");
 
                 var FoundSubscription = await _context.Subscriptions.FirstOrDefaultAsync(U => U.UserId == user.Id);
-                FoundSubscription.EndDate = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1);
+                FoundSubscription.EndDate = EgyptTimeHelper.TodayInEgypt().AddMonths(1);
                 return FoundSubscription;
             }
             catch (Exception ex)

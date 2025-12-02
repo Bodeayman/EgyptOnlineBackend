@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Identity.Data;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
+using System.Runtime.InteropServices;
 namespace EgyptOnline.Controllers
 {
 
@@ -357,7 +358,8 @@ namespace EgyptOnline.Controllers
                     message = "Login successful",
                     accessToken,
                     refreshToken = refreshTokenString,
-                    subscriptionExpiry = user.Subscription.EndDate
+                    subscriptionExpiry = user.Subscription.EndDate,
+                    refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
                 });
 
             }
@@ -405,9 +407,17 @@ namespace EgyptOnline.Controllers
                 Console.WriteLine("Unauthrozied refresing");
                 if (storedToken == null)
                     return Unauthorized("Invalid refresh token");
+                Console.WriteLine(storedToken.Expires);
+                Console.WriteLine(DateTime.UtcNow);
 
+                Console.WriteLine(storedToken.IsRevoked);
                 if (storedToken.IsRevoked || storedToken.Expires < DateTime.UtcNow)
+                {
+                    Console.WriteLine("Am i dying");
                     return Unauthorized(new { message = "Refresh token is expired or revoked", errorCode = "SubscriptionInvalid" });
+
+                }
+                Console.WriteLine("Am i dying 2");
 
                 var user = storedToken.User;
                 if (user == null)
@@ -462,7 +472,10 @@ namespace EgyptOnline.Controllers
                 {
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshTokenString,
-                    ExpiresIn = TimeSpan.FromMinutes(30).TotalSeconds
+                    refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
+                    subscriptionExpiry = user.Subscription.EndDate,
+
+
                 });
             }
             catch (SecurityTokenExpiredException)

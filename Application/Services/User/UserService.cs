@@ -58,7 +58,10 @@ namespace EgyptOnline.Services
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim("uid", user.Id),
                 new Claim("role",userRole.ToString()),
-                new Claim("token_type",TokenType.ToString())
+                new Claim("token_type",TokenType.ToString()),
+                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
+
+
             };
                 var token = new JwtSecurityToken(
                     issuer: _config["Jwt:Issuer"],
