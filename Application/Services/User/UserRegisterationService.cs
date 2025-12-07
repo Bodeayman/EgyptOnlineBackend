@@ -104,6 +104,14 @@ namespace EgyptOnline.Services
                         User = null
                     };
                 }
+                if (model.Password.Length < 8)
+                {
+                    return new UserRegisterationResult
+                    {
+                        Result = IdentityResult.Failed(new IdentityError { Description = "Password length is not valid", Code = UserErrors.PasswordInvalid.ToString() }),
+                        User = null
+                    };
+                }
                 Console.WriteLine("Hashing Password");
                 var passwordHasher = new PasswordHasher<User>();
                 user.PasswordHash = passwordHasher.HashPassword(user, model.Password);

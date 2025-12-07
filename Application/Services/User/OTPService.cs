@@ -1,64 +1,56 @@
 using EgyptOnline.Domain.Interfaces;
+using EgyptOnline.Infrastructure; // IEmailService
+using EgyptOnline.Infrastructure;
+using Microsoft.Extensions.Caching.Distributed;
+using System;
+using System.Threading.Tasks;
 
 namespace EgyptOnline.Services
 {
-
-
-
-
-    public class SmsMisrOtpService : IOTPService
+    public class OtpService : IOTPService
     {
-        private readonly HttpClient _httpClient;
-        public readonly IConfiguration _config;
+        private readonly IDistributedCache _cache;
+        private readonly IEmailService _emailService;
+        private readonly Random _rng = new Random();
 
-        private readonly string _username;
-        private readonly string _password = "YOUR_PASSWORD";
-        private readonly string _senderToken = "YOUR_SENDER_TOKEN";
-        private readonly string _templateToken = "YOUR_TEMPLATE_TOKEN";
-
-        public SmsMisrOtpService(HttpClient httpClient, IConfiguration config)
+        public OtpService(IDistributedCache cache, IEmailService emailService)
         {
-            _httpClient = httpClient;
-            _config = config;
-            _username = _config["SMSMisr:UserName"]!;
-            _password = _config["SMSMisr:Password"]!;
-            _senderToken = _config["SMSMisr:SenderToken"]!;
-            _templateToken = _config["SMSMisr:TemplateToken"]!;
-
+            _cache = cache;
+            _emailService = emailService;
         }
 
-        public async Task<string> SendOtpAsync(string phoneNumber, bool isLive = false)
+        public async Task SendOtpAsync(string key, bool isRegister)
         {
-            try
-            {
-                string otpCode = GenerateOtp();
-                var environment = isLive ? 1 : 2;
+            var otp = _rng.Next(100000, 999999).ToString();
 
-                var url = $"https://smsmisr.com/api/OTP/?" +
-                          $"environment={environment}&" +
-                          $"username={_username}&" +
-                          $"password={_password}&" +
-                          $"sender={_senderToken}&" +
-                          $"mobile={phoneNumber}&" +
-                          $"template={_templateToken}&" +
-                          $"otp={otpCode}";
+            // Store OTP in cache
+            await _cache.SetStringAsync(
+                $"otp:{key}",
+                otp,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                });
 
-                var response = await _httpClient.PostAsync(url, null);
-                var result = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(result);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
-            }
+            // Extract email from key (key format: "email:phone")
+            var email = key.Split(':')[0];
+
+            // Send OTP via email
+            await _emailService.SendEmailAsync(
+                email,
+                "Your OTP Code",
+                $"Your OTP code is: {otp}. It expires in 5 minutes.");
+
+            Console.WriteLine($"[OTP] {otp} sent to {email}");
         }
 
-        public string GenerateOtp()
+        public async Task<bool> ValidateOtpAsync(string key, string otp)
         {
-            var random = new Random();
-            return random.Next(100000, 999999).ToString(); // Generates 6-digit OTP
+            var cached = await _cache.GetStringAsync($"otp:{key}");
+            if (cached == null || cached != otp) return false;
+
+            await _cache.RemoveAsync($"otp:{key}");
+            return true;
         }
     }
 }

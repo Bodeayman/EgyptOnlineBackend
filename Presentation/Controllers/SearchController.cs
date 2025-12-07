@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Reflection;
 using EgyptOnline.Data;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
@@ -26,6 +27,35 @@ namespace EgyptOnline.Controllers
             _logger = logger;
             _context = context;
             _userService = userService;
+        }
+
+
+        private static FilterSearchDto TrimAllSearchInputs(FilterSearchDto? filterSearchDto)
+        {
+            if (filterSearchDto == null)
+
+            {
+                return filterSearchDto;
+
+            }
+
+            // Get all public instance properties
+            var properties = typeof(FilterSearchDto).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var prop in properties)
+            {
+                // Only handle string properties
+                if (prop.PropertyType == typeof(string))
+                {
+                    var value = (string?)prop.GetValue(filterSearchDto);
+
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        prop.SetValue(filterSearchDto, value.Trim());
+                    }
+                }
+            }
+
+            return filterSearchDto;
         }
 
         private async Task<bool> CheckSubscription()
@@ -92,6 +122,9 @@ namespace EgyptOnline.Controllers
                     });
                 }
                 var workers = _context.Workers.Include(w => w.User).AsQueryable();
+                Console.WriteLine("Before");
+                filter = TrimAllSearchInputs(filter);
+                Console.WriteLine("After");
 
                 if (filter != null)
                 {
@@ -106,22 +139,35 @@ namespace EgyptOnline.Controllers
                         workers = workers.Where(w => w.WorkerType == filter.WorkerType);
 
                     if (!string.IsNullOrEmpty(filter.FirstName))
-                        workers = workers.Where(w => w.User.FirstName != null && w.User.FirstName.Contains(filter.FirstName));
+                        workers = workers.Where(w =>
+                            w.User.FirstName != null &&
+                            w.User.FirstName.ToLower().Contains(filter.FirstName.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.LastName))
-                        workers = workers.Where(w => w.User.LastName != null && w.User.LastName.Contains(filter.LastName));
+                        workers = workers.Where(w =>
+                            w.User.LastName != null &&
+                            w.User.LastName.ToLower().Contains(filter.LastName.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.Governorate))
-                        workers = workers.Where(w => w.User.Governorate != null && w.User.Governorate.Contains(filter.Governorate));
+                        workers = workers.Where(w =>
+                            w.User.Governorate != null &&
+                            w.User.Governorate.ToLower().Contains(filter.Governorate.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.City))
-                        workers = workers.Where(w => w.User.City != null && w.User.City.Contains(filter.City));
+                        workers = workers.Where(w =>
+                            w.User.City != null &&
+                            w.User.City.ToLower().Contains(filter.City.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.District))
-                        workers = workers.Where(w => w.User.District != null && w.User.District.Contains(filter.District));
+                        workers = workers.Where(w =>
+                            w.User.District != null &&
+                            w.User.District.ToLower().Contains(filter.District.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.Profession))
-                        workers = workers.Where(w => w.Skill != null && w.Skill.Contains(filter.Profession));
+                        workers = workers.Where(w =>
+                            w.Skill != null &&
+                            w.Skill.ToLower().Contains(filter.Profession.ToLower()));
+
                 }
                 workers = workers.Where(w => w.IsAvailable);
 
@@ -149,6 +195,7 @@ namespace EgyptOnline.Controllers
                     });
 
                 var companies = _context.Companies.Include(c => c.User).AsQueryable();
+                filter = TrimAllSearchInputs(filter);
 
                 if (filter != null && filter.BasedOnPoints == true)
                 {
@@ -160,22 +207,35 @@ namespace EgyptOnline.Controllers
                 if (filter != null)
                 {
                     if (!string.IsNullOrEmpty(filter.FirstName))
-                        companies = companies.Where(c => c.User.UserName != null && c.User.UserName.Contains(filter.FirstName));
+                        companies = companies.Where(c =>
+                            c.User.UserName != null &&
+                            c.User.UserName.ToLower().Contains(filter.FirstName.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.LastName))
-                        companies = companies.Where(c => c.User.LastName != null && c.User.LastName.Contains(filter.LastName));
+                        companies = companies.Where(c =>
+                            c.User.LastName != null &&
+                            c.User.LastName.ToLower().Contains(filter.LastName.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.Governorate))
-                        companies = companies.Where(c => c.User.Governorate != null && c.User.Governorate.Contains(filter.Governorate));
+                        companies = companies.Where(c =>
+                            c.User.Governorate != null &&
+                            c.User.Governorate.ToLower().Contains(filter.Governorate.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.City))
-                        companies = companies.Where(c => c.User.City != null && c.User.City.Contains(filter.City));
+                        companies = companies.Where(c =>
+                            c.User.City != null &&
+                            c.User.City.ToLower().Contains(filter.City.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.District))
-                        companies = companies.Where(c => c.User.District != null && c.User.District.Contains(filter.District));
+                        companies = companies.Where(c =>
+                            c.User.District != null &&
+                            c.User.District.ToLower().Contains(filter.District.ToLower()));
 
                     if (!string.IsNullOrEmpty(filter.Profession))
-                        companies = companies.Where(c => c.Business != null && c.Business.Contains(filter.Profession));
+                        companies = companies.Where(c =>
+                            c.Business != null &&
+                            c.Business.ToLower().Contains(filter.Profession.ToLower()));
+
                 }
 
                 companies = companies.Where(c => c.IsAvailable);
@@ -204,6 +264,7 @@ namespace EgyptOnline.Controllers
                     });
 
                 var contractors = _context.Contractors.Include(c => c.User).AsQueryable();
+                filter = TrimAllSearchInputs(filter);
 
                 if (filter != null && filter.BasedOnPoints == true)
                 {
@@ -215,17 +276,35 @@ namespace EgyptOnline.Controllers
                 if (filter != null)
                 {
                     if (!string.IsNullOrEmpty(filter.FirstName))
-                        contractors = contractors.Where(c => c.User.FirstName != null && c.User.FirstName.Contains(filter.FirstName));
+                        contractors = contractors.Where(c =>
+                            c.User.FirstName != null &&
+                            c.User.FirstName.ToLower().Contains(filter.FirstName.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.LastName))
-                        contractors = contractors.Where(c => c.User.LastName != null && c.User.LastName.Contains(filter.LastName));
+                        contractors = contractors.Where(c =>
+                            c.User.LastName != null &&
+                            c.User.LastName.ToLower().Contains(filter.LastName.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.Governorate))
-                        contractors = contractors.Where(c => c.User.Governorate != null && c.User.Governorate.Contains(filter.Governorate));
+                        contractors = contractors.Where(c =>
+                            c.User.Governorate != null &&
+                            c.User.Governorate.ToLower().Contains(filter.Governorate.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.City))
-                        contractors = contractors.Where(c => c.User.City != null && c.User.City.Contains(filter.City));
+                        contractors = contractors.Where(c =>
+                            c.User.City != null &&
+                            c.User.City.ToLower().Contains(filter.City.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.District))
-                        contractors = contractors.Where(c => c.User.District != null && c.User.District.Contains(filter.District));
+                        contractors = contractors.Where(c =>
+                            c.User.District != null &&
+                            c.User.District.ToLower().Contains(filter.District.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.Profession))
-                        contractors = contractors.Where(c => c.Specialization != null && c.Specialization.Contains(filter.Profession));
+                        contractors = contractors.Where(c =>
+                            c.Specialization != null &&
+                            c.Specialization.ToLower().Contains(filter.Profession.ToLower()));
+
                 }
 
                 contractors = contractors.Where(c => c.IsAvailable);
@@ -254,6 +333,7 @@ namespace EgyptOnline.Controllers
                     });
 
                 var marketplaces = _context.MarketPlaces.Include(m => m.User).AsQueryable();
+                filter = TrimAllSearchInputs(filter);
 
                 if (filter != null && filter.BasedOnPoints == true)
                 {
@@ -265,17 +345,35 @@ namespace EgyptOnline.Controllers
                 if (filter != null)
                 {
                     if (!string.IsNullOrEmpty(filter.FirstName))
-                        marketplaces = marketplaces.Where(m => m.User.FirstName != null && m.User.FirstName.Contains(filter.FirstName));
+                        marketplaces = marketplaces.Where(m =>
+                            m.User.FirstName != null &&
+                            m.User.FirstName.ToLower().Contains(filter.FirstName.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.LastName))
-                        marketplaces = marketplaces.Where(m => m.User.LastName != null && m.User.LastName.Contains(filter.LastName));
+                        marketplaces = marketplaces.Where(m =>
+                            m.User.LastName != null &&
+                            m.User.LastName.ToLower().Contains(filter.LastName.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.Governorate))
-                        marketplaces = marketplaces.Where(m => m.User.Governorate != null && m.User.Governorate.Contains(filter.Governorate));
+                        marketplaces = marketplaces.Where(m =>
+                            m.User.Governorate != null &&
+                            m.User.Governorate.ToLower().Contains(filter.Governorate.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.City))
-                        marketplaces = marketplaces.Where(m => m.User.City != null && m.User.City.Contains(filter.City));
+                        marketplaces = marketplaces.Where(m =>
+                            m.User.City != null &&
+                            m.User.City.ToLower().Contains(filter.City.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.District))
-                        marketplaces = marketplaces.Where(m => m.User.District != null && m.User.District.Contains(filter.District));
+                        marketplaces = marketplaces.Where(m =>
+                            m.User.District != null &&
+                            m.User.District.ToLower().Contains(filter.District.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.Profession))
-                        marketplaces = marketplaces.Where(m => m.Business != null && m.Business.Contains(filter.Profession));
+                        marketplaces = marketplaces.Where(m =>
+                            m.Business != null &&
+                            m.Business.ToLower().Contains(filter.Profession.ToLower()));
+
                 }
 
                 marketplaces = marketplaces.Where(m => m.IsAvailable);
@@ -303,6 +401,7 @@ namespace EgyptOnline.Controllers
                     });
 
                 var engineers = _context.Engineers.Include(e => e.User).AsQueryable();
+                filter = TrimAllSearchInputs(filter);
 
                 if (filter != null && filter.BasedOnPoints == true)
                 {
@@ -314,17 +413,35 @@ namespace EgyptOnline.Controllers
                 if (filter != null)
                 {
                     if (!string.IsNullOrEmpty(filter.FirstName))
-                        engineers = engineers.Where(e => e.User.FirstName != null && e.User.FirstName.Contains(filter.FirstName));
+                        engineers = engineers.Where(e =>
+                            e.User.FirstName != null &&
+                            e.User.FirstName.ToLower().Contains(filter.FirstName.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.LastName))
-                        engineers = engineers.Where(e => e.User.LastName != null && e.User.LastName.Contains(filter.LastName));
+                        engineers = engineers.Where(e =>
+                            e.User.LastName != null &&
+                            e.User.LastName.ToLower().Contains(filter.LastName.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.Governorate))
-                        engineers = engineers.Where(e => e.User.Governorate != null && e.User.Governorate.Contains(filter.Governorate));
+                        engineers = engineers.Where(e =>
+                            e.User.Governorate != null &&
+                            e.User.Governorate.ToLower().Contains(filter.Governorate.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.City))
-                        engineers = engineers.Where(e => e.User.City != null && e.User.City.Contains(filter.City));
+                        engineers = engineers.Where(e =>
+                            e.User.City != null &&
+                            e.User.City.ToLower().Contains(filter.City.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.District))
-                        engineers = engineers.Where(e => e.User.District != null && e.User.District.Contains(filter.District));
+                        engineers = engineers.Where(e =>
+                            e.User.District != null &&
+                            e.User.District.ToLower().Contains(filter.District.ToLower()));
+
                     if (!string.IsNullOrEmpty(filter.Profession))
-                        engineers = engineers.Where(e => e.Specialization != null && e.Specialization.Contains(filter.Profession));
+                        engineers = engineers.Where(e =>
+                            e.Specialization != null &&
+                            e.Specialization.ToLower().Contains(filter.Profession.ToLower()));
+
                 }
 
                 engineers = engineers.Where(e => e.IsAvailable);

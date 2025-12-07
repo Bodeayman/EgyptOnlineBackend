@@ -17,6 +17,8 @@ using System.Text.RegularExpressions;
 using System.Transactions;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using System.Runtime.InteropServices;
+using Microsoft.EntityFrameworkCore.SqlServer.Migrations.Internal;
+using System.Collections.Concurrent;
 namespace EgyptOnline.Controllers
 {
 
@@ -34,6 +36,8 @@ namespace EgyptOnline.Controllers
         private readonly UserImageService _userImageService;
 
         private readonly ApplicationDbContext _context;
+
+
 
         public AuthController(UserManager<User> userManager, UserRegisterationService userRegisterationService, IUserService service, IOTPService sms, ApplicationDbContext context, UserImageService userImageService)
         {
@@ -80,10 +84,10 @@ namespace EgyptOnline.Controllers
                 {
                     // Collect all validation errors
                     var errors = ModelState
-                        .Where(x => x.Value.Errors.Count > 0)
+                        .Where(x => x.Value!.Errors.Count > 0)
                         .ToDictionary(
                             kvp => kvp.Key,
-                            kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
                         );
 
                     return BadRequest(new
@@ -95,7 +99,7 @@ namespace EgyptOnline.Controllers
                 }
 
                 if (model.Pay < 100 &&
-                 !model.ProviderType.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase) &&
+                 !model.ProviderType!.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase) &&
                  !model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase)
                  )
                 {
@@ -167,9 +171,9 @@ namespace EgyptOnline.Controllers
                 else if (model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase))
                 {
 
-                    if (model.Business == null)
+                    if (model.Business == null || model.Owner == null)
                     {
-                        return BadRequest(new { message = "Please Add the Business" });
+                        return BadRequest(new { message = "Please Add the Business and the Owner" });
                     }
                     var Company = new Company
                     {
@@ -186,9 +190,9 @@ namespace EgyptOnline.Controllers
                 else if (model.ProviderType.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase))
                 {
 
-                    if (model.Business == null)
+                    if (model.Business == null || model.Owner == null)
                     {
-                        return BadRequest(new { message = "Please Add the Business" });
+                        return BadRequest(new { message = "Please Add the Business and the Owner" });
                     }
                     var MarketPlace = new MarketPlace
                     {
@@ -249,7 +253,7 @@ namespace EgyptOnline.Controllers
                 return Ok(new
                 {
                     message = $"The Service Provider which is {model.ProviderType} is Created Successfully",
-                    expiryDate = UserRegisterationResult.User.Subscription.EndDate
+                    expiryDate = UserRegisterationResult.User.Subscription!.EndDate
                 });
 
 
@@ -272,10 +276,8 @@ namespace EgyptOnline.Controllers
 
 
 
-                var input = model.Email.Trim();
-                Console.WriteLine(input);
-                User user = null;
-                Console.WriteLine("Maybe here");
+                var input = model.Email.Trim(); // trim the output to check
+                User user;
                 if (Helper.IsEmail(input))
                 {
 
@@ -286,16 +288,13 @@ namespace EgyptOnline.Controllers
                     if (user == null)
                     {
                         return BadRequest(new { message = "This User is not found", errorCode = UserErrors.UserIsNotFound.ToString() });
-
                     }
                 }
                 //Egyptain Server
                 else if (Helper.IsPhone(input))
                 {
-                    Console.WriteLine("Reached here after phone check");
 
                     string phoneNumber = $"+20{input.Substring(1)}";
-                    Console.WriteLine(phoneNumber);
                     user = await _context.Users
                         .Include(u => u.Subscription)
                         .Include(u => u.ServiceProvider)
@@ -306,6 +305,22 @@ namespace EgyptOnline.Controllers
 
                     }
                 }
+                /*
+                else if (Helper.IsUserName(input))
+                {
+
+
+                    user = await _context.Users
+                        .Include(u => u.Subscription)
+                        .Include(u => u.ServiceProvider)
+                        .FirstOrDefaultAsync(u => u.UserName == input);
+                    if (user == null)
+                    {
+                        return BadRequest(new { message = "This User is not found", errorCode = UserErrors.UserIsNotFound.ToString() });
+
+                    }
+                }
+                */
                 else
                 {
                     return BadRequest(new { message = "Invalid email or phone format" });
@@ -313,11 +328,11 @@ namespace EgyptOnline.Controllers
                 // Check user existence and password
                 Console.WriteLine(user.Id);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
-                    return NotFound(new { message = "The Email/Phone or password is incorrect" });
+                    return NotFound(new { message = "The Email/Phone or password is incorrect", errorCode = UserErrors.EmailOrPasswordInCorrect.ToString() });
                 Console.WriteLine("What happns");
 
                 // Check subscription availability
-                if (!user.ServiceProvider.IsAvailable)
+                if (!user.ServiceProvider!.IsAvailable)
                 {
                     return Unauthorized(new
                     {
@@ -358,7 +373,7 @@ namespace EgyptOnline.Controllers
                     message = "Login successful",
                     accessToken,
                     refreshToken = refreshTokenString,
-                    subscriptionExpiry = user.Subscription.EndDate,
+                    subscriptionExpiry = user.Subscription!.EndDate,
                     refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
                 });
 
@@ -368,11 +383,16 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = "Internal server error", error = ex.Message });
             }
         }
+
+        // This password is for logged in user
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
         {
             var user = await _userManager.GetUserAsync(User); // logged-in user
-            Console.WriteLine(model.CurrentPassword);
+            if (user == null)
+            {
+                return BadRequest(new { message = "User is not found" });
+            }
             if (!await _userManager.CheckPasswordAsync(user, model.CurrentPassword))
                 return BadRequest(new { message = "Current password is incorrect" });
 
@@ -387,43 +407,60 @@ namespace EgyptOnline.Controllers
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest refreshRequest)
         {
-            Console.WriteLine("INitailizationg");
             if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
                 return BadRequest("Refresh token is required");
-            Console.WriteLine("INitailization2");
 
             try
             {
-                // Step 1: Find the refresh token in the database
                 var storedToken = await _context.RefreshTokens
-     .Include(rt => rt.User)
-     .ThenInclude(u => u.ServiceProvider)
-     .Include(rt => rt.User.Subscription)   // <-- IMPORTANT
-     .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
+                    .Include(rt => rt.User)
+                        .ThenInclude(u => u.ServiceProvider)
+                    .Include(rt => rt.User.Subscription)
+                    .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
 
-
-
-
-                Console.WriteLine("Unauthrozied refresing");
                 if (storedToken == null)
-                    return Unauthorized("Invalid refresh token");
-                Console.WriteLine(storedToken.Expires);
-                Console.WriteLine(DateTime.UtcNow);
+                    return Unauthorized(new { message = "Invalid refresh token", errorCode = "InvalidToken" });
 
-                Console.WriteLine(storedToken.IsRevoked);
-                if (storedToken.IsRevoked || storedToken.Expires < DateTime.UtcNow)
+                // NEW: Check if already revoked FIRST
+                if (storedToken.IsRevoked)
                 {
-                    Console.WriteLine("Am i dying");
-                    return Unauthorized(new { message = "Refresh token is expired or revoked", errorCode = "SubscriptionInvalid" });
+                    // Token already used - this is a replay attack or race condition
+                    // Return the MOST RECENT valid token for this user instead of failing
+                    var latestToken = await _context.RefreshTokens
+                        .Where(rt => rt.UserId == storedToken.UserId && !rt.IsRevoked && rt.Expires > DateTime.UtcNow)
+                        .OrderByDescending(rt => rt.Created)
+                        .FirstOrDefaultAsync();
 
+                    if (latestToken != null)
+                    {
+                        // Return existing valid token - prevents cascade failures
+                        var existingAccessToken = _userService.GenerateJwtToken(
+                            storedToken.User,
+                            Helper.GetUserType(storedToken.User),
+                            TokensTypes.AccessToken
+                        );
+
+                        return Ok(new
+                        {
+                            AccessToken = existingAccessToken,
+                            RefreshToken = latestToken.Token,
+                            refreshTokenExpiry = latestToken.Expires,
+                            subscriptionExpiry = storedToken.User.Subscription?.EndDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(100)),
+                        });
+                    }
+
+                    return Unauthorized(new { message = "Refresh token is expired or revoked", errorCode = "SubscriptionInvalid" });
                 }
-                Console.WriteLine("Am i dying 2");
+
+                if (storedToken.Expires < DateTime.UtcNow)
+                    return Unauthorized(new { message = "Refresh token is expired or revoked", errorCode = "SubscriptionInvalid" });
 
                 var user = storedToken.User;
                 if (user == null)
                     return Unauthorized("User not found");
-                Console.WriteLine(user.UserName);
-                if (!user.ServiceProvider.IsAvailable)
+
+                // Add null checks
+                if (user.ServiceProvider == null || !user.ServiceProvider.IsAvailable)
                 {
                     return Unauthorized(new
                     {
@@ -433,28 +470,13 @@ namespace EgyptOnline.Controllers
                     });
                 }
 
-                // Optional: revoke the old refresh token to enforce single use
-
+                // Revoke old token
                 storedToken.IsRevoked = true;
                 storedToken.Revoked = DateTime.UtcNow;
-                Console.WriteLine("Working before saving");
 
-                await _context.SaveChangesAsync();
-                Console.WriteLine("Working before crashing");
-                // Step 2: Generate a new access token
-                // Replace with actual role claim
-                Console.WriteLine(Helper.GetUserType(user));
-                var newAccessToken = _userService.GenerateJwtToken(
-                    user,
-                    Helper.GetUserType(user),
-                    TokensTypes.AccessToken
-                );
-
-                var newRefreshTokenString = _userService.GenerateJwtToken(
-                    user,
-                     Helper.GetUserType(user),
-                    TokensTypes.RefreshToken
-                );
+                // Generate new tokens
+                var newAccessToken = _userService.GenerateJwtToken(user, Helper.GetUserType(user), TokensTypes.AccessToken);
+                var newRefreshTokenString = _userService.GenerateJwtToken(user, Helper.GetUserType(user), TokensTypes.RefreshToken);
 
                 var newRefreshToken = new RefreshToken
                 {
@@ -464,35 +486,22 @@ namespace EgyptOnline.Controllers
                     Created = DateTime.UtcNow,
                     IsRevoked = false
                 };
+
                 _context.RefreshTokens.Add(newRefreshToken);
                 await _context.SaveChangesAsync();
 
-                // Step 3: Return new tokens to client
                 return Ok(new
                 {
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshTokenString,
                     refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
-                    subscriptionExpiry = user.Subscription.EndDate,
-
-
+                    subscriptionExpiry = user.Subscription?.EndDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(100)),
                 });
-            }
-            catch (SecurityTokenExpiredException)
-            {
-                return Unauthorized("Refresh token expired");
-            }
-            catch (SecurityTokenException)
-            {
-                return Unauthorized("Invalid refresh token");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
-                {
-                    message = "Error processing refresh token",
-                    errorMessage = ex.Message
-                });
+                Console.WriteLine($"Error in refresh: {ex.Message}");
+                return StatusCode(500, new { message = "Error processing refresh token", errorMessage = ex.Message });
             }
         }
         [HttpPost("logout")]
@@ -532,26 +541,7 @@ namespace EgyptOnline.Controllers
             }
         }
 
-        [HttpPost("request-otp")]
-        public async Task<IActionResult> RequestOtp([FromBody] string phoneNumber)
-        {
-            try
-            {
 
-                var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
-
-                if (user == null) return NotFound("User not found");
-                await _smsOtpService.SendOtpAsync(phoneNumber, false);
-                // SendOtpAsync()
-
-
-                return Ok("OTP sent");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error: " + ex.Message });
-            }
-        }
         [Authorize]
         [HttpPost("upload-profile-image")]
 

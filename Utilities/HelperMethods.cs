@@ -98,6 +98,15 @@ namespace EgyptOnline.Utilities
             MyRegex().IsMatch(input);
         [GeneratedRegex(@"^\+?[0-9]{7,15}$")]
         private static partial Regex MyRegex();
+
+
+
+        public static bool IsUserName(string input) =>
+    UserNameRegex().IsMatch(input);
+
+        [GeneratedRegex(@"^[\u0600-\u06FFa-z0-9]+_[0-9]{1,6}$")]
+        private static partial Regex UserNameRegex();
+
     }
 
 

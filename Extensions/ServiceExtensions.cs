@@ -10,6 +10,10 @@ using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Application.Interfaces;
 using EgyptOnline.Strategies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using StackExchange.Redis;
+using EgyptOnline.Infrastructure;
 /*
 This file is for adding functionalies to program.cs instead of packing everything in one file
 like adding authentication and swagger configuration
@@ -22,7 +26,6 @@ namespace EgyptOnline.Extensions
         {
             services.AddScoped<UserImageService>();
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IOTPService, SmsMisrOtpService>();
             services.AddScoped<ICDNService, LocalStorageService>();
             services.AddScoped<IPaymentStrategy, MobileWalletPaymentStrategy>();
             services.AddScoped<IPaymentStrategy, CreditCardPaymentStrategy>();
@@ -32,7 +35,10 @@ namespace EgyptOnline.Extensions
             services.AddScoped<UserRegisterationService>();
             services.AddScoped<UserSubscriptionServices>();
             services.AddScoped<UserPointService>();
+            services.AddSingleton<IEmailService, EmailService>();
 
+
+            services.AddScoped<IOTPService, OtpService>();
 
             services.AddHttpClient();
 
@@ -46,6 +52,13 @@ namespace EgyptOnline.Extensions
                 options.DefaultApiVersion = new ApiVersion(1, 0);
                 options.ReportApiVersions = true;
             });
+            //         services.AddRateLimiter(options => options.AddFixedWindowLimiter("FixedPolicy", opt =>
+            // {
+            //     opt.Window = TimeSpan.FromMinutes(1);
+            //     opt.PermitLimit = 100;
+            //     opt.QueueLimit = 2;
+            //     opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            // }));
             return services;
         }
 

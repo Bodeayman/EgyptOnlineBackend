@@ -7,6 +7,7 @@ using Serilog;
 using Serilog.Events;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.FileProviders;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,11 +38,27 @@ try
 
     // ---------- Services ----------
     builder.Services.AddControllers();
+    builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration["RedisSettings:Configuration"];
+    options.InstanceName = builder.Configuration["RedisSettings:InstanceName"];
+});
+
+    // IConnectionMultiplexer using settings from configuration
+    builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    {
+        return ConnectionMultiplexer.Connect(builder.Configuration["RedisSettings:Configuration"]);
+    });
 
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-    builder.Services.AddIdentity<User, IdentityRole>()
+    builder.Services.AddIdentity<User, IdentityRole>(options =>
+    {
+        options.User.AllowedUserNameCharacters =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+"
+    + "أابتثجحخدذرزسشصضطظعغفقكلمنهويءآأإىة٤٥٦٧٨٩٠"; // Arabic chars
+    })
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 

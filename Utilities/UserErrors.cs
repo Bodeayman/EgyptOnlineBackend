@@ -12,7 +12,8 @@ namespace EgyptOnline.Utilities
         ImageIsNull,
         SubscriptionInvalid,
         InvalidInput,
-        UserIsNotFound
-
+        UserIsNotFound,
+        PasswordInvalid,
+        EmailOrPasswordInCorrect
     }
 }

@@ -2,8 +2,8 @@ namespace EgyptOnline.Domain.Interfaces
 {
     public interface IOTPService
     {
-        public Task<string> SendOtpAsync(string phoneNumber, bool isLive = false);
-        public string GenerateOtp();
+        Task SendOtpAsync(string phoneNumber, bool isRegister);
+        Task<bool> ValidateOtpAsync(string phoneNumber, string otp);
 
     }
 }
