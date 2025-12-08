@@ -50,6 +50,7 @@ namespace EgyptOnline.Controllers
         }
         [AllowAnonymous]
         [HttpPost("register")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Register([FromForm] RegisterWorkerDto model, [FromForm] IFormFile imageFile)
         {
@@ -351,6 +352,7 @@ namespace EgyptOnline.Controllers
                 Console.WriteLine("What happns 1");
 
                 // Generate tokens
+                var roles = await _userManager.GetRolesAsync(user);
                 var accessToken = _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
                 var refreshTokenString = _userService.GenerateJwtToken(user, userRole, TokensTypes.RefreshToken);
                 Console.WriteLine("What happns 2");
@@ -417,7 +419,6 @@ namespace EgyptOnline.Controllers
                         .ThenInclude(u => u.ServiceProvider)
                     .Include(rt => rt.User.Subscription)
                     .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
-
                 if (storedToken == null)
                     return Unauthorized(new { message = "Invalid refresh token", errorCode = "InvalidToken" });
 

@@ -6,6 +6,7 @@ using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,11 +23,13 @@ namespace EgyptOnline.Services
     {
         private readonly IConfiguration _config;
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<User> _userManager;
 
-        public UserService(IConfiguration config, ApplicationDbContext context)
+        public UserService(IConfiguration config, ApplicationDbContext context, UserManager<User> userManager)
         {
             _config = config;
             _context = context;
+            _userManager = userManager;
         }
 
 
@@ -52,7 +55,7 @@ namespace EgyptOnline.Services
                 var expiry = TokenType == TokensTypes.RefreshToken
                   ? DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
                   : DateTime.UtcNow.AddMinutes(TokenPeriod.ACCESS_TOKEN_MINS);
-                var claims = new[]
+                var claims = new List<Claim>
                 {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
@@ -61,8 +64,8 @@ namespace EgyptOnline.Services
                 new Claim("token_type",TokenType.ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
 
-
             };
+                claims.Add(new Claim(ClaimTypes.Role, Roles.User));
                 var token = new JwtSecurityToken(
                     issuer: _config["Jwt:Issuer"],
                     audience: _config["Jwt:Audience"],

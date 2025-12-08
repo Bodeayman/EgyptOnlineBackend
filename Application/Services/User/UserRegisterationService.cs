@@ -127,6 +127,7 @@ namespace EgyptOnline.Services
                 }
                 else
                 {
+                    await _userManager.AddToRoleAsync(user, Roles.User);
                     return new UserRegisterationResult
                     {
                         Result = IdentityResult.Success,

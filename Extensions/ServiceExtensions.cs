@@ -52,13 +52,19 @@ namespace EgyptOnline.Extensions
                 options.DefaultApiVersion = new ApiVersion(1, 0);
                 options.ReportApiVersions = true;
             });
-            //         services.AddRateLimiter(options => options.AddFixedWindowLimiter("FixedPolicy", opt =>
-            // {
-            //     opt.Window = TimeSpan.FromMinutes(1);
-            //     opt.PermitLimit = 100;
-            //     opt.QueueLimit = 2;
-            //     opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-            // }));
+            /*
+            services.AddRateLimiter(options =>
+ {
+     options.AddFixedWindowLimiter("FixedPolicy", opt =>
+     {
+         opt.Window = TimeSpan.FromMinutes(1);
+         opt.PermitLimit = 100;
+         opt.QueueLimit = 2;
+         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+     });
+ });
+ */
+
             return services;
         }
 
@@ -123,5 +129,6 @@ namespace EgyptOnline.Extensions
 
             return services;
         }
+
     }
 }
