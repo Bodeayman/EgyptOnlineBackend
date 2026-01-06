@@ -19,8 +19,8 @@ namespace EgyptOnline.Utilities
 
                 PhoneNumber = user.PhoneNumber,
                 ImageUrl = user.ImageUrl,
-                Subscription = user.Subscription?.ToSubscriptionDto(),
-                ServiceProvider = user.ServiceProvider?.ToServiceProviderDto(),
+                Subscription = user.Subscription?.ToSubscriptionDto() ?? new SubscriptionDto(),
+                ServiceProvider = user.ServiceProvider?.ToServiceProviderDto() ?? new ServiceProviderDto(),
                 Points = user.Points,
 
 

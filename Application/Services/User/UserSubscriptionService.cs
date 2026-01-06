@@ -8,9 +8,11 @@ namespace EgyptOnline.Services
     public class UserSubscriptionServices
     {
         private readonly ApplicationDbContext _context;
-        public UserSubscriptionServices(ApplicationDbContext context)
+        private readonly UserPointService _userPointService;
+        public UserSubscriptionServices(ApplicationDbContext context, UserPointService userPointService)
         {
             _context = context;
+            _userPointService = userPointService;
         }
         public Subscription? AddSubscriptionForANewUser(User user)
         {
@@ -40,8 +42,16 @@ namespace EgyptOnline.Services
             {
                 Console.WriteLine("Subscription is added here");
 
-                var FoundSubscription = await _context.Subscriptions.FirstOrDefaultAsync(U => U.UserId == user.Id);
+                var FoundSubscription = await _context.Subscriptions.Include(s => s.User).FirstOrDefaultAsync(U => U.UserId == user.Id);
                 FoundSubscription.EndDate = EgyptTimeHelper.TodayInEgypt().AddMonths(1);
+
+                // Check for referral reward
+                if (!string.IsNullOrEmpty(FoundSubscription.User.ReferrerUserName) && FoundSubscription.User.ReferralRewardCount < 5)
+                {
+                    _userPointService.AddPointsToUser(FoundSubscription.User.ReferrerUserName);
+                    FoundSubscription.User.ReferralRewardCount++;
+                }
+
                 return FoundSubscription;
             }
             catch (Exception ex)

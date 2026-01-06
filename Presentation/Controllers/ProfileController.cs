@@ -17,7 +17,7 @@ namespace EgyptOnline.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiVersion("1.0")]
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = Roles.User)]
 
     public class ProfileController : ControllerBase
     {
@@ -38,7 +38,10 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                Console.WriteLine("On my way");
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+                Console.WriteLine("Fucked my way");
+
                 if (userId == null)
                     return Unauthorized();
 

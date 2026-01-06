@@ -5,12 +5,10 @@ using EgyptOnline.Data;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Models;
 using EgyptOnline.Utilities;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+
 /*
 This is not related to the repository pattern that deals with the user database
 But rather it will provide the functionalies that needed mostly for authentication
@@ -33,10 +31,17 @@ namespace EgyptOnline.Services
         }
 
 
-        public string GenerateJwtToken(User user, UsersTypes userRole, TokensTypes TokenType)
+        public async Task<string> GenerateJwtToken(User user, UsersTypes userRole, TokensTypes TokenType)
         {
             try
             {
+                var rolesAwaiting = await _userManager.GetRolesAsync(user);
+                Console.WriteLine("The roles are");
+                foreach (var role in rolesAwaiting)
+                {
+                    Console.WriteLine(role);
+                }
+                Console.WriteLine("Finishes");
                 SymmetricSecurityKey securityKey;
                 if (TokenType == TokensTypes.AccessToken)
                 {
@@ -60,12 +65,20 @@ namespace EgyptOnline.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim("uid", user.Id),
-                new Claim("role",userRole.ToString()),
+                new Claim("worker_type",userRole.ToString()),
                 new Claim("token_type",TokenType.ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
 
             };
-                claims.Add(new Claim(ClaimTypes.Role, Roles.User));
+                if (rolesAwaiting.Count > 0)
+                {
+                    claims.AddRange(rolesAwaiting.Select(r => new Claim(ClaimTypes.Role, r)));
+                }
+                else
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, Roles.User));
+                }
+
                 var token = new JwtSecurityToken(
                     issuer: _config["Jwt:Issuer"],
                     audience: _config["Jwt:Audience"],
@@ -94,12 +107,10 @@ namespace EgyptOnline.Services
 
             return userId;
         }
-        public ClaimsPrincipal ValidateRefreshToken(RefreshRequest refreshRequest)
+        public ClaimsPrincipal ValidateRefreshToken(string refreshToken)
         {
-            if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
+            if (string.IsNullOrEmpty(refreshToken))
                 return null;
-
-            var token = refreshRequest.RefreshToken;
 
             var handler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_config["Jwt:RefreshKey"]);
@@ -118,7 +129,13 @@ namespace EgyptOnline.Services
 
             try
             {
-                var principal = handler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+                var principal = handler.ValidateToken(refreshToken, validationParameters, out SecurityToken validatedToken);
+
+                // Optional: Check if token type claim is actually "RefreshToken"
+                var tokenType = principal.Claims.FirstOrDefault(c => c.Type == "token_type")?.Value;
+                if (tokenType != TokensTypes.RefreshToken.ToString())
+                    return null;
+
                 return principal;
             }
             catch

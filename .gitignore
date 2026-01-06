@@ -21,3 +21,5 @@ Dockerfile
 *.txt
 *.conf
 *.md
+
+*.sh

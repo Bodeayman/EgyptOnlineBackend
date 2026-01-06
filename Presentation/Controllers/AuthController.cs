@@ -330,8 +330,16 @@ namespace EgyptOnline.Controllers
                 Console.WriteLine(user.Id);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
                     return NotFound(new { message = "The Email/Phone or password is incorrect", errorCode = UserErrors.EmailOrPasswordInCorrect.ToString() });
-                Console.WriteLine("What happns");
+                var roles = await _userManager.GetRolesAsync(user);
 
+                if (roles.Contains(Roles.Admin))
+                {
+                    return BadRequest(new
+                    {
+                        message = "You are an admin, can't access the app",
+                        errorCode = UserErrors.GeneralError.ToString()
+                    });
+                }
                 // Check subscription availability
                 if (!user.ServiceProvider!.IsAvailable)
                 {
@@ -352,9 +360,8 @@ namespace EgyptOnline.Controllers
                 Console.WriteLine("What happns 1");
 
                 // Generate tokens
-                var roles = await _userManager.GetRolesAsync(user);
-                var accessToken = _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
-                var refreshTokenString = _userService.GenerateJwtToken(user, userRole, TokensTypes.RefreshToken);
+                var accessToken = await _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
+                var refreshTokenString = await _userService.GenerateJwtToken(user, userRole, TokensTypes.RefreshToken);
                 Console.WriteLine("What happns 2");
 
                 var refreshToken = new RefreshToken
@@ -388,6 +395,7 @@ namespace EgyptOnline.Controllers
 
         // This password is for logged in user
         [HttpPost("change-password")]
+        [Authorize(Roles = Roles.User)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
         {
             var user = await _userManager.GetUserAsync(User); // logged-in user
@@ -405,7 +413,7 @@ namespace EgyptOnline.Controllers
 
             return Ok(new { message = "Password changed successfully" });
         }
-
+        [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest refreshRequest)
         {
@@ -414,70 +422,51 @@ namespace EgyptOnline.Controllers
 
             try
             {
+                // 1. Validate the token itself
+                var principal = _userService.ValidateRefreshToken(refreshRequest.RefreshToken);
+                if (principal == null)
+                    return Unauthorized(new { message = "Invalid refresh token", errorCode = "InvalidToken" });
+
+                var tokenType = principal.Claims.FirstOrDefault(c => c.Type == "token_type")?.Value;
+                if (tokenType != TokensTypes.RefreshToken.ToString())
+                    return Unauthorized(new { message = "Token is not a refresh token", errorCode = "InvalidToken" });
+
+                // 2. Find the stored token
                 var storedToken = await _context.RefreshTokens
                     .Include(rt => rt.User)
                         .ThenInclude(u => u.ServiceProvider)
                     .Include(rt => rt.User.Subscription)
                     .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
-                if (storedToken == null)
-                    return Unauthorized(new { message = "Invalid refresh token", errorCode = "InvalidToken" });
 
-                // NEW: Check if already revoked FIRST
-                if (storedToken.IsRevoked)
-                {
-                    // Token already used - this is a replay attack or race condition
-                    // Return the MOST RECENT valid token for this user instead of failing
-                    var latestToken = await _context.RefreshTokens
-                        .Where(rt => rt.UserId == storedToken.UserId && !rt.IsRevoked && rt.Expires > DateTime.UtcNow)
-                        .OrderByDescending(rt => rt.Created)
-                        .FirstOrDefaultAsync();
-
-                    if (latestToken != null)
-                    {
-                        // Return existing valid token - prevents cascade failures
-                        var existingAccessToken = _userService.GenerateJwtToken(
-                            storedToken.User,
-                            Helper.GetUserType(storedToken.User),
-                            TokensTypes.AccessToken
-                        );
-
-                        return Ok(new
-                        {
-                            AccessToken = existingAccessToken,
-                            RefreshToken = latestToken.Token,
-                            refreshTokenExpiry = latestToken.Expires,
-                            subscriptionExpiry = storedToken.User.Subscription?.EndDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(100)),
-                        });
-                    }
-
-                    return Unauthorized(new { message = "Refresh token is expired or revoked", errorCode = "SubscriptionInvalid" });
-                }
-
-                if (storedToken.Expires < DateTime.UtcNow)
+                if (storedToken == null || storedToken.IsRevoked || storedToken.Expires < DateTime.UtcNow)
                     return Unauthorized(new { message = "Refresh token is expired or revoked", errorCode = "SubscriptionInvalid" });
 
                 var user = storedToken.User;
                 if (user == null)
                     return Unauthorized("User not found");
 
-                // Add null checks
                 if (user.ServiceProvider == null || !user.ServiceProvider.IsAvailable)
-                {
                     return Unauthorized(new
                     {
                         message = "Your subscription has expired",
                         ErrorCode = "SubscriptionInvalid",
                         LastDate = user.Subscription?.EndDate.ToString()
                     });
+
+                // 3. Revoke **all previous valid tokens** to prevent replay/race attacks
+                var oldTokens = await _context.RefreshTokens
+                    .Where(rt => rt.UserId == user.Id && !rt.IsRevoked && rt.Expires > DateTime.UtcNow)
+                    .ToListAsync();
+
+                foreach (var oldToken in oldTokens)
+                {
+                    oldToken.IsRevoked = true;
+                    oldToken.Revoked = DateTime.UtcNow;
                 }
 
-                // Revoke old token
-                storedToken.IsRevoked = true;
-                storedToken.Revoked = DateTime.UtcNow;
-
-                // Generate new tokens
-                var newAccessToken = _userService.GenerateJwtToken(user, Helper.GetUserType(user), TokensTypes.AccessToken);
-                var newRefreshTokenString = _userService.GenerateJwtToken(user, Helper.GetUserType(user), TokensTypes.RefreshToken);
+                // 4. Generate new tokens
+                var newAccessToken = await _userService.GenerateJwtToken(user, Helper.GetUserType(user), TokensTypes.AccessToken);
+                var newRefreshTokenString = await _userService.GenerateJwtToken(user, Helper.GetUserType(user), TokensTypes.RefreshToken);
 
                 var newRefreshToken = new RefreshToken
                 {
@@ -495,7 +484,7 @@ namespace EgyptOnline.Controllers
                 {
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshTokenString,
-                    refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
+                    refreshTokenExpiry = newRefreshToken.Expires,
                     subscriptionExpiry = user.Subscription?.EndDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(100)),
                 });
             }
@@ -505,7 +494,11 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = "Error processing refresh token", errorMessage = ex.Message });
             }
         }
+
+        [AllowAnonymous]
+
         [HttpPost("logout")]
+
         public async Task<IActionResult> Logout([FromBody] RefreshRequest refreshRequest)
         {
             if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))

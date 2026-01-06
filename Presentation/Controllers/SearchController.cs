@@ -15,7 +15,7 @@ namespace EgyptOnline.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiVersion("1.0")]
-    [Authorize]
+    [Authorize(Roles = Roles.User)]
     public class SearchController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

@@ -8,6 +8,7 @@ using Serilog.Events;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.FileProviders;
 using StackExchange.Redis;
+using EgyptOnline.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +59,11 @@ try
         options.User.AllowedUserNameCharacters =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+"
     + "أابتثجحخدذرزسشصضطظعغفقكلمنهويءآأإىة٤٥٦٧٨٩٠"; // Arabic chars
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
     })
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
@@ -80,6 +86,11 @@ try
             Log.Information("Running database migrations...");
             db.Database.Migrate();
             Log.Information("Database migrations completed successfully");
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+
+            await IdentityExtensions.SeedRoles(roleManager);
+            await IdentityExtensions.SeedAdmin(userManager);
         }
         catch (Exception ex)
         {

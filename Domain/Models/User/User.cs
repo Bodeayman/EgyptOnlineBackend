@@ -26,6 +26,9 @@ namespace EgyptOnline.Models
 
         public int Points { get; set; } = 0;
 
+        public string? ReferrerUserName { get; set; }
+        public int ReferralRewardCount { get; set; } = 0;
+
 
 
     }

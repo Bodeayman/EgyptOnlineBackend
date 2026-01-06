@@ -147,4 +147,82 @@ namespace EgyptOnline.Strategies
 
 
 
+    public class FawryPaymentStrategy : IPaymentStrategy
+    {
+        private readonly HttpClient _httpClient;
+        private readonly IConfiguration _config;
+
+        public FawryPaymentStrategy(HttpClient httpClient, IConfiguration config)
+        {
+            _httpClient = httpClient;
+            _config = config;
+        }
+
+        public async Task<string> PayAsync(decimal amount, User user)
+        {
+            // 1. Auth
+            var authResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/auth/tokens",
+                new { api_key = _config["Payment:APIKey"] });
+            authResponse.EnsureSuccessStatusCode();
+            var token = (await authResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
+
+            // 2. Register Order
+            // Use UserId in merchant_order_id for tracking
+            string merchantOrderId = $"{user.Id}_{Guid.NewGuid()}";
+            var orderResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/ecommerce/orders",
+                new { auth_token = token, delivery_needed = "false", amount_cents = (int)(amount * 100), merchant_order_id = merchantOrderId, items = Array.Empty<object>() });
+            orderResponse.EnsureSuccessStatusCode();
+            var orderId = (await orderResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+            // 3. Get Payment Key
+            // Assuming config has Payment:FawryId, if not user needs to add it or we use placeholder
+            var integrationId = int.Parse(_config["Payment:FawryId"] ?? "0"); 
+            var paymentKeyResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/acceptance/payment_keys",
+                new
+                {
+                    auth_token = token,
+                    amount_cents = (int)(amount * 100),
+                    expiration = 3600,
+                    order_id = orderId,
+                    integration_id = integrationId,
+                    billingData = new
+                    {
+                        first_name = user?.UserName ?? "NA",
+                        last_name = user?.UserName ?? "NA",
+                        street = "NA",
+                        building = "NA",
+                        floor = "NA",
+                        apartment = "NA",
+                        city = "NA",
+                        state = "NA",
+                        country = "NA",
+                        email = user?.Email ?? "NA@example.com",
+                        phone_number = user?.PhoneNumber ?? "0000000000",
+                        shipping_method = "NA",
+                        postal_code = "NA"
+                    },
+                    currency = "EGP"
+                });
+            paymentKeyResponse.EnsureSuccessStatusCode();
+            var paymentToken = (await paymentKeyResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
+
+            // 4. Initiate Fawry Payment
+            var fawryResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/acceptance/payments/pay",
+                new
+                {
+                    source = new { identifier = "AGGREGATOR", subtype = "AGGREGATOR" },
+                    payment_token = paymentToken
+                });
+            
+            fawryResponse.EnsureSuccessStatusCode();
+            // Return reference number
+            var responseJson = await fawryResponse.Content.ReadFromJsonAsync<JsonElement>();
+            // Typically returned in data.bill_reference
+            if (responseJson.TryGetProperty("data", out var data) && data.TryGetProperty("bill_reference", out var billRef))
+            {
+                 return billRef.GetInt32().ToString();
+            }
+            return "Reference number not found";
+        }
+    }
 }

@@ -28,16 +28,18 @@ namespace EgyptOnline.Controllers
         private readonly IPaymentService _paymentService;
         private readonly CreditCardPaymentStrategy _creditCardStrategy;
         private readonly MobileWalletPaymentStrategy _mobileWalletStrategy;
+        private readonly FawryPaymentStrategy _fawryPaymentStrategy;
 
 
         public PaymentController(ApplicationDbContext context, IUserService service, IPaymentService paymentService, CreditCardPaymentStrategy creditCardStrategy,
-        MobileWalletPaymentStrategy mobileWalletStrategy, UserSubscriptionServices userSubscription)
+        MobileWalletPaymentStrategy mobileWalletStrategy, FawryPaymentStrategy fawryPaymentStrategy, UserSubscriptionServices userSubscription)
         {
             _paymentService = paymentService;
             _context = context;
             _userService = service;
             _creditCardStrategy = creditCardStrategy;
             _mobileWalletStrategy = mobileWalletStrategy;
+            _fawryPaymentStrategy = fawryPaymentStrategy;
             _userSubscriptionService = userSubscription;
 
         }
@@ -75,6 +77,14 @@ namespace EgyptOnline.Controllers
 
                          );
                 }
+                else if (callbackDto.PaymentMethod == "Fawry")
+                {
+                     Link = await _paymentService.CreatePaymentSession(
+                    callbackDto.AmountCents ?? 50,
+                    user
+                    , _fawryPaymentStrategy
+                    );
+                }
                 else
                 {
                     Link = await _paymentService.CreatePaymentSession(
@@ -110,9 +120,16 @@ namespace EgyptOnline.Controllers
                     Console.WriteLine($"{header.Key}: {header.Value}");
                 }
 
+                // Extract UserId from merchant_order_id
+                string merchantOrderId = obj.GetProperty("order").GetProperty("merchant_order_id").GetString();
                 string userId = "";
-
-                Console.WriteLine(userId);
+                
+                if (!string.IsNullOrEmpty(merchantOrderId) && merchantOrderId.Contains("_"))
+                {
+                    userId = merchantOrderId.Split('_')[0];
+                }
+                
+                Console.WriteLine($"Webhook received for User: {userId}, Order: {merchantOrderId}");
 
 
                 if (success)

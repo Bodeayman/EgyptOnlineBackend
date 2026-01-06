@@ -32,6 +32,7 @@ namespace EgyptOnline.Extensions
             services.AddScoped<IPaymentService, PaymobService>();
             services.AddScoped<CreditCardPaymentStrategy>();
             services.AddScoped<MobileWalletPaymentStrategy>();
+            services.AddScoped<FawryPaymentStrategy>();
             services.AddScoped<UserRegisterationService>();
             services.AddScoped<UserSubscriptionServices>();
             services.AddScoped<UserPointService>();
