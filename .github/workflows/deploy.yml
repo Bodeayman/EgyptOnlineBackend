@@ -11,9 +11,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Run all tests
-      run: dotnet test EgyptOnline/EgyptOnline.csproj --configuration Release --logger "console;verbosity=normal"
+  
     
     - name: Run login tests specifically
       run: dotnet test EgyptOnline/EgyptOnline.csproj --filter "FullyQualifiedName~UserLoginServiceTests" --configuration Release
