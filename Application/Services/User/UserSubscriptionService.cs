@@ -25,7 +25,8 @@ namespace EgyptOnline.Services
 
                     UserId = user.Id,
                     StartDate = EgyptTimeHelper.TodayInEgypt(),
-                    EndDate = EgyptTimeHelper.TodayInEgypt().AddMonths(1)
+                    EndDate = EgyptTimeHelper.TodayInEgypt().AddMonths(1),
+                    UpdatedAt = EgyptTimeHelper.ToEgyptTime(DateTime.UtcNow)
                 };
                 _context.Subscriptions.Add(Subscription);
                 return Subscription;
@@ -42,13 +43,19 @@ namespace EgyptOnline.Services
             {
 
                 var FoundSubscription = await _context.Subscriptions.Include(s => s.User).FirstOrDefaultAsync(U => U.UserId == user.Id);
-                FoundSubscription.EndDate = EgyptTimeHelper.TodayInEgypt().AddMonths(1);
+
 
                 // Check for referral reward
                 if (!string.IsNullOrEmpty(FoundSubscription.User.ReferrerUserName) && FoundSubscription.User.ReferralRewardCount < 5)
                 {
+                    FoundSubscription.EndDate = FoundSubscription.EndDate.AddMonths(1);
+                    FoundSubscription.UpdatedAt = EgyptTimeHelper.ToEgyptTime(DateTime.UtcNow);
                     _userPointService.AddSubscriptionPointsToUser(FoundSubscription.User.ReferrerUserName);
                     FoundSubscription.User.ReferralRewardCount++;
+                }
+                if (user != null)
+                {
+                    user.ServiceProvider.IsAvailable = true;
                 }
 
                 return FoundSubscription;

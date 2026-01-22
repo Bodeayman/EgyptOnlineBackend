@@ -38,9 +38,8 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                Console.WriteLine("On my way");
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
-                Console.WriteLine("Fucked my way");
+
 
                 if (userId == null)
                     return Unauthorized();
@@ -141,7 +140,7 @@ namespace EgyptOnline.Controllers
 
 
                 user.ServiceProvider.Bio = model.Bio ?? user.ServiceProvider.Bio;
-                
+
 
                 if (user.ServiceProvider.ProviderType == "Worker")
                 {

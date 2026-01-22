@@ -9,6 +9,8 @@ namespace EgyptOnline.Models
         public DateOnly EndDate { get; set; }
         public DateOnly StartDate { get; set; }
 
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
         // Note: IsActive now uses DateOnly
         public bool IsActive => EndDate > DateOnly.FromDateTime(DateTime.UtcNow);
 

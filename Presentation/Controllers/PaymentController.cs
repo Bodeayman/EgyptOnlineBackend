@@ -80,7 +80,7 @@ namespace EgyptOnline.Controllers
 
                 _context.PaymentTransactions.Add(payment);
                 await _context.SaveChangesAsync();
-                
+
                 Console.WriteLine($"✅ Payment record created: {payment.Id} for User: {userId}");
 
                 // Create payment session with the payment ID
@@ -96,12 +96,12 @@ namespace EgyptOnline.Controllers
                 }
                 else if (callbackDto.PaymentMethod == "Fawry")
                 {
-                     Link = await _paymentService.CreatePaymentSession(
-                    payment.Amount,
-                    user,
-                    payment.Id,
-                    _fawryPaymentStrategy
-                    );
+                    Link = await _paymentService.CreatePaymentSession(
+                   payment.Amount,
+                   user,
+                   payment.Id,
+                   _fawryPaymentStrategy
+                   );
                 }
                 else
                 {
@@ -238,17 +238,14 @@ namespace EgyptOnline.Controllers
                     {
                         Console.WriteLine($"✅ User Found: {UserFound.Id}");
                         await _userSubscriptionService.RenewSubscription(UserFound);
-                        if (UserFound.ServiceProvider != null)
-                        {
-                            UserFound.ServiceProvider.IsAvailable = true;
-                        }
-                        
+
+
                         // Final status update
                         payment.Status = PaymentStatus.Success;
                         payment.ProcessedAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
                         Console.WriteLine($"✅ Subscription Renewed Successfully");
-                        
+
                         return Ok(new
                         {
                             message = "Subscription Renewed Successfully",
