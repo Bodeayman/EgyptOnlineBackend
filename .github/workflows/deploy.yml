@@ -11,6 +11,12 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      
+    - name: Run all tests
+      run: dotnet test EgyptOnline/EgyptOnline.csproj --configuration Release --logger "console;verbosity=normal"
+    
+    - name: Run login tests specifically
+      run: dotnet test EgyptOnline/EgyptOnline.csproj --filter "FullyQualifiedName~UserLoginServiceTests" --configuration Release
 
     # Login to DockerHub
     - name: Docker Login
@@ -49,8 +55,4 @@ jobs:
         sleep 15
         curl -f https://egyptonlinema3ak.com/health
     
-    - name: Run all tests
-      run: dotnet test EgyptOnline/EgyptOnline.csproj --configuration Release --logger "console;verbosity=normal"
-    
-    - name: Run login tests specifically
-      run: dotnet test EgyptOnline/EgyptOnline.csproj --filter "FullyQualifiedName~UserLoginServiceTests" --configuration Release
+  
