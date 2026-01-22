@@ -12,7 +12,7 @@ namespace EgyptOnline.Dtos
 
         public string? Profession { get; set; } = string.Empty;
 
-        public WorkerTypes? WorkerType { get; set; } = WorkerTypes.PerDay;
+        public WorkerTypes? WorkerType { get; set; }
         public string? Governorate { get; set; } = string.Empty;
         public string? City { get; set; } = string.Empty;
         public string? District { get; set; } = string.Empty;

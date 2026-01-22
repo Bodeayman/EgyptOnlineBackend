@@ -22,6 +22,7 @@ namespace EgyptOnline.Utilities
                 Subscription = user.Subscription?.ToSubscriptionDto() ?? new SubscriptionDto(),
                 ServiceProvider = user.ServiceProvider?.ToServiceProviderDto() ?? new ServiceProviderDto(),
                 Points = user.Points,
+                SubscriptionPoints = user.SubscriptionPoints,
 
 
             };

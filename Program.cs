@@ -50,7 +50,7 @@ try
     {
         return ConnectionMultiplexer.Connect(builder.Configuration["RedisSettings:Configuration"]);
     });
-
+ builder.Services.AddDistributedMemoryCache();
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -74,6 +74,13 @@ try
     builder.Services.ApiVersioningSettings();
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddSwaggerWithJwt();
+    
+    // SignalR & Chat
+    builder.Services.AddSignalR();
+    builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp => 
+        new MongoDB.Driver.MongoClient(builder.Configuration["MongoDB:ConnectionString"])); // Placeholder
+    builder.Services.AddScoped<EgyptOnline.Services.ChatService>();
+    builder.Services.AddSingleton<EgyptOnline.Services.PresenceService>();
 
     var app = builder.Build();
 
@@ -179,6 +186,7 @@ try
 
     // ---------- Map Endpoints ----------
     app.MapControllers();
+    app.MapHub<EgyptOnline.Presentation.Hubs.ChatHub>("/chatHub");
     app.MapGet("/health", () => Results.Ok("Healthy"));
 
     Log.Information("Application started successfully on {Environment}", app.Environment.EnvironmentName);

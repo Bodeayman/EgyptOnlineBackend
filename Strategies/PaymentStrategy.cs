@@ -5,7 +5,7 @@ namespace EgyptOnline.Strategies
 {
     public interface IPaymentStrategy
     {
-        public Task<string> PayAsync(decimal amount, User user);
+        public Task<string> PayAsync(decimal amount, User user, int paymentId);
     }
     public class CreditCardPaymentStrategy : IPaymentStrategy
     {
@@ -18,7 +18,7 @@ namespace EgyptOnline.Strategies
             _config = config;
         }
 
-        public async Task<string> PayAsync(decimal amount, User user)
+        public async Task<string> PayAsync(decimal amount, User user, int paymentId)
         {
             // 1. Auth
             var authResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/auth/tokens",
@@ -26,9 +26,9 @@ namespace EgyptOnline.Strategies
             authResponse.EnsureSuccessStatusCode();
             var token = (await authResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
 
-            // 2. Register Order
+            // 2. Register Order - Use paymentId as merchant_order_id
             var orderResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/ecommerce/orders",
-                new { auth_token = token, delivery_needed = "false", amount_cents = (int)(amount * 100), merchant_order_id = Guid.NewGuid().ToString(), items = Array.Empty<object>() });
+                new { auth_token = token, delivery_needed = "false", amount_cents = (int)(amount * 100), merchant_order_id = paymentId.ToString(), items = Array.Empty<object>() });
             orderResponse.EnsureSuccessStatusCode();
             var orderId = (await orderResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
 
@@ -42,23 +42,21 @@ namespace EgyptOnline.Strategies
                     amount_cents = (int)(amount * 100),
                     expiration = 3600,
                     order_id = orderId,
-                    billingData = new
+                    billing_data = new
                     {
-                        first_name = user?.UserName ?? "NA",
-                        last_name = user?.UserName ?? "NA",
-
-
-                        street = "NA",
-                        building = "NA",
-                        floor = "NA",
+                        first_name = user?.FirstName ?? "Customer",
+                        last_name = user?.LastName ?? "Customer",
+                        email = user?.Email ?? "customer@example.com",
+                        phone_number = user?.PhoneNumber ?? "20100000000",
                         apartment = "NA",
-                        city = "NA",
-                        state = "NA",
-                        country = "NA",
-                        email = user?.Email ?? "NA@example.com",
-                        phone_number = user?.PhoneNumber ?? "0000000000",
+                        floor = "NA",
+                        building = "NA",
+                        street = user?.District ?? "NA",
                         shipping_method = "NA",
-                        postal_code = "NA"
+                        postal_code = "00000",
+                        city = user?.City ?? "Cairo",
+                        state = user?.Governorate ?? "Cairo",
+                        country = "Egypt"
                     },
                     integration_id = integrationId,
                     currency = "EGP"
@@ -87,7 +85,7 @@ namespace EgyptOnline.Strategies
             _config = config;
         }
 
-        public async Task<string> PayAsync(decimal amount, User user)
+        public async Task<string> PayAsync(decimal amount, User user, int paymentId)
         {
             // 1. Auth
             var authResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/auth/tokens",
@@ -95,9 +93,9 @@ namespace EgyptOnline.Strategies
             authResponse.EnsureSuccessStatusCode();
             var token = (await authResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
 
-            // 2. Register Order
+            // 2. Register Order - Use paymentId as merchant_order_id
             var orderResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/ecommerce/orders",
-                new { auth_token = token, delivery_needed = "false", amount_cents = (int)(amount * 100), merchant_order_id = Guid.NewGuid().ToString(), items = Array.Empty<object>() });
+                new { auth_token = token, delivery_needed = "false", amount_cents = (int)(amount * 100), merchant_order_id = paymentId.ToString(), items = Array.Empty<object>() });
             orderResponse.EnsureSuccessStatusCode();
             var orderId = (await orderResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
 
@@ -113,19 +111,19 @@ namespace EgyptOnline.Strategies
                     integration_id = integrationId,
                     billingData = new
                     {
-                        first_name = user?.UserName ?? "NA",
-                        last_name = user?.UserName ?? "NA",
-                        street = "NA",
-                        building = "NA",
-                        floor = "NA",
+                        first_name = user?.FirstName ?? user?.UserName ?? "Customer",
+                        last_name = user?.LastName ?? user?.UserName ?? "Customer",
+                        email = user?.Email ?? "customer@example.com",
+                        phone_number = user?.PhoneNumber ?? "20100000000",
                         apartment = "NA",
-                        city = "NA",
-                        state = "NA",
-                        country = "NA",
-                        email = user?.Email ?? "NA@example.com",
-                        phone_number = user?.PhoneNumber ?? "0000000000",
+                        floor = "NA",
+                        building = "NA",
+                        street = "NA",
                         shipping_method = "NA",
-                        postal_code = "NA"
+                        postal_code = user?.District ?? "00000",
+                        city = user?.City ?? "Cairo",
+                        state = user?.Governorate ?? "Cairo",
+                        country = "Egypt"
                     },
                     currency = "EGP"
                 });
@@ -158,7 +156,7 @@ namespace EgyptOnline.Strategies
             _config = config;
         }
 
-        public async Task<string> PayAsync(decimal amount, User user)
+        public async Task<string> PayAsync(decimal amount, User user, int paymentId)
         {
             // 1. Auth
             var authResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/auth/tokens",
@@ -166,17 +164,15 @@ namespace EgyptOnline.Strategies
             authResponse.EnsureSuccessStatusCode();
             var token = (await authResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
 
-            // 2. Register Order
-            // Use UserId in merchant_order_id for tracking
-            string merchantOrderId = $"{user.Id}_{Guid.NewGuid()}";
+            // 2. Register Order - Use paymentId as merchant_order_id
             var orderResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/ecommerce/orders",
-                new { auth_token = token, delivery_needed = "false", amount_cents = (int)(amount * 100), merchant_order_id = merchantOrderId, items = Array.Empty<object>() });
+                new { auth_token = token, delivery_needed = "false", amount_cents = (int)(amount * 100), merchant_order_id = paymentId.ToString(), items = Array.Empty<object>() });
             orderResponse.EnsureSuccessStatusCode();
             var orderId = (await orderResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
 
             // 3. Get Payment Key
             // Assuming config has Payment:FawryId, if not user needs to add it or we use placeholder
-            var integrationId = int.Parse(_config["Payment:FawryId"] ?? "0"); 
+            var integrationId = int.Parse(_config["Payment:FawryId"] ?? "0");
             var paymentKeyResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/acceptance/payment_keys",
                 new
                 {
@@ -187,19 +183,19 @@ namespace EgyptOnline.Strategies
                     integration_id = integrationId,
                     billingData = new
                     {
-                        first_name = user?.UserName ?? "NA",
-                        last_name = user?.UserName ?? "NA",
-                        street = "NA",
-                        building = "NA",
-                        floor = "NA",
+                        first_name = user?.FirstName ?? user?.UserName ?? "Customer",
+                        last_name = user?.LastName ?? user?.UserName ?? "Customer",
+                        email = user?.Email ?? "customer@example.com",
+                        phone_number = user?.PhoneNumber ?? "20100000000",
                         apartment = "NA",
-                        city = "NA",
-                        state = "NA",
-                        country = "NA",
-                        email = user?.Email ?? "NA@example.com",
-                        phone_number = user?.PhoneNumber ?? "0000000000",
+                        floor = "NA",
+                        building = "NA",
+                        street = "NA",
                         shipping_method = "NA",
-                        postal_code = "NA"
+                        postal_code = user?.District ?? "00000",
+                        city = user?.City ?? "Cairo",
+                        state = user?.Governorate ?? "Cairo",
+                        country = "Egypt"
                     },
                     currency = "EGP"
                 });
@@ -213,14 +209,14 @@ namespace EgyptOnline.Strategies
                     source = new { identifier = "AGGREGATOR", subtype = "AGGREGATOR" },
                     payment_token = paymentToken
                 });
-            
+
             fawryResponse.EnsureSuccessStatusCode();
             // Return reference number
             var responseJson = await fawryResponse.Content.ReadFromJsonAsync<JsonElement>();
             // Typically returned in data.bill_reference
             if (responseJson.TryGetProperty("data", out var data) && data.TryGetProperty("bill_reference", out var billRef))
             {
-                 return billRef.GetInt32().ToString();
+                return billRef.GetInt32().ToString();
             }
             return "Reference number not found";
         }

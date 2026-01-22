@@ -40,7 +40,6 @@ namespace EgyptOnline.Services
         {
             try
             {
-                Console.WriteLine("Subscription is added here");
 
                 var FoundSubscription = await _context.Subscriptions.Include(s => s.User).FirstOrDefaultAsync(U => U.UserId == user.Id);
                 FoundSubscription.EndDate = EgyptTimeHelper.TodayInEgypt().AddMonths(1);
@@ -48,7 +47,7 @@ namespace EgyptOnline.Services
                 // Check for referral reward
                 if (!string.IsNullOrEmpty(FoundSubscription.User.ReferrerUserName) && FoundSubscription.User.ReferralRewardCount < 5)
                 {
-                    _userPointService.AddPointsToUser(FoundSubscription.User.ReferrerUserName);
+                    _userPointService.AddSubscriptionPointsToUser(FoundSubscription.User.ReferrerUserName);
                     FoundSubscription.User.ReferralRewardCount++;
                 }
 

@@ -14,6 +14,7 @@ namespace EgyptOnline.Dtos
         public string? PhoneNumber { get; set; }
         public string? ImageUrl { get; set; }
         public int Points { get; set; }
+        public int SubscriptionPoints { get; set; }
 
 
 

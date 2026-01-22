@@ -341,28 +341,26 @@ namespace EgyptOnline.Controllers
                     });
                 }
                 // Check subscription availability
-                if (!user.ServiceProvider!.IsAvailable)
-                {
-                    return Unauthorized(new
-                    {
-                        message = $"Your subscription has expired in {user.Subscription?.EndDate.ToString()}",
-                        errorCode = UserErrors.SubscriptionInvalid.ToString(),
-                        LastDate = user.Subscription?.EndDate,
-                        subscriptionExpiry = user.Subscription?.EndDate
-                    });
-                }
+                // if (!user.ServiceProvider!.IsAvailable)
+                // {
+                //     return Unauthorized(new
+                //     {
+                //         message = $"Your subscription has expired in {user.Subscription?.EndDate.ToString()}",
+                //         errorCode = UserErrors.SubscriptionInvalid.ToString(),
+                //         LastDate = user.Subscription?.EndDate,
+                //         subscriptionExpiry = user.Subscription?.EndDate
+                //     });
+                // }
 
                 // Determine user role
                 if (!Enum.TryParse<UsersTypes>(user.ServiceProvider.ProviderType, out UsersTypes userRole))
                 {
                     return StatusCode(500, new { message = "Error while fetching the user role" });
                 }
-                Console.WriteLine("What happns 1");
 
                 // Generate tokens
                 var accessToken = await _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
                 var refreshTokenString = await _userService.GenerateJwtToken(user, userRole, TokensTypes.RefreshToken);
-                Console.WriteLine("What happns 2");
 
                 var refreshToken = new RefreshToken
                 {
@@ -372,7 +370,6 @@ namespace EgyptOnline.Controllers
                     Created = DateTime.UtcNow,
                     IsRevoked = false
                 };
-                Console.WriteLine("What happns 3");
                 _context.RefreshTokens.Add(refreshToken);
 
                 await _context.SaveChangesAsync();
@@ -381,6 +378,7 @@ namespace EgyptOnline.Controllers
                 {
                     message = "Login successful",
                     accessToken,
+                    isExpired = !(user!.ServiceProvider.IsAvailable),
                     refreshToken = refreshTokenString,
                     subscriptionExpiry = user.Subscription!.EndDate,
                     refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)

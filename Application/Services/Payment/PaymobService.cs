@@ -9,11 +9,11 @@ namespace EgyptOnline.Services
 {
     public class PaymobService : IPaymentService
     {
-        public async Task<string> CreatePaymentSession(decimal amount, User user, IPaymentStrategy strategy)
+        public async Task<string> CreatePaymentSession(decimal amount, User user, int paymentId, IPaymentStrategy strategy)
         {
             try
             {
-                var result = await strategy.PayAsync(amount, user);
+                var result = await strategy.PayAsync(amount, user, paymentId);
                 return result;
             }
             catch (Exception ex)

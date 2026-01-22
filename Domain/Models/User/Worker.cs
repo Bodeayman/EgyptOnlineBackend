@@ -10,5 +10,10 @@ namespace EgyptOnline.Models
 
         public required WorkerTypes WorkerType { get; set; }
 
+        public override string GetSpecialization()
+        {
+            return Skill;
+        }
+
     }
 }

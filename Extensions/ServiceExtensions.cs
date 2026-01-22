@@ -92,6 +92,30 @@ namespace EgyptOnline.Extensions
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ClockSkew = TimeSpan.Zero
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var path = context.HttpContext.Request.Path;
+                        
+                        // For SignalR/WebSocket: Extract from Authorization header
+                        if (path.StartsWithSegments("/chatHub"))
+                        {
+                            var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+                            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+                            {
+                                context.Token = authHeader.Substring("Bearer ".Length).Trim();
+                            }
+                            // Fallback: Try cookies as backup (more secure for WebSockets)
+                            else if (context.Request.Cookies.TryGetValue("access_token", out var token))
+                            {
+                                context.Token = token;
+                            }
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             return services;

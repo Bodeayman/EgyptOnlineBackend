@@ -25,6 +25,7 @@ namespace EgyptOnline.Models
         public Subscription? Subscription { get; set; }
 
         public int Points { get; set; } = 0;
+        public int SubscriptionPoints { get; set; } = 0;
 
         public string? ReferrerUserName { get; set; }
         public int ReferralRewardCount { get; set; } = 0;

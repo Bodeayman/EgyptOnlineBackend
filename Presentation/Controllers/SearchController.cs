@@ -71,21 +71,12 @@ namespace EgyptOnline.Controllers
 
         private static object MapResult(dynamic x, bool isCompany, int workerType, decimal pay)
         {
-            string skill = "Unknown";
 
-            if (x is Worker)
-                skill = x.Skill;
-            else if (x is Company)
-                skill = x.Business;
-            else if (x is Contractor)
-                skill = x.Specialization;
-            else if (x is Engineer)
-                skill = x.Specialization;
-            else if (x is MarketPlace)
-                skill = x.Business;
+            string skill = x.GetSpecialization();
 
             return new
             {
+                userId = x.User.Id,
                 userName = x.User.UserName,
                 name = $"{x.User.FirstName} {x.User.LastName}",
                 skill = skill,
@@ -111,7 +102,6 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                Console.WriteLine("Coming overhere");
 
                 if (!await CheckSubscription())
                 {
@@ -122,21 +112,19 @@ namespace EgyptOnline.Controllers
                     });
                 }
                 var workers = _context.Workers.Include(w => w.User).AsQueryable();
-                Console.WriteLine("Before");
                 filter = TrimAllSearchInputs(filter);
-                Console.WriteLine("After");
 
                 if (filter != null)
                 {
-                    if (filter.BasedOnPoints == true)
-                    {
-                        workers = workers.OrderByDescending(w => w.User.Points).ThenBy(w => Guid.NewGuid()).Take(Constants.SEARCH_PAGE_SIZE);
-                        var list = await workers.ToListAsync();
-                        return Ok(list.Select(w => MapResult(w, false, Convert.ToInt32(filter.WorkerType), w.ServicePricePerDay)).ToList());
-                    }
-
                     if (filter.WorkerType != null)
                         workers = workers.Where(w => w.WorkerType == filter.WorkerType);
+
+                    if (filter.BasedOnPoints == true)
+                    {
+                        workers = workers.Where(w => w.IsAvailable).OrderByDescending(w => w.User.Points).ThenBy(w => Guid.NewGuid()).Take(Constants.SEARCH_PAGE_SIZE);
+                        var list = await workers.ToListAsync();
+                        return Ok(list.Select(w => MapResult(w, false, Convert.ToInt32(w.WorkerType), w.ServicePricePerDay)).ToList());
+                    }
 
                     if (!string.IsNullOrEmpty(filter.FirstName))
                         workers = workers.Where(w =>
@@ -174,7 +162,7 @@ namespace EgyptOnline.Controllers
                 workers = Helper.PaginateUsers(workers, filter!.PageNumber, Constants.PAGE_SIZE);
                 workers = workers.OrderBy(w => Guid.NewGuid());
                 var finalList = await workers.ToListAsync();
-                return Ok(finalList.Select(w => MapResult(w, false, Convert.ToInt32(filter.WorkerType), w.ServicePricePerDay)).ToList());
+                return Ok(finalList.Select(w => MapResult(w, false, Convert.ToInt32(w.WorkerType), w.ServicePricePerDay)).ToList());
             }
             catch (Exception ex)
             {

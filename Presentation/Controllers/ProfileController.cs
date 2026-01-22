@@ -141,7 +141,7 @@ namespace EgyptOnline.Controllers
 
 
                 user.ServiceProvider.Bio = model.Bio ?? user.ServiceProvider.Bio;
-
+                
 
                 if (user.ServiceProvider.ProviderType == "Worker")
                 {

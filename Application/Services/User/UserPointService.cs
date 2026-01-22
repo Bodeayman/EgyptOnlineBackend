@@ -27,5 +27,22 @@ namespace EgyptOnline.Services
             }
             return false;
         }
+
+        public bool AddSubscriptionPointsToUser(string referrerUserName)
+        {
+            var user = _context.Users.Include(u => u.ServiceProvider).FirstOrDefault(u => u.UserName == referrerUserName);
+            if (user != null)
+            {
+                if (user.ServiceProvider.ProviderType == "Worker")
+                    user.SubscriptionPoints += 25;
+                else if (user.ServiceProvider.ProviderType == "Company" || user.ServiceProvider.ProviderType == "Marketplace")
+                    user.SubscriptionPoints += 100;
+                else if (user.ServiceProvider.ProviderType == "Engineer" || user.ServiceProvider.ProviderType == "Contractor")
+                    user.SubscriptionPoints += 50;
+
+                return true;
+            }
+            return false;
+        }
     }
 }
