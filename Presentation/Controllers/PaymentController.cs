@@ -45,35 +45,62 @@ namespace EgyptOnline.Controllers
 
         }
 
-        // This function returns the iframe that we will call the payment from
-        [HttpPost("callback")]
-        public async Task<IActionResult> PaymentCallback([FromBody] PaymentCallbackDto callbackDto)
+        /// <summary>
+        /// Initiate payment for subscription renewal.
+        /// Payment amount and method are determined from configuration and query parameters.
+        /// The amount is automatically calculated based on the user's provider type.
+        /// </summary>
+        /// <param name="paymentMethod">Payment method: "CreditCard" or "MobileWallet"</param>
+        [HttpPost("subscribe")]
+        [Authorize]
+        public async Task<IActionResult> InitiateSubscriptionPayment([FromQuery] string paymentMethod = "CreditCard")
         {
             try
             {
+                // Validate payment method
+                if (!IsValidPaymentMethod(paymentMethod))
+                {
+                    return BadRequest(new { message = "Invalid payment method. Supported: CreditCard, MobileWallet" });
+                }
+
                 string userId = _userService.GetUserID(User);
                 if (userId == null)
                 {
                     return Unauthorized(new { message = "You should sign in again" });
                 }
-                User user = await _context.Users.FirstOrDefaultAsync(p => p.Id == userId);
+
+                // Get user with service provider
+                User user = await _context.Users
+                    .Include(u => u.ServiceProvider)
+                    .FirstOrDefaultAsync(p => p.Id == userId);
+                
                 if (user == null)
                 {
                     return BadRequest(new { message = "The user is not found" });
                 }
 
-                bool isPaid = await _context.ServiceProviders.AnyAsync(w => w.UserId == userId && w.IsAvailable);
-                if (isPaid)
+                // Check if user already has active subscription
+                bool hasActiveSubscription = await _context.ServiceProviders
+                    .AnyAsync(w => w.UserId == userId && w.IsAvailable);
+                
+                if (hasActiveSubscription)
                 {
                     return BadRequest(new { message = "User already has an active subscription." });
                 }
+
+                // Get subscription cost from centralized configuration (single source of truth)
+                string providerType = user.ServiceProvider?.ProviderType ?? "Worker";
+                decimal subscriptionCost = ProviderPricingConfig.GetSubscriptionCost(providerType);
+
+                Console.WriteLine($"📋 Initiating {paymentMethod} payment for User: {userId}");
+                Console.WriteLine($"📋 Provider Type: {providerType}, Amount: {subscriptionCost} EGP");
 
                 // Create pending payment record
                 var payment = new PaymentTransaction
                 {
                     UserId = userId,
-                    Amount = callbackDto.AmountCents ?? 50,
-                    PaymentMethod = callbackDto.PaymentMethod,
+                    Amount = subscriptionCost,
+                    PaymentMethod = paymentMethod,
                     Status = PaymentStatus.Pending,
                     IdempotencyKey = Guid.NewGuid().ToString()
                 };
@@ -84,42 +111,55 @@ namespace EgyptOnline.Controllers
                 Console.WriteLine($"✅ Payment record created: {payment.Id} for User: {userId}");
 
                 // Create payment session with the payment ID
-                string Link;
-                if (callbackDto.PaymentMethod == "CreditCard")
+                string paymentLink;
+                if (paymentMethod == "CreditCard")
                 {
-                    Link = await _paymentService.CreatePaymentSession(
-                         payment.Amount,
-                         user,
-                         payment.Id,
-                         _creditCardStrategy
+                    paymentLink = await _paymentService.CreatePaymentSession(
+                        payment.Amount,
+                        user,
+                        payment.Id,
+                        _creditCardStrategy
                     );
                 }
-                else if (callbackDto.PaymentMethod == "Fawry")
+                else // MobileWallet
                 {
-                    Link = await _paymentService.CreatePaymentSession(
-                   payment.Amount,
-                   user,
-                   payment.Id,
-                   _fawryPaymentStrategy
-                   );
-                }
-                else
-                {
-                    Link = await _paymentService.CreatePaymentSession(
-                    payment.Amount,
-                    user,
-                    payment.Id,
-                    _mobileWalletStrategy
+                    paymentLink = await _paymentService.CreatePaymentSession(
+                        payment.Amount,
+                        user,
+                        payment.Id,
+                        _mobileWalletStrategy
                     );
                 }
 
-                return Ok(new { message = Link, paymentId = payment.Id });
+                return Ok(new 
+                { 
+                    message = "Payment session created successfully",
+                    paymentLink = paymentLink, 
+                    paymentId = payment.Id,
+                    amount = payment.Amount,
+                    currency = "EGP",
+                    paymentMethod = paymentMethod
+                });
             }
-
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while processing the payment callback.", error = ex.Message });
+                Console.WriteLine($"❌ Payment Error: {ex.Message}");
+                return StatusCode(500, new { message = "An error occurred while processing the payment request.", error = ex.Message });
             }
+        }
+
+        /// <summary>
+        /// Validate if payment method is supported.
+        /// Currently supports: CreditCard, MobileWallet
+        /// Note: Fawry and VodafoneCash are not edited as per requirements.
+        /// </summary>
+        private bool IsValidPaymentMethod(string paymentMethod)
+        {
+            return paymentMethod switch
+            {
+                "CreditCard" or "MobileWallet" => true,
+                _ => false
+            };
         }
         // callback function to handle the webhook from paymob after payment
         [HttpPost("webhook")]

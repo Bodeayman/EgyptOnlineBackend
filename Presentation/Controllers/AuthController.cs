@@ -19,6 +19,7 @@ using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using System.Runtime.InteropServices;
 using Microsoft.EntityFrameworkCore.SqlServer.Migrations.Internal;
 using System.Collections.Concurrent;
+using EgyptOnline.Strategies;
 namespace EgyptOnline.Controllers
 {
 
@@ -37,6 +38,8 @@ namespace EgyptOnline.Controllers
 
         private readonly ApplicationDbContext _context;
 
+        private readonly ProviderRegistrationStrategyFactory _strategyFactory;
+
 
 
         public AuthController(UserManager<User> userManager, UserRegisterationService userRegisterationService, IUserService service, IOTPService sms, ApplicationDbContext context, UserImageService userImageService)
@@ -47,6 +50,7 @@ namespace EgyptOnline.Controllers
             _context = context;
             _userImageService = userImageService;
             _userManager = userManager;
+            _strategyFactory = new ProviderRegistrationStrategyFactory();
         }
         [AllowAnonymous]
         [HttpPost("register")]
@@ -128,109 +132,23 @@ namespace EgyptOnline.Controllers
                 }
                 Console.WriteLine("Service Provider is being created right now , but not yet");
 
-
-                if (model.ProviderType.Equals("worker", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    if (model.Skill == null)
-                    {
-                        return BadRequest(new { message = "Please Add the Skill" });
-                    }
-
-                    var Worker = new Worker
-                    {
-                        User = UserRegisterationResult.User,
-                        UserId = UserRegisterationResult.User!.Id,
-                        Bio = model.Bio,
-                        WorkerType = (WorkerTypes)model.WorkerType,
-                        Skill = model.Skill,
-                        ProviderType = model.ProviderType,
-                        ServicePricePerDay = model.Pay ?? 0,
-                        IsAvailable = true,
-                    };
-
-                    _context.Workers.Add(Worker);
-                }
-                else if (model.ProviderType.Equals("contractor", StringComparison.CurrentCultureIgnoreCase))
-                {
-
-                    if (model.Specialization == null)
-                    {
-                        return BadRequest(new { message = "Please Add the Specialization" });
-                    }
-                    var Contractor = new Contractor
-                    {
-                        User = UserRegisterationResult.User,
-                        UserId = UserRegisterationResult.User!.Id,
-                        Bio = model.Bio,
-                        Specialization = model.Specialization,
-                        ProviderType = model.ProviderType,
-                        IsAvailable = true,
-                        Salary = model.Pay ?? 0,
-                    };
-                    _context.Contractors.Add(Contractor);
-                }
-                else if (model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase))
-                {
-
-                    if (model.Business == null || model.Owner == null)
-                    {
-                        return BadRequest(new { message = "Please Add the Business and the Owner" });
-                    }
-                    var Company = new Company
-                    {
-                        User = UserRegisterationResult.User,
-                        UserId = UserRegisterationResult.User!.Id,
-                        Bio = model.Bio,
-                        ProviderType = model.ProviderType,
-                        Owner = model.Owner,
-                        Business = model.Business,
-                        IsAvailable = true,
-                    };
-                    _context.Companies.Add(Company);
-                }
-                else if (model.ProviderType.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase))
-                {
-
-                    if (model.Business == null || model.Owner == null)
-                    {
-                        return BadRequest(new { message = "Please Add the Business and the Owner" });
-                    }
-                    var MarketPlace = new MarketPlace
-                    {
-                        User = UserRegisterationResult.User,
-                        UserId = UserRegisterationResult.User!.Id,
-                        Bio = model.Bio,
-                        ProviderType = model.ProviderType,
-                        Business = model.Business,
-                        IsAvailable = true,
-
-                        Owner = model.Owner,
-                    };
-                    _context.MarketPlaces.Add(MarketPlace);
-                }
-                else if (model.ProviderType.Equals("engineer", StringComparison.CurrentCultureIgnoreCase))
-                {
-
-                    if (model.Specialization == null)
-                    {
-                        return BadRequest(new { message = "Please Add the Specialization" });
-                    }
-                    var Engineer = new Engineer
-                    {
-                        User = UserRegisterationResult.User,
-                        UserId = UserRegisterationResult.User!.Id,
-                        Bio = model.Bio,
-                        ProviderType = model.ProviderType,
-                        Salary = model.Pay ?? 0,
-                        Specialization = model.Specialization,
-                        IsAvailable = true,
-                    };
-                    _context.Engineers.Add(Engineer);
-                }
-                else
+                // Get the appropriate strategy for this provider type
+                var strategy = _strategyFactory.GetStrategy(model.ProviderType);
+                if (strategy == null)
                 {
                     return BadRequest(new { message = "Please Provide the Type Of Service" });
                 }
+
+                // Validate provider-specific requirements
+                var validationError = strategy.Validate(model);
+                if (validationError != null)
+                {
+                    return BadRequest(new { message = validationError });
+                }
+
+                // Create the appropriate provider using the strategy
+                var provider = strategy.CreateProvider(model, UserRegisterationResult.User);
+                _context.Add(provider);
 
 
                 await _context.SaveChangesAsync();
@@ -277,7 +195,7 @@ namespace EgyptOnline.Controllers
 
 
 
-                var input = model.Email.Trim(); // trim the output to check
+                var input = model.Email.Trim();
                 User user;
                 if (Helper.IsEmail(input))
                 {
@@ -306,22 +224,7 @@ namespace EgyptOnline.Controllers
 
                     }
                 }
-                /*
-                else if (Helper.IsUserName(input))
-                {
 
-
-                    user = await _context.Users
-                        .Include(u => u.Subscription)
-                        .Include(u => u.ServiceProvider)
-                        .FirstOrDefaultAsync(u => u.UserName == input);
-                    if (user == null)
-                    {
-                        return BadRequest(new { message = "This User is not found", errorCode = UserErrors.UserIsNotFound.ToString() });
-
-                    }
-                }
-                */
                 else
                 {
                     return BadRequest(new { message = "Invalid email or phone format" });
@@ -340,17 +243,7 @@ namespace EgyptOnline.Controllers
                         errorCode = UserErrors.GeneralError.ToString()
                     });
                 }
-                // Check subscription availability
-                // if (!user.ServiceProvider!.IsAvailable)
-                // {
-                //     return Unauthorized(new
-                //     {
-                //         message = $"Your subscription has expired in {user.Subscription?.EndDate.ToString()}",
-                //         errorCode = UserErrors.SubscriptionInvalid.ToString(),
-                //         LastDate = user.Subscription?.EndDate,
-                //         subscriptionExpiry = user.Subscription?.EndDate
-                //     });
-                // }
+
 
                 // Determine user role
                 if (!Enum.TryParse<UsersTypes>(user.ServiceProvider.ProviderType, out UsersTypes userRole))
@@ -443,13 +336,9 @@ namespace EgyptOnline.Controllers
                 if (user == null)
                     return Unauthorized("User not found");
 
-                if (user.ServiceProvider == null || !user.ServiceProvider.IsAvailable)
-                    return Unauthorized(new
-                    {
-                        message = "Your subscription has expired",
-                        ErrorCode = "SubscriptionInvalid",
-                        LastDate = user.Subscription?.EndDate.ToString()
-                    });
+                // Allow refresh even if subscription expired - user can still access app but with limited functionality
+                // The new token will reflect current subscription status
+                // Critical operations will check DB via RequireSubscription attribute
 
                 // 3. Revoke **all previous valid tokens** to prevent replay/race attacks
                 var oldTokens = await _context.RefreshTokens
@@ -483,7 +372,7 @@ namespace EgyptOnline.Controllers
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshTokenString,
                     refreshTokenExpiry = newRefreshToken.Expires,
-                    subscriptionExpiry = user.Subscription?.EndDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(100)),
+                    subscriptionExpiry = user.Subscription?.EndDate ?? DateTime.UtcNow.AddYears(100),
                 });
             }
             catch (Exception ex)

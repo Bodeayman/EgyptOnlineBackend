@@ -7,7 +7,7 @@ namespace EgyptOnline.Dtos
         public bool? IsAvailable { get; set; }
         public string? ProviderType { get; set; }
         public string? Email { get; set; }
-        public DateOnly? SubscriptionStartDate { get; set; }
-        public DateOnly? SubscriptionEndDate { get; set; }
+        public DateTime? SubscriptionStartDate { get; set; }
+        public DateTime? SubscriptionEndDate { get; set; }
     }
 }

@@ -8,6 +8,7 @@ namespace EgyptOnline.Utilities
         Contractor,
         Company,
         Engineer,
+        Assistant,
         Marketplace
     }
 }

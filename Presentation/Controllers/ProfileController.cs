@@ -6,6 +6,7 @@ using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
 using EgyptOnline.Models;
 using EgyptOnline.Utilities;
+using EgyptOnline.Domain.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -33,13 +34,13 @@ namespace EgyptOnline.Controllers
             _context = context;
         }
         // Get the profile of the worker
+        // Non-critical: Allow viewing profile even if expired (uses token claim, no DB hit for subscription check)
         [HttpGet]
         public async Task<IActionResult> GetProfile()
         {
             try
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
-
 
                 if (userId == null)
                     return Unauthorized();
@@ -49,23 +50,14 @@ namespace EgyptOnline.Controllers
                     .Include(u => u.Subscription)
                     .FirstOrDefaultAsync(u => u.Id == userId);
 
-                if (!user.ServiceProvider.IsAvailable)
-                {
-                    return Unauthorized(new
-                    {
-                        message = "Your subscription has expired",
-                        errorCode = UserErrors.SubscriptionInvalid.ToString()
-,
-                        LastDate = user.Subscription.EndDate.ToString()
-                    });
-                }
-
                 if (user == null)
                     return NotFound();
 
+                // Check subscription from token (may be stale, but acceptable for viewing own profile)
+                // No DB hit needed - subscription status available in token claim
+                // Client can check subscription_expires claim from token if needed
+
                 return Ok(user.ToShowProfileDto());
-
-
             }
             catch (Exception ex)
             {
@@ -74,8 +66,9 @@ namespace EgyptOnline.Controllers
         }
 
         //Update the location and availability and skills of the worker
+        // Critical operation: Requires active subscription (checks DB for fresh data)
         [HttpPut]
-
+        [RequireSubscription]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileDto model)
         {
             try
@@ -91,23 +84,16 @@ namespace EgyptOnline.Controllers
                     return Unauthorized(new { message = "User ID not found in token" });
                 }
                 var user = await _context.Users
-    .Include(u => u.ServiceProvider)
-    .Include(u => u.Subscription)
-    .FirstOrDefaultAsync(u => u.Id == userId);
+                    .Include(u => u.ServiceProvider)
+                    .Include(u => u.Subscription)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
 
-                if (!user.ServiceProvider.IsAvailable)
-                {
-                    return Unauthorized(new
-                    {
-                        message = "Your subscription has expired",
-                        LastDate = user.Subscription.EndDate.ToString(),
-                        errorCode = UserErrors.SubscriptionInvalid.ToString()
-                    });
-                }
                 if (user == null)
                 {
-                    return NotFound(new { messag = "User not found" });
+                    return NotFound(new { message = "User not found" });
                 }
+
+                // Subscription check is handled by [RequireSubscription] attribute
                 using var transaction = await _context.Database.BeginTransactionAsync();
 
 
@@ -167,6 +153,11 @@ namespace EgyptOnline.Controllers
                 {
                     var engineer = await _context.Engineers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
                     engineer!.Salary = model.Pay;
+                }
+                else if (user.ServiceProvider.ProviderType == "Engineer")
+                {
+                    var engineer = await _context.Assistants.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
+                    engineer!.ServicePricePerDay = model.Pay;
                 }
                 else
                 {

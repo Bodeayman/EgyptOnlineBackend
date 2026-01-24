@@ -24,9 +24,9 @@ namespace EgyptOnline.Services
                     User = user,
 
                     UserId = user.Id,
-                    StartDate = EgyptTimeHelper.TodayInEgypt(),
-                    EndDate = EgyptTimeHelper.TodayInEgypt().AddMonths(1),
-                    UpdatedAt = EgyptTimeHelper.ToEgyptTime(DateTime.UtcNow)
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(1),
+                    UpdatedAt = DateTime.UtcNow
                 };
                 _context.Subscriptions.Add(Subscription);
                 return Subscription;
@@ -49,7 +49,7 @@ namespace EgyptOnline.Services
                 if (!string.IsNullOrEmpty(FoundSubscription.User.ReferrerUserName) && FoundSubscription.User.ReferralRewardCount < 5)
                 {
                     FoundSubscription.EndDate = FoundSubscription.EndDate.AddMonths(1);
-                    FoundSubscription.UpdatedAt = EgyptTimeHelper.ToEgyptTime(DateTime.UtcNow);
+                    FoundSubscription.UpdatedAt = DateTime.UtcNow;
                     _userPointService.AddSubscriptionPointsToUser(FoundSubscription.User.ReferrerUserName);
                     FoundSubscription.User.ReferralRewardCount++;
                 }

@@ -70,9 +70,7 @@ namespace EgyptOnline.Controllers
 
             // Reset password
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            Console.WriteLine("Problem here");
             var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
-            Console.WriteLine("Problem here 2c");
 
 
             if (!result.Succeeded)
@@ -83,17 +81,5 @@ namespace EgyptOnline.Controllers
     }
 
     // ------------------ DTOs ------------------
-    public class OtpRequestDto
-    {
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
-    }
 
-    public class OtpVerifyDto
-    {
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
-        public string Otp { get; set; }
-        public string NewPassword { get; set; }
-    }
 }

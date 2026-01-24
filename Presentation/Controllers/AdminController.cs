@@ -55,10 +55,10 @@ namespace EgyptOnline.Controllers
                         u.District,
                         SubscriptionStartDate = u.ServiceProvider != null && u.Subscription != null
                                                 ? u.Subscription.StartDate
-                                                : (DateOnly?)null,
+                                                : (DateTime?)null,
                         SubscriptionEndDate = u.ServiceProvider != null && u.Subscription != null
                                               ? u.Subscription.EndDate
-                                              : (DateOnly?)null,
+                                              : (DateTime?)null,
                         IsAvailable = u.ServiceProvider != null ? u.ServiceProvider.IsAvailable : (bool?)null,
                         ProviderType = u.ServiceProvider != null ? u.ServiceProvider.ProviderType : null
                     });

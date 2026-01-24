@@ -70,6 +70,13 @@ namespace EgyptOnline.Services
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
 
             };
+                
+                // Add subscription expiry date to token (for client-side checks and non-critical operations)
+                // Note: This may be stale for up to ACCESS_TOKEN_MINS, but critical operations will check DB
+                if (user.Subscription != null)
+                {
+                    claims.Add(new Claim("subscription_expires", user.Subscription.EndDate.ToString("yyyy-MM-dd")));
+                }
                 if (rolesAwaiting.Count > 0)
                 {
                     claims.AddRange(rolesAwaiting.Select(r => new Claim(ClaimTypes.Role, r)));

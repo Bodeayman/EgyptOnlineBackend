@@ -15,7 +15,7 @@ namespace EgyptOnline.Data
 
         public DbSet<Worker> Workers { get; set; }
         public DbSet<Company> Companies { get; set; }
-
+        public DbSet<Assistant> Assistants { get; set; }
         public DbSet<Contractor> Contractors { get; set; }
 
         public DbSet<User> Users { get; set; }
@@ -41,7 +41,7 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<Company>().ToTable("Companies");
             modelBuilder.Entity<Worker>().ToTable("Workers");
             modelBuilder.Entity<MarketPlace>().ToTable("MarketPlaces");
-
+            modelBuilder.Entity<Assistant>().ToTable("Assistants");
             modelBuilder.Entity<Engineer>().ToTable("Engineers");
             modelBuilder.Entity<Subscription>()
                   .Property(s => s.StartDate)

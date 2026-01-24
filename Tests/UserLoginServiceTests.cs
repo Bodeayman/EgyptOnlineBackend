@@ -174,8 +174,8 @@ namespace EgyptOnline.Tests
             {
                 UserId = user.Id,
                 User = user,
-                StartDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(-1)),
-                EndDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(1))
+                StartDate = DateTime.UtcNow.AddMonths(-1),
+                EndDate = DateTime.UtcNow.AddMonths(1)
             };
             _context.Subscriptions.Add(subscription);
             await _context.SaveChangesAsync();
@@ -235,8 +235,8 @@ namespace EgyptOnline.Tests
             {
                 UserId = activeSubUser.Id,
                 User = activeSubUser,
-                StartDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(-2)),
-                EndDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(1)) // Future date = Active
+                StartDate = DateTime.UtcNow.AddMonths(-2),
+                EndDate = DateTime.UtcNow.AddMonths(1) // Future date = Active
             };
 
             _context.Users.Add(activeSubUser);
@@ -330,8 +330,8 @@ namespace EgyptOnline.Tests
             {
                 UserId = expiredSubUser.Id,
                 User = expiredSubUser,
-                StartDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(-3)),
-                EndDate = DateOnly.FromDateTime(DateTime.Now.AddDays(-1)) // Past date = Expired
+                StartDate = DateTime.UtcNow.AddMonths(-3),
+                EndDate = DateTime.UtcNow.AddDays(-1) // Past date = Expired
             };
 
             _context.Users.Add(expiredSubUser);
@@ -452,8 +452,8 @@ namespace EgyptOnline.Tests
             {
                 UserId = user.Id,
                 User = user,
-                StartDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(-1)),
-                EndDate = DateOnly.FromDateTime(DateTime.Now) // Ending today
+                StartDate = DateTime.UtcNow.AddMonths(-1),
+                EndDate = DateTime.UtcNow // Ending today
             };
 
             _context.Users.Add(user);
@@ -461,7 +461,7 @@ namespace EgyptOnline.Tests
             await _context.SaveChangesAsync();
 
             // ACT - Simulate subscription renewal
-            oldSubscription.EndDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(1));
+            oldSubscription.EndDate = DateTime.UtcNow.AddMonths(1);
             _context.Subscriptions.Update(oldSubscription);
             await _context.SaveChangesAsync();
 
@@ -471,7 +471,7 @@ namespace EgyptOnline.Tests
 
             Assert.NotNull(updatedSubscription);
             Assert.True(updatedSubscription.IsActive);
-            Assert.True(updatedSubscription.EndDate > DateOnly.FromDateTime(DateTime.Now));
+            Assert.True(updatedSubscription.EndDate > DateTime.UtcNow);
         }
 
         [Fact]
@@ -511,8 +511,8 @@ namespace EgyptOnline.Tests
             {
                 UserId = referredUser.Id,
                 User = referredUser,
-                StartDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(-1)),
-                EndDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(1))
+                StartDate = DateTime.UtcNow.AddMonths(-1),
+                EndDate = DateTime.UtcNow.AddMonths(1)
             };
 
             _context.Users.Add(referrerUser);

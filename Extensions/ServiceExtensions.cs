@@ -98,7 +98,7 @@ namespace EgyptOnline.Extensions
                     OnMessageReceived = context =>
                     {
                         var path = context.HttpContext.Request.Path;
-                        
+
                         // For SignalR/WebSocket: Extract from Authorization header
                         if (path.StartsWithSegments("/chatHub"))
                         {
@@ -125,7 +125,7 @@ namespace EgyptOnline.Extensions
         {
             services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("v1", new() { Title = "BookingApp API", Version = "v1" });
+                options.SwaggerDoc("v1", new() { Title = "Ma3ak API", Version = "v1" });
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",

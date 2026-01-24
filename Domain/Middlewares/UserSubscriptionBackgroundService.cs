@@ -31,11 +31,11 @@ public class SubscriptionCheckerService : BackgroundService
                                     .ToListAsync(stoppingToken);
                 Console.WriteLine($"Checking {users.Count} users at {DateTime.UtcNow}");
 
-                var today = EgyptTimeHelper.TodayInEgypt(); // Get today's date in Egypt
+                var now = DateTime.UtcNow;
 
                 foreach (var user in users)
                 {
-                    if (user.Subscription.EndDate < today)
+                    if (user.Subscription.EndDate < now)
                     {
                         // Revoke refresh tokens
                         if (user.RefreshTokens != null)

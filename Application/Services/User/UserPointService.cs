@@ -1,4 +1,5 @@
 using EgyptOnline.Data;
+using EgyptOnline.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EgyptOnline.Services
@@ -11,35 +12,33 @@ namespace EgyptOnline.Services
             _context = context;
 
         }
+        /// <summary>
+        /// Add registration points to user based on their provider type.
+        /// Uses centralized pricing configuration for single source of truth.
+        /// </summary>
         public bool AddPointsToUser(string userId)
         {
             var user = _context.Users.Include(u => u.ServiceProvider).FirstOrDefault(u => u.UserName == userId);
             if (user != null)
             {
-                if (user.ServiceProvider.ProviderType == "Worker")
-                    user.Points += 25;
-                else if (user.ServiceProvider.ProviderType == "Company" || user.ServiceProvider.ProviderType == "Marketplace")
-                    user.Points += 100;
-                else if (user.ServiceProvider.ProviderType == "Engineer" || user.ServiceProvider.ProviderType == "Contractor")
-                    user.Points += 50;
-
+                int points = ProviderPricingConfig.GetRegistrationPoints(user.ServiceProvider.ProviderType);
+                user.Points += points;
                 return true;
             }
             return false;
         }
 
+        /// <summary>
+        /// Add subscription renewal points to referrer user.
+        /// Uses centralized pricing configuration for single source of truth.
+        /// </summary>
         public bool AddSubscriptionPointsToUser(string referrerUserName)
         {
             var user = _context.Users.Include(u => u.ServiceProvider).FirstOrDefault(u => u.UserName == referrerUserName);
             if (user != null)
             {
-                if (user.ServiceProvider.ProviderType == "Worker")
-                    user.SubscriptionPoints += 25;
-                else if (user.ServiceProvider.ProviderType == "Company" || user.ServiceProvider.ProviderType == "Marketplace")
-                    user.SubscriptionPoints += 100;
-                else if (user.ServiceProvider.ProviderType == "Engineer" || user.ServiceProvider.ProviderType == "Contractor")
-                    user.SubscriptionPoints += 50;
-
+                int points = ProviderPricingConfig.GetSubscriptionPoints(user.ServiceProvider.ProviderType);
+                user.SubscriptionPoints += points;
                 return true;
             }
             return false;

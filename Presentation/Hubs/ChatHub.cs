@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using EgyptOnline.Services;
+using EgyptOnline.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace EgyptOnline.Presentation.Hubs
 {
@@ -10,11 +12,26 @@ namespace EgyptOnline.Presentation.Hubs
     {
         private readonly ChatService _chatService;
         private readonly PresenceService _presenceService;
+        private readonly ApplicationDbContext _context;
 
-        public ChatHub(ChatService chatService, PresenceService presenceService)
+        public ChatHub(ChatService chatService, PresenceService presenceService, ApplicationDbContext context)
         {
             _chatService = chatService;
             _presenceService = presenceService;
+            _context = context;
+        }
+
+        /// <summary>
+        /// Checks if user has active subscription from database (fresh check for critical operations)
+        /// </summary>
+        private async Task<bool> CheckSubscriptionAsync(string userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.Subscription)
+                .Include(u => u.ServiceProvider)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            return user?.Subscription != null 
+                && user.ServiceProvider?.IsAvailable == true;
         }
 
         public override async Task OnConnectedAsync()
@@ -49,14 +66,23 @@ namespace EgyptOnline.Presentation.Hubs
         {
             var senderId = Context.User?.FindFirst("uid")?.Value;
             
-            if (string.IsNullOrEmpty(senderId)) return;
+            if (string.IsNullOrEmpty(senderId))
+            {
+                await Clients.Caller.SendAsync("SendMessageError", "Unauthorized");
+                return;
+            }
+
+            // Critical operation: Check subscription from DB
+            if (!await CheckSubscriptionAsync(senderId))
+            {
+                await Clients.Caller.SendAsync("SendMessageError", "Your subscription has expired. Please renew to send messages.");
+                return;
+            }
 
             // Save to MongoDB
             await _chatService.SaveMessageAsync(senderId, receiverId, content);
 
             // Send to receiver (assuming receiver is connected to their own user-id group)
-            // Ideally, clients subscribe to a group named after their UserID upon connection.
-            // Or simpler: use User(receiverId) if the UserId provider maps correctly.
             await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, content);
             
             // Also send back to sender so their UI updates immediately (or they do it optimistically)
@@ -70,6 +96,13 @@ namespace EgyptOnline.Presentation.Hubs
             if (string.IsNullOrEmpty(senderId))
             {
                 await Clients.Caller.SendAsync("DeleteMessageError", "Unauthorized");
+                return;
+            }
+
+            // Critical operation: Check subscription from DB
+            if (!await CheckSubscriptionAsync(senderId))
+            {
+                await Clients.Caller.SendAsync("DeleteMessageError", "Your subscription has expired. Please renew to delete messages.");
                 return;
             }
 
@@ -103,6 +136,13 @@ namespace EgyptOnline.Presentation.Hubs
             if (string.IsNullOrEmpty(senderId))
             {
                 await Clients.Caller.SendAsync("EditMessageError", "Unauthorized");
+                return;
+            }
+
+            // Critical operation: Check subscription from DB
+            if (!await CheckSubscriptionAsync(senderId))
+            {
+                await Clients.Caller.SendAsync("EditMessageError", "Your subscription has expired. Please renew to edit messages.");
                 return;
             }
 
