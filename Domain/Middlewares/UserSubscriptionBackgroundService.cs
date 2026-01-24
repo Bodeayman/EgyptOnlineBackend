@@ -68,17 +68,15 @@ public class SubscriptionCheckerService : BackgroundService
                 Console.WriteLine($"Error in SubscriptionCheckerService: {ex.Message}");
             }
 
-            // Calculate delay until next midnight in Egypt
-            var nowEgypt = EgyptTimeHelper.NowInEgypt();
-            var tomorrowMidnightEgypt = nowEgypt.Date.AddDays(1);
-            var tomorrowMidnightUtc = EgyptTimeHelper.ToUtc(tomorrowMidnightEgypt);
 
-            var delay = tomorrowMidnightUtc - DateTime.UtcNow;
+            var nowUtc = DateTime.UtcNow;
+            var tomorrowMidnightUtc = nowUtc.Date.AddDays(1);
+            var delay = tomorrowMidnightUtc - nowUtc;
 
             if (delay <= TimeSpan.Zero)
                 delay = TimeSpan.FromMinutes(1);
 
-            Console.WriteLine($"Next check at: {tomorrowMidnightEgypt} Egypt time (in {delay.TotalHours:F2} hours)");
+            Console.WriteLine($"Next check at UTC midnight: {tomorrowMidnightUtc} (in {delay.TotalHours:F2} hours)");
 
             await Task.Delay(delay, stoppingToken);
         }

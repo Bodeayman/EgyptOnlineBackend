@@ -54,9 +54,9 @@ namespace EgyptOnline.Domain.Attributes
             // Check if subscription is active
             if (user.Subscription == null ||
                 (user.ServiceProvider != null &&
-                (user.Subscription.EndDate < DateTime.Now || !user.ServiceProvider.IsAvailable)))
+                (!user.ServiceProvider.IsAvailable)))
             {
-                user.ServiceProvider.IsAvailable = false;
+                // user.ServiceProvider.IsAvailable = false;
                 await dbContext.SaveChangesAsync();
                 // Match exact format from old CheckSubscription() for backward compatibility
                 context.Result = new UnauthorizedObjectResult(new

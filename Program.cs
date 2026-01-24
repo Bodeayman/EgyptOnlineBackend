@@ -45,6 +45,7 @@ try
     options.InstanceName = builder.Configuration["RedisSettings:InstanceName"];
 });
 
+
     // IConnectionMultiplexer using settings from configuration
     builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     {
@@ -177,6 +178,8 @@ try
        });
 
     app.UseRouting();
+    app.UseCors();
+
     app.UseAuthentication();
     app.UseAuthorization();
     // app.UseMiddleware<SubscriptionCheckMiddleware>();
@@ -185,8 +188,9 @@ try
     app.UseSerilogRequestLogging();
 
     // ---------- Map Endpoints ----------
-    app.MapControllers();
     app.MapHub<EgyptOnline.Presentation.Hubs.ChatHub>("/chatHub");
+    app.MapControllers();
+
     app.MapGet("/health", () => Results.Ok("Healthy"));
 
     Log.Information("Application started successfully on {Environment}", app.Environment.EnvironmentName);

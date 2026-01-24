@@ -37,7 +37,8 @@ namespace EgyptOnline.Utilities
                 Id = subscription.Id,
                 StartDate = subscription.StartDate,
                 EndDate = subscription.EndDate,
-                IsActive = subscription.IsActive
+                IsActive = subscription.IsActive,
+                UpdatedAt = subscription.UpdatedAt,
             };
         }
 

@@ -33,18 +33,19 @@ namespace EgyptOnline.Services
             });
         }
 
-        public async Task SaveMessageAsync(string senderId, string receiverId, string content)
-        {
-            var message = new ChatMessage
-            {
-                SenderId = senderId,
-                ReceiverId = receiverId,
-                Content = content,
-                Timestamp = DateTime.UtcNow
-            };
+    public async Task<string> SaveMessageAsync(string senderId, string receiverId, string content)
+{
+    var message = new ChatMessage
+    {
+        SenderId = senderId,
+        ReceiverId = receiverId,
+        Content = content,
+        Timestamp = DateTime.UtcNow
+    };
 
-            await _messages.InsertOneAsync(message);
-        }
+    await _messages.InsertOneAsync(message);
+    return message.Id; // Return the message ID
+}
 
         // Optimized with pagination
         public async Task<List<ChatMessage>> GetConversationAsync(string user1Id, string user2Id, int pageNumber = 1, int pageSize = 50)

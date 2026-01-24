@@ -62,32 +62,40 @@ namespace EgyptOnline.Presentation.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task SendMessage(string receiverId, string content)
-        {
-            var senderId = Context.User?.FindFirst("uid")?.Value;
-            
-            if (string.IsNullOrEmpty(senderId))
-            {
-                await Clients.Caller.SendAsync("SendMessageError", "Unauthorized");
-                return;
-            }
+     // Presentation/Hubs/ChatHub.cs - Line 65-90
+public async Task SendMessage(string receiverId, string content)
+{
+    var senderId = Context.User?.FindFirst("uid")?.Value;
+    
+    if (string.IsNullOrEmpty(senderId))
+    {
+        await Clients.Caller.SendAsync("SendMessageError", "Unauthorized");
+        return;
+    }
 
-            // Critical operation: Check subscription from DB
-            if (!await CheckSubscriptionAsync(senderId))
-            {
-                await Clients.Caller.SendAsync("SendMessageError", "Your subscription has expired. Please renew to send messages.");
-                return;
-            }
+    // Critical operation: Check subscription from DB
+    if (!await CheckSubscriptionAsync(senderId))
+    {
+        await Clients.Caller.SendAsync("SendMessageError", "Your subscription has expired. Please renew to send messages.");
+        return;
+    }
 
-            // Save to MongoDB
-            await _chatService.SaveMessageAsync(senderId, receiverId, content);
+    try
+    {
+        // Save to MongoDB and get message ID
+        var messageId = await _chatService.SaveMessageAsync(senderId, receiverId, content);
 
-            // Send to receiver (assuming receiver is connected to their own user-id group)
-            await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, content);
-            
-            // Also send back to sender so their UI updates immediately (or they do it optimistically)
-            // await Clients.Caller.SendAsync("ReceiveMessage", senderId, content);
-        }
+        // Send to receiver
+        await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, content, messageId);
+        
+        // Send confirmation back to sender with message ID
+        await Clients.Caller.SendAsync("MessageSent", messageId, receiverId, content);
+    }
+    catch (Exception ex)
+    {
+        await Clients.Caller.SendAsync("SendMessageError", $"Error sending message: {ex.Message}");
+    }
+}
 
         public async Task DeleteMessage(string messageId, string receiverId)
         {
