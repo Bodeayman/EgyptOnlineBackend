@@ -48,12 +48,13 @@ namespace EgyptOnline.Services
                 // Check for referral reward
                 if (!string.IsNullOrEmpty(FoundSubscription.User.ReferrerUserName) && FoundSubscription.User.ReferralRewardCount < 5)
                 {
-                    FoundSubscription.UpdatedAt = DateTime.UtcNow;
-                    FoundSubscription.EndDate = DateTime.UtcNow.AddMonths(1);
 
-                    _userPointService.AddSubscriptionPointsToUser(FoundSubscription.User.ReferrerUserName);
+
+                    _userPointService.AddSubscriptionPointsToUser(FoundSubscription.User.ReferrerUserName, FoundSubscription.User.ServiceProvider.ProviderType);
                     FoundSubscription.User.ReferralRewardCount++;
                 }
+                FoundSubscription.UpdatedAt = DateTime.UtcNow;
+                FoundSubscription.EndDate = FoundSubscription.EndDate.AddMonths(1);
                 if (user != null)
                 {
                     user.ServiceProvider.IsAvailable = true;

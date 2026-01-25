@@ -62,7 +62,6 @@ namespace EgyptOnline.Controllers
             return new
             {
                 userId = x.User.Id,
-                userName = x.User.UserName,
                 name = $"{x.User.FirstName} {x.User.LastName}",
                 skill = skill,
                 governorate = x.User.Governorate,
@@ -74,10 +73,8 @@ namespace EgyptOnline.Controllers
                 isCompany = isCompany,
                 workerType = workerType,
                 mobileNumber = x.User.PhoneNumber,
-                email = x.User.Email,
                 typeOfService = x.ProviderType?.ToString(),
                 aboutMe = x.Bio,
-                Points = x.User.Points
             };
         }
 

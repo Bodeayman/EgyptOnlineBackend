@@ -52,8 +52,8 @@ namespace EgyptOnline.Controllers
         /// </summary>
         /// <param name="paymentMethod">Payment method: "CreditCard" or "MobileWallet"</param>
         [HttpPost("subscribe")]
-        [Authorize]
-        public async Task<IActionResult> InitiateSubscriptionPayment([FromQuery] string paymentMethod = "CreditCard")
+        [Authorize(Roles = Roles.User)]
+        public async Task<IActionResult> InitiateSubscriptionPayment([FromQuery] PaymentType paymentMethod)
         {
             try
             {
@@ -73,34 +73,26 @@ namespace EgyptOnline.Controllers
                 User user = await _context.Users
                     .Include(u => u.ServiceProvider)
                     .FirstOrDefaultAsync(p => p.Id == userId);
-                
+
                 if (user == null)
                 {
                     return BadRequest(new { message = "The user is not found" });
                 }
 
                 // Check if user already has active subscription
-                bool hasActiveSubscription = await _context.ServiceProviders
-                    .AnyAsync(w => w.UserId == userId && w.IsAvailable);
-                
-                if (hasActiveSubscription)
-                {
-                    return BadRequest(new { message = "User already has an active subscription." });
-                }
+
 
                 // Get subscription cost from centralized configuration (single source of truth)
                 string providerType = user.ServiceProvider?.ProviderType ?? "Worker";
                 decimal subscriptionCost = ProviderPricingConfig.GetSubscriptionCost(providerType);
 
-                Console.WriteLine($"📋 Initiating {paymentMethod} payment for User: {userId}");
-                Console.WriteLine($"📋 Provider Type: {providerType}, Amount: {subscriptionCost} EGP");
 
                 // Create pending payment record
                 var payment = new PaymentTransaction
                 {
                     UserId = userId,
                     Amount = subscriptionCost,
-                    PaymentMethod = paymentMethod,
+                    PaymentMethod = paymentMethod.ToString(),
                     Status = PaymentStatus.Pending,
                     IdempotencyKey = Guid.NewGuid().ToString()
                 };
@@ -108,11 +100,10 @@ namespace EgyptOnline.Controllers
                 _context.PaymentTransactions.Add(payment);
                 await _context.SaveChangesAsync();
 
-                Console.WriteLine($"✅ Payment record created: {payment.Id} for User: {userId}");
 
                 // Create payment session with the payment ID
                 string paymentLink;
-                if (paymentMethod == "CreditCard")
+                if (paymentMethod == PaymentType.CreditCard)
                 {
                     paymentLink = await _paymentService.CreatePaymentSession(
                         payment.Amount,
@@ -123,6 +114,7 @@ namespace EgyptOnline.Controllers
                 }
                 else // MobileWallet
                 {
+
                     paymentLink = await _paymentService.CreatePaymentSession(
                         payment.Amount,
                         user,
@@ -131,10 +123,10 @@ namespace EgyptOnline.Controllers
                     );
                 }
 
-                return Ok(new 
-                { 
+                return Ok(new
+                {
                     message = "Payment session created successfully",
-                    paymentLink = paymentLink, 
+                    paymentLink = paymentLink,
                     paymentId = payment.Id,
                     amount = payment.Amount,
                     currency = "EGP",
@@ -143,7 +135,6 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Payment Error: {ex.Message}");
                 return StatusCode(500, new { message = "An error occurred while processing the payment request.", error = ex.Message });
             }
         }
@@ -153,162 +144,117 @@ namespace EgyptOnline.Controllers
         /// Currently supports: CreditCard, MobileWallet
         /// Note: Fawry and VodafoneCash are not edited as per requirements.
         /// </summary>
-        private bool IsValidPaymentMethod(string paymentMethod)
+        private bool IsValidPaymentMethod(PaymentType paymentMethod)
         {
             return paymentMethod switch
             {
-                "CreditCard" or "MobileWallet" => true,
+                PaymentType.CreditCard or PaymentType.MobileWallet => true,
                 _ => false
             };
         }
         // callback function to handle the webhook from paymob after payment
         [HttpPost("webhook")]
         [HttpGet("webhook")]
-        [AllowAnonymous]
         public async Task<IActionResult> PaymobNewWebHook()
         {
-            //This is should be done after doing the payment
             try
             {
-                Console.WriteLine($"🔔 WEBHOOK RECEIVED at {DateTime.UtcNow}");
-                Console.WriteLine($"Request Method: {Request.Method}");
-
-                // Handle both POST (JSON body) and GET (query parameters)
                 bool success = false;
                 string orderId = "";
                 string merchantOrderId = "";
                 string message = "";
 
-                if (Request.Method == "GET")
+                using (var reader = new StreamReader(Request.Body))
                 {
-                    // Parse query parameters
-                    var query = Request.Query;
-                    Console.WriteLine($"Query Parameters: {string.Join(", ", query.Select(x => $"{x.Key}={x.Value}"))}");
+                    var body = await reader.ReadToEndAsync();
 
-                    success = query["success"].ToString().ToLower() == "true";
-                    orderId = query["order"].ToString() ?? "";
-                    merchantOrderId = query["merchant_order_id"].ToString() ?? "";
-                    message = query["data.message"].ToString() ?? "";
-
-                    Console.WriteLine($"✅ Payment Success: {success}");
-                    Console.WriteLine($"Order ID: {orderId}");
-                    Console.WriteLine($"Merchant Order ID: {merchantOrderId}");
-                    Console.WriteLine($"Message: {message}");
-                }
-                else
-                {
-                    // Parse JSON body (POST)
-                    using (var reader = new StreamReader(Request.Body))
+                    if (!string.IsNullOrEmpty(body))
                     {
-                        var body = await reader.ReadToEndAsync();
-                        Console.WriteLine($"Payload: {body}");
+                        var payload = JsonSerializer.Deserialize<JsonElement>(body);
+                        var obj = payload.GetProperty("obj");
 
-                        if (!string.IsNullOrEmpty(body))
-                        {
-                            var payload = JsonSerializer.Deserialize<JsonElement>(body);
-                            var obj = payload.GetProperty("obj");
-
-                            success = obj.GetProperty("success").GetBoolean();
-                            orderId = obj.GetProperty("order").GetProperty("id").GetInt32().ToString();
-                            message = obj.GetProperty("data").GetProperty("message").GetString() ?? "";
-                            merchantOrderId = obj.GetProperty("order").GetProperty("merchant_order_id").GetString();
-
-                            Console.WriteLine($"✅ Payment Success: {success}");
-                        }
+                        success = obj.GetProperty("success").GetBoolean();
+                        orderId = obj.GetProperty("order").GetProperty("id").GetInt32().ToString();
+                        message = obj.GetProperty("data").GetProperty("message").GetString() ?? "";
+                        merchantOrderId = obj.GetProperty("order").GetProperty("merchant_order_id").GetString();
                     }
                 }
 
-                // Extract paymentId from merchant_order_id (it's now stored as paymentId instead of userId)
                 int paymentId = 0;
-                if (!string.IsNullOrEmpty(merchantOrderId) && int.TryParse(merchantOrderId, out paymentId))
-                {
-                    Console.WriteLine($"✅ Parsed Payment ID: {paymentId}");
-                }
-                else
-                {
-                    Console.WriteLine($"❌ Could not parse Payment ID from merchant_order_id: {merchantOrderId}");
+                if (!(!string.IsNullOrEmpty(merchantOrderId) && int.TryParse(merchantOrderId, out paymentId)))
                     return BadRequest(new { message = "Invalid merchant_order_id format" });
-                }
-
-                Console.WriteLine($"Webhook received for Payment ID: {paymentId}");
-
-                // Log all headers
-                foreach (var header in Request.Headers)
-                {
-                    Console.WriteLine($"Header - {header.Key}: {header.Value}");
-                }
 
                 if (success)
                 {
-                    // Fetch payment record from database
-                    var payment = await _context.PaymentTransactions
-                        .Include(p => p.User)
-                        .ThenInclude(u => u.ServiceProvider)
-                        .FirstOrDefaultAsync(p => p.Id == paymentId);
-
-                    if (payment == null)
+                    using (var transaction = await _context.Database.BeginTransactionAsync())
                     {
-                        Console.WriteLine($"❌ Payment record not found with ID: {paymentId}");
-                        return BadRequest(new { message = "Payment record not found" });
-                    }
-
-                    // Idempotency check: prevent double processing
-                    if (payment.Status == PaymentStatus.Success)
-                    {
-                        Console.WriteLine($"✅ Payment already processed (idempotent). Payment ID: {paymentId}");
-                        return Ok(new
+                        try
                         {
-                            message = "Payment already processed",
-                            paymentId = payment.Id,
-                            status = payment.Status.ToString()
-                        });
-                    }
+                            var payment = await _context.PaymentTransactions
+                                .Include(p => p.User)
+                                .ThenInclude(u => u.ServiceProvider)
+                                .FirstOrDefaultAsync(p => p.Id == paymentId);
 
-                    // Update payment status
-                    payment.Status = PaymentStatus.Processing;
-                    payment.PaymobOrderId = int.TryParse(orderId, out var oid) ? oid : null;
-                    payment.PaymobMerchantOrderId = merchantOrderId;
-                    payment.PaymentGatewayResponse = message;
-                    await _context.SaveChangesAsync();
-                    Console.WriteLine($"✅ Payment status updated to Processing");
+                            if (payment == null)
+                            {
+                                await transaction.RollbackAsync();
+                                return BadRequest(new { message = "Payment record not found" });
+                            }
 
-                    // Get user and renew subscription
-                    User UserFound = payment.User;
-                    if (UserFound != null)
-                    {
-                        Console.WriteLine($"✅ User Found: {UserFound.Id}");
-                        await _userSubscriptionService.RenewSubscription(UserFound);
+                            if (payment.Status == PaymentStatus.Success)
+                            {
+                                await transaction.RollbackAsync();
+                                return Ok(new
+                                {
+                                    message = "Payment already processed",
+                                    paymentId = payment.Id,
+                                    status = payment.Status.ToString()
+                                });
+                            }
 
+                            payment.Status = PaymentStatus.Processing;
+                            payment.PaymobOrderId = int.TryParse(orderId, out var oid) ? oid : null;
+                            payment.PaymobMerchantOrderId = merchantOrderId;
+                            payment.PaymentGatewayResponse = message;
+                            await _context.SaveChangesAsync();
 
-                        // Final status update
-                        payment.Status = PaymentStatus.Success;
-                        payment.ProcessedAt = DateTime.UtcNow;
-                        await _context.SaveChangesAsync();
-                        Console.WriteLine($"✅ Subscription Renewed Successfully");
+                            User UserFound = payment.User;
+                            if (UserFound == null)
+                            {
+                                payment.Status = PaymentStatus.Failed;
+                                payment.ErrorMessage = "User not found";
+                                payment.ProcessedAt = DateTime.UtcNow;
+                                await _context.SaveChangesAsync();
+                                await transaction.RollbackAsync();
+                                return BadRequest(new { message = "User not found for this payment" });
+                            }
 
-                        return Ok(new
+                            await _userSubscriptionService.RenewSubscription(UserFound);
+
+                            payment.Status = PaymentStatus.Success;
+                            payment.ProcessedAt = DateTime.UtcNow;
+                            await _context.SaveChangesAsync();
+
+                            await transaction.CommitAsync();
+
+                            return Ok(new
+                            {
+                                message = "Subscription Renewed Successfully",
+                                userId = UserFound.Id,
+                                paymentId = payment.Id,
+                                status = payment.Status.ToString(),
+                                orderId = orderId
+                            });
+                        }
+                        catch (Exception)
                         {
-                            message = "Subscription Renewed Successfully",
-                            userId = UserFound.Id,
-                            paymentId = payment.Id,
-                            status = payment.Status.ToString(),
-                            orderId = orderId
-                        });
+                            await transaction.RollbackAsync();
+                            throw;
+                        }
                     }
-                    else
-                    {
-                        Console.WriteLine($"❌ User not found for payment ID: {paymentId}");
-                        payment.Status = PaymentStatus.Failed;
-                        payment.ErrorMessage = "User not found";
-                        payment.ProcessedAt = DateTime.UtcNow;
-                        await _context.SaveChangesAsync();
-                        return BadRequest(new { message = "User not found for this payment" });
-                    }
-
                 }
                 else
                 {
-                    Console.WriteLine($"❌ Payment failed for Payment ID: {paymentId}, Message: {message}");
                     var payment = await _context.PaymentTransactions.FirstOrDefaultAsync(p => p.Id == paymentId);
                     if (payment != null)
                     {
@@ -322,8 +268,6 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Webhook Error: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                 return StatusCode(500, new { message = "An error occurred while processing the webhook.", error = ex.Message });
             }
         }
@@ -331,7 +275,7 @@ namespace EgyptOnline.Controllers
         /// Check payment status by payment ID. Can be called without authentication.
         /// </summary>
         [HttpGet("status/{paymentId}")]
-        [AllowAnonymous]
+        [Authorize(Roles = Roles.User)]
         public async Task<IActionResult> GetPaymentStatus(int paymentId)
         {
             try

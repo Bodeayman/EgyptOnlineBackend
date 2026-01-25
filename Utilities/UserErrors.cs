@@ -14,6 +14,7 @@ namespace EgyptOnline.Utilities
         InvalidInput,
         UserIsNotFound,
         PasswordInvalid,
-        EmailOrPasswordInCorrect
+        EmailOrPasswordInCorrect,
+        RefreshTokenInvalid
     }
 }

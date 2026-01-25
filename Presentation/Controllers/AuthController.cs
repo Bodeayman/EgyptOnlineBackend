@@ -20,6 +20,7 @@ using System.Runtime.InteropServices;
 using Microsoft.EntityFrameworkCore.SqlServer.Migrations.Internal;
 using System.Collections.Concurrent;
 using EgyptOnline.Strategies;
+using Microsoft.AspNetCore.Mvc.Versioning;
 namespace EgyptOnline.Controllers
 {
 
@@ -330,7 +331,11 @@ namespace EgyptOnline.Controllers
                     .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
 
                 if (storedToken == null || storedToken.IsRevoked || storedToken.Expires < DateTime.UtcNow)
-                    return Unauthorized(new { message = "Refresh token is expired or revoked", errorCode = "SubscriptionInvalid" });
+                    return Unauthorized(new
+                    {
+                        message = "Refresh token is expired or revoked",
+                        errorCode = UserErrors.RefreshTokenInvalid.ToString()
+                    });
 
                 var user = storedToken.User;
                 if (user == null)
@@ -372,7 +377,7 @@ namespace EgyptOnline.Controllers
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshTokenString,
                     refreshTokenExpiry = newRefreshToken.Expires,
-                    subscriptionExpiry = user.Subscription?.EndDate ?? DateTime.UtcNow.AddYears(100),
+                    subscriptionExpiry = user.Subscription?.EndDate,
                 });
             }
             catch (Exception ex)
@@ -423,7 +428,7 @@ namespace EgyptOnline.Controllers
         }
 
 
-        [Authorize]
+        [Authorize(Roles = Roles.User)]
         [HttpPost("upload-profile-image")]
 
 

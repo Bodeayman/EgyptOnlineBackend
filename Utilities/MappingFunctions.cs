@@ -63,6 +63,10 @@ namespace EgyptOnline.Utilities
                     dto.Pay = worker.ServicePricePerDay;
                     dto.WorkerTypes = worker.WorkerType;
                     break;
+                case Assistant worker:
+                    dto.Specialization = worker.Skill;
+                    dto.Pay = worker.ServicePricePerDay;
+                    break;
                 case Contractor contractor:
                     // Assuming Contractor has an Expertise property
                     dto.Pay = contractor.Salary;

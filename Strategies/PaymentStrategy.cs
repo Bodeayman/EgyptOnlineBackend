@@ -73,7 +73,6 @@ namespace EgyptOnline.Strategies
             return $"https://accept.paymob.com/api/acceptance/iframes/{iframeId}?payment_token={paymentToken}";
         }
     }
-
     public class MobileWalletPaymentStrategy : IPaymentStrategy
     {
         private readonly HttpClient _httpClient;
@@ -93,7 +92,7 @@ namespace EgyptOnline.Strategies
             authResponse.EnsureSuccessStatusCode();
             var token = (await authResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
 
-            // 2. Register Order - Use paymentId as merchant_order_id
+            // 2. Register Order
             var orderResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/ecommerce/orders",
                 new { auth_token = token, delivery_needed = "false", amount_cents = (int)(amount * 100), merchant_order_id = paymentId.ToString(), items = Array.Empty<object>() });
             orderResponse.EnsureSuccessStatusCode();
@@ -108,43 +107,100 @@ namespace EgyptOnline.Strategies
                     amount_cents = (int)(amount * 100),
                     expiration = 3600,
                     order_id = orderId,
-                    integration_id = integrationId,
-                    billingData = new
+                    billing_data = new
                     {
-                        first_name = user?.FirstName ?? user?.UserName ?? "Customer",
-                        last_name = user?.LastName ?? user?.UserName ?? "Customer",
+                        first_name = user?.FirstName ?? "Customer",
+                        last_name = user?.LastName ?? "Customer",
                         email = user?.Email ?? "customer@example.com",
                         phone_number = user?.PhoneNumber ?? "20100000000",
                         apartment = "NA",
                         floor = "NA",
                         building = "NA",
-                        street = "NA",
+                        street = user?.District ?? "NA",
                         shipping_method = "NA",
-                        postal_code = user?.District ?? "00000",
+                        postal_code = "00000",
                         city = user?.City ?? "Cairo",
                         state = user?.Governorate ?? "Cairo",
                         country = "Egypt"
                     },
+                    integration_id = integrationId,
                     currency = "EGP"
                 });
             paymentKeyResponse.EnsureSuccessStatusCode();
             var paymentToken = (await paymentKeyResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
 
+            // Format phone number properly
+            string phoneNumber = user.PhoneNumber;
+            if (phoneNumber.StartsWith("+20"))
+            {
+                phoneNumber = "0" + phoneNumber.Substring(3);
+            }
+            else if (phoneNumber.StartsWith("20"))
+            {
+                phoneNumber = "0" + phoneNumber.Substring(2);
+            }
+
             // 4. Initiate Wallet Payment
-            var walletResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/acceptance/payments/pay",
+            var walletResponse = await _httpClient.PostAsJsonAsync(
+                "https://accept.paymob.com/api/acceptance/payments/pay",
                 new
                 {
-                    source = new { identifier = user.PhoneNumber, subtype = "WALLET" },
+                    source = new
+                    {
+                        identifier =
+                        // This is test
+                        01010101010,
+                        subtype = "WALLET",
+                        otp = 123456
+                    },
                     payment_token = paymentToken
                 });
 
-            return await walletResponse.Content.ReadAsStringAsync(); // JSON with pending OTP info
+            walletResponse.EnsureSuccessStatusCode();
+            var walletJson = await walletResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+            // Log the full response to see what's returned
+
+            // 5. Try to extract redirect URL or iframe URL
+            string redirectUrl = null;
+
+            // Try different possible response fields
+            if (walletJson.TryGetProperty("redirect_url", out var redirectUrlProp))
+            {
+                redirectUrl = redirectUrlProp.GetString();
+            }
+            else if (walletJson.TryGetProperty("iframe_redirection_url", out var iframeUrlProp))
+            {
+                redirectUrl = iframeUrlProp.GetString();
+            }
+            else if (walletJson.TryGetProperty("iframe_id", out var iframeIdProp))
+            {
+                // Build iframe URL manually
+                var iframeId = iframeIdProp.GetString();
+                redirectUrl = $"https://accept.paymob.com/api/acceptance/iframes/{iframeId}?payment_token={paymentToken}";
+            }
+            else
+            {
+                // If no redirect URL, the payment might be pending OTP
+                // Return a status message instead
+                var pending = walletJson.TryGetProperty("pending", out var pendingProp) && pendingProp.GetBoolean();
+                if (pending)
+                {
+                    // Payment is waiting for OTP - return a message or the whole response
+                    return walletJson.GetRawText(); // Return full JSON for frontend to handle
+                }
+
+                throw new Exception($"No redirect URL found in wallet response: {walletJson.GetRawText()}");
+            }
+
+            return redirectUrl;
         }
     }
 
 
-
-
+    /// <summary>
+    /// Fawry Payment Strategy Implementation
+    /// </summary>
     public class FawryPaymentStrategy : IPaymentStrategy
     {
         private readonly HttpClient _httpClient;
@@ -180,23 +236,23 @@ namespace EgyptOnline.Strategies
                     amount_cents = (int)(amount * 100),
                     expiration = 3600,
                     order_id = orderId,
-                    integration_id = integrationId,
-                    billingData = new
+                    billing_data = new
                     {
-                        first_name = user?.FirstName ?? user?.UserName ?? "Customer",
-                        last_name = user?.LastName ?? user?.UserName ?? "Customer",
+                        first_name = user?.FirstName ?? "Customer",
+                        last_name = user?.LastName ?? "Customer",
                         email = user?.Email ?? "customer@example.com",
                         phone_number = user?.PhoneNumber ?? "20100000000",
                         apartment = "NA",
                         floor = "NA",
                         building = "NA",
-                        street = "NA",
+                        street = user?.District ?? "NA",
                         shipping_method = "NA",
-                        postal_code = user?.District ?? "00000",
+                        postal_code = "00000",
                         city = user?.City ?? "Cairo",
                         state = user?.Governorate ?? "Cairo",
                         country = "Egypt"
                     },
+                    integration_id = integrationId,
                     currency = "EGP"
                 });
             paymentKeyResponse.EnsureSuccessStatusCode();

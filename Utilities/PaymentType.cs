@@ -4,6 +4,7 @@ namespace EgyptOnline.Utilities
     {
 
         CreditCard,
-        VodafoneCash
+        MobileWallet,
+        Fawry
     }
 }

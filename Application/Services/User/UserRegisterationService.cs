@@ -75,7 +75,6 @@ namespace EgyptOnline.Services
                     Governorate = model.Governorate,
                     City = model.City,
                     District = model.District,
-                    SecurityStamp = Guid.NewGuid().ToString("D"),
                     ReferrerUserName = model.ReferralUserName,
                     ReferralRewardCount = 0
                 };
@@ -108,7 +107,7 @@ namespace EgyptOnline.Services
                 // Referral points
                 if (!string.IsNullOrEmpty(model.ReferralUserName))
                 {
-                    var pointsAdded = _userPointService.AddPointsToUser(model.ReferralUserName);
+                    var pointsAdded = _userPointService.AddPointsToUser(model.ReferralUserName, model.ProviderType);
                     if (!pointsAdded)
                     {
                         return new UserRegisterationResult

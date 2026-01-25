@@ -154,7 +154,7 @@ namespace EgyptOnline.Controllers
                     var engineer = await _context.Engineers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
                     engineer!.Salary = model.Pay;
                 }
-                else if (user.ServiceProvider.ProviderType == "Engineer")
+                else if (user.ServiceProvider.ProviderType == "Assistant")
                 {
                     var engineer = await _context.Assistants.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
                     engineer!.ServicePricePerDay = model.Pay;

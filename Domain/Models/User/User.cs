@@ -30,7 +30,8 @@ namespace EgyptOnline.Models
         public string? ReferrerUserName { get; set; }
         public int ReferralRewardCount { get; set; } = 0;
 
-
+        //For Soft Delete
+        // public bool IsDeleted { get; set; }
 
     }
 }

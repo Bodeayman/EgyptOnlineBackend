@@ -35,7 +35,13 @@ namespace EgyptOnline.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
+            // modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<PaymentTransaction>()
+                .HasIndex(p => p.IdempotencyKey)
+                .IsUnique();
+            // Repeat for other entities
+            // modelBuilder.Entity<PaymentTransaction>().HasQueryFilter(p => !p.IsDeleted);
+            // modelBuilder.Entity<ServiceProvider>().HasQueryFilter(s => !s.IsDeleted);
             modelBuilder.Entity<Contractor>().ToTable("Contractors");
             modelBuilder.Entity<ServicesProvider>().ToTable("ServicesProviders");
             modelBuilder.Entity<Company>().ToTable("Companies");

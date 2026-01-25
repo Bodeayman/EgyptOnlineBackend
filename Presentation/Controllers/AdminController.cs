@@ -41,6 +41,8 @@ namespace EgyptOnline.Controllers
             try
             {
                 var usersQuery = _context.Users
+                .Include(u => u.Subscription)
+                .Include(u => u.ServiceProvider)
                     .Select(u => new
                     {
                         u.Id,
@@ -60,9 +62,10 @@ namespace EgyptOnline.Controllers
                                               ? u.Subscription.EndDate
                                               : (DateTime?)null,
                         IsAvailable = u.ServiceProvider != null ? u.ServiceProvider.IsAvailable : (bool?)null,
-                        ProviderType = u.ServiceProvider != null ? u.ServiceProvider.ProviderType : null
+                        ProviderType = u.ServiceProvider != null ? u.ServiceProvider.ProviderType : null,
+                        Profession = u.ServiceProvider != null ? u.ServiceProvider!.GetSpecialization() : "Not Found",
                     });
-
+                Console.WriteLine("Continue");
                 // Apply search filters
                 if (!string.IsNullOrWhiteSpace(dto.Email))
                 {
@@ -120,6 +123,18 @@ namespace EgyptOnline.Controllers
             {
                 return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
             }
+        }
+        [HttpGet("payments/{userId}")]
+        [Authorize(Roles = Roles.Admin)]
+
+        public async Task<IActionResult> GetUserPayments(string userId)
+        {
+            var paymentTransaction = await _context.PaymentTransactions.Where(pt => pt.UserId == userId).ToListAsync();
+            if (paymentTransaction == null)
+            {
+                return NotFound(new { message = "No payment transactions found for the specified user." });
+            }
+            return Ok(paymentTransaction);
         }
 
         [HttpPut("users/{userId}")]
@@ -198,8 +213,7 @@ namespace EgyptOnline.Controllers
                     if (dto.IsAvailable.HasValue)
                         user.ServiceProvider.IsAvailable = dto.IsAvailable.Value;
 
-                    if (dto.ProviderType != null)
-                        user.ServiceProvider.ProviderType = dto.ProviderType;
+
                 }
 
                 if (user.Subscription != null)
@@ -221,50 +235,50 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
             }
         }
-
-        [HttpDelete("users/{userId}")]
-        [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> DeleteUser(string userId)
-        {
-            try
-            {
-                var user = await _context.Users
-                    .Include(u => u.ServiceProvider)
-                    .Include(u => u.Subscription)
-                    .Include(u => u.RefreshTokens)
-                    .FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (user == null)
-                    return NotFound(new { message = "User not found" });
-
-                var roles = await _userManager.GetRolesAsync(user);
-                if (roles.Contains(Roles.Admin))
+        /*
+                [HttpDelete("users/{userId}")]
+                [Authorize(Roles = Roles.Admin)]
+                public async Task<IActionResult> DeleteUser(string userId)
                 {
-                    return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟" });
+                    try
+                    {
+                        var user = await _context.Users
+                            .Include(u => u.ServiceProvider)
+                            .Include(u => u.Subscription)
+                            .Include(u => u.RefreshTokens)
+                            .FirstOrDefaultAsync(u => u.Id == userId);
+
+                        if (user == null)
+                            return NotFound(new { message = "User not found" });
+
+                        var roles = await _userManager.GetRolesAsync(user);
+                        if (roles.Contains(Roles.Admin))
+                        {
+                            return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟" });
+                        }
+
+                        if (user.RefreshTokens != null && user.RefreshTokens.Any())
+                        {
+                            _context.RefreshTokens.RemoveRange(user.RefreshTokens);
+                        }
+
+                        if (user.ServiceProvider != null)
+                            _context.ServiceProviders.Remove(user.ServiceProvider);
+
+                        if (user.Subscription != null)
+                            _context.Subscriptions.Remove(user.Subscription);
+
+                        _context.Users.Remove(user);
+                        await _context.SaveChangesAsync();
+
+                        return Ok(new { message = "User deleted successfully" });
+                    }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
+                    }
                 }
-
-                if (user.RefreshTokens != null && user.RefreshTokens.Any())
-                {
-                    _context.RefreshTokens.RemoveRange(user.RefreshTokens);
-                }
-
-                if (user.ServiceProvider != null)
-                    _context.ServiceProviders.Remove(user.ServiceProvider);
-
-                if (user.Subscription != null)
-                    _context.Subscriptions.Remove(user.Subscription);
-
-                _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { message = "User deleted successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
-            }
-        }
-
+        */
         [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginWorkerDto model)
