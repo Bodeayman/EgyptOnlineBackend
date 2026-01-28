@@ -8,7 +8,7 @@ namespace EgyptOnline.Domain.Interfaces
 {
     public interface IUserService
     {
-        public Task<string> GenerateJwtToken(User user, UsersTypes userRole, TokensTypes TokenType);
+        public Task<string> GenerateJwtToken(User user, TokensTypes TokenType);
         public ClaimsPrincipal ValidateRefreshToken(string refreshToken);
         public string GetUserID(ClaimsPrincipal user);
         public Task<string> GetUserLocation(ClaimsPrincipal User);

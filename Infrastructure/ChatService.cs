@@ -19,35 +19,35 @@ namespace EgyptOnline.Services
             var indexKeys1 = Builders<ChatMessage>.IndexKeys
                 .Ascending(m => m.SenderId)
                 .Ascending(m => m.ReceiverId)
-                .Descending(m => m.Timestamp);
-            
+                .Ascending(m => m.Timestamp);  // ✅ Changed to Ascending
+
             var indexKeys2 = Builders<ChatMessage>.IndexKeys
                 .Ascending(m => m.ReceiverId)
                 .Ascending(m => m.SenderId)
-                .Descending(m => m.Timestamp);
+                .Ascending(m => m.Timestamp);  // ✅ Changed to Ascending
 
-            _messages.Indexes.CreateMany(new[] 
-            { 
+            _messages.Indexes.CreateMany(new[]
+            {
                 new CreateIndexModel<ChatMessage>(indexKeys1),
                 new CreateIndexModel<ChatMessage>(indexKeys2)
             });
         }
 
-    public async Task<string> SaveMessageAsync(string senderId, string receiverId, string content)
-{
-    var message = new ChatMessage
-    {
-        SenderId = senderId,
-        ReceiverId = receiverId,
-        Content = content,
-        Timestamp = DateTime.UtcNow
-    };
+        public async Task<string> SaveMessageAsync(string senderId, string receiverId, string content)
+        {
+            var message = new ChatMessage
+            {
+                SenderId = senderId,
+                ReceiverId = receiverId,
+                Content = content,
+                Timestamp = DateTime.UtcNow
+            };
 
-    await _messages.InsertOneAsync(message);
-    return message.Id; // Return the message ID
-}
+            await _messages.InsertOneAsync(message);
+            return message.Id; // Return the message ID
+        }
 
-        // Optimized with pagination
+        // ✅ FIXED: Changed to SortBy (ascending) for oldest-first ordering
         public async Task<List<ChatMessage>> GetConversationAsync(string user1Id, string user2Id, int pageNumber = 1, int pageSize = 50)
         {
             var filter = Builders<ChatMessage>.Filter.Or(
@@ -62,7 +62,7 @@ namespace EgyptOnline.Services
             );
 
             return await _messages.Find(filter)
-                                  .SortByDescending(m => m.Timestamp) // Latest first is usually better for mobile
+                                  .SortBy(m => m.Timestamp) // ✅ Changed from SortByDescending - oldest first
                                   .Skip((pageNumber - 1) * pageSize)
                                   .Limit(pageSize)
                                   .ToListAsync();
@@ -109,5 +109,5 @@ namespace EgyptOnline.Services
                 return false;
             }
         }
-}
+    }
 }

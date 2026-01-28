@@ -52,3 +52,6 @@ yarn-error.log
 # Additional files
 images/files
 wwwroot/images/profiles
+
+serviceAccountKey.json
+googlekey.json

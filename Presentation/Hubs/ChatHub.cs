@@ -4,6 +4,7 @@ using System.Security.Claims;
 using EgyptOnline.Services;
 using EgyptOnline.Data;
 using Microsoft.EntityFrameworkCore;
+using EgyptOnline.Models;
 
 namespace EgyptOnline.Presentation.Hubs
 {
@@ -13,25 +14,27 @@ namespace EgyptOnline.Presentation.Hubs
         private readonly ChatService _chatService;
         private readonly PresenceService _presenceService;
         private readonly ApplicationDbContext _context;
+        private readonly NotificationService _notificationService;
 
-        public ChatHub(ChatService chatService, PresenceService presenceService, ApplicationDbContext context)
+
+        public ChatHub(ChatService chatService, PresenceService presenceService, ApplicationDbContext context, NotificationService notificationService)
         {
             _chatService = chatService;
             _presenceService = presenceService;
             _context = context;
+            _notificationService = notificationService;
         }
 
         /// <summary>
         /// Checks if user has active subscription from database (fresh check for critical operations)
         /// </summary>
-        private async Task<bool> CheckSubscriptionAsync(string userId)
+        private async Task<User> CheckSubscriptionAsync(string userId)
         {
             var user = await _context.Users
                 .Include(u => u.Subscription)
                 .Include(u => u.ServiceProvider)
                 .FirstOrDefaultAsync(u => u.Id == userId);
-            return user?.Subscription != null 
-                && user.ServiceProvider?.IsAvailable == true;
+            return user;
         }
 
         public override async Task OnConnectedAsync()
@@ -62,45 +65,48 @@ namespace EgyptOnline.Presentation.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-     // Presentation/Hubs/ChatHub.cs - Line 65-90
-public async Task SendMessage(string receiverId, string content)
-{
-    var senderId = Context.User?.FindFirst("uid")?.Value;
-    
-    if (string.IsNullOrEmpty(senderId))
-    {
-        await Clients.Caller.SendAsync("SendMessageError", "Unauthorized");
-        return;
-    }
+        // Presentation/Hubs/ChatHub.cs - Line 65-90
+        public async Task SendMessage(string receiverId, string content)
+        {
+            var senderId = Context.User?.FindFirst("uid")?.Value;
 
-    // Critical operation: Check subscription from DB
-    if (!await CheckSubscriptionAsync(senderId))
-    {
-        await Clients.Caller.SendAsync("SendMessageError", "Your subscription has expired. Please renew to send messages.");
-        return;
-    }
+            if (string.IsNullOrEmpty(senderId))
+            {
+                await Clients.Caller.SendAsync("SendMessageError", "Unauthorized");
+                return;
+            }
+            var user = await CheckSubscriptionAsync(senderId);
+            // Critical operation: Check subscription from DB
+            if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
+            {
+                await Clients.Caller.SendAsync("SendMessageError", "Your subscription has expired. Please renew to send messages.");
+                return;
+            }
 
-    try
-    {
-        // Save to MongoDB and get message ID
-        var messageId = await _chatService.SaveMessageAsync(senderId, receiverId, content);
+            try
+            {
+                // Save to MongoDB and get message ID
+                var messageId = await _chatService.SaveMessageAsync(senderId, receiverId, content);
 
-        // Send to receiver
-        await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, content, messageId);
-        
-        // Send confirmation back to sender with message ID
-        await Clients.Caller.SendAsync("MessageSent", messageId, receiverId, content);
-    }
-    catch (Exception ex)
-    {
-        await Clients.Caller.SendAsync("SendMessageError", $"Error sending message: {ex.Message}");
-    }
-}
+                // Send to receiver
+                await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, content, messageId);
+
+                // Send confirmation back to sender with message ID
+                await Clients.Caller.SendAsync("MessageSent", messageId, receiverId, content);
+                await _notificationService.SendNotificationToUser(receiverId, $" ارسل {user.FirstName} {user.LastName} لك",
+                 "لقد استلمت رسالة جديدة في الدردشة.",
+                 senderId, $"{user.FirstName} {user.LastName}");
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.SendAsync("SendMessageError", $"Error sending message: {ex.Message}");
+            }
+        }
 
         public async Task DeleteMessage(string messageId, string receiverId)
         {
             var senderId = Context.User?.FindFirst("uid")?.Value;
-            
+
             if (string.IsNullOrEmpty(senderId))
             {
                 await Clients.Caller.SendAsync("DeleteMessageError", "Unauthorized");
@@ -108,8 +114,11 @@ public async Task SendMessage(string receiverId, string content)
             }
 
             // Critical operation: Check subscription from DB
-            if (!await CheckSubscriptionAsync(senderId))
+            var user = await CheckSubscriptionAsync(senderId);
+            // Critical operation: Check subscription from DB
+            if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
             {
+
                 await Clients.Caller.SendAsync("DeleteMessageError", "Your subscription has expired. Please renew to delete messages.");
                 return;
             }
@@ -118,7 +127,7 @@ public async Task SendMessage(string receiverId, string content)
             {
                 // Delete from MongoDB - only message owner can delete
                 var deleted = await _chatService.DeleteMessageAsync(messageId, senderId);
-                
+
                 if (!deleted)
                 {
                     await Clients.Caller.SendAsync("DeleteMessageError", "Message not found or you don't have permission");
@@ -127,7 +136,7 @@ public async Task SendMessage(string receiverId, string content)
 
                 // Notify receiver that message was deleted
                 await Clients.User(receiverId).SendAsync("MessageDeleted", messageId);
-                
+
                 // Confirm deletion to sender
                 await Clients.Caller.SendAsync("MessageDeleted", messageId);
             }
@@ -140,15 +149,16 @@ public async Task SendMessage(string receiverId, string content)
         public async Task EditMessage(string messageId, string newContent, string receiverId)
         {
             var senderId = Context.User?.FindFirst("uid")?.Value;
-            
+
             if (string.IsNullOrEmpty(senderId))
             {
                 await Clients.Caller.SendAsync("EditMessageError", "Unauthorized");
                 return;
             }
+            var user = await CheckSubscriptionAsync(senderId);
 
             // Critical operation: Check subscription from DB
-            if (!await CheckSubscriptionAsync(senderId))
+            if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
             {
                 await Clients.Caller.SendAsync("EditMessageError", "Your subscription has expired. Please renew to edit messages.");
                 return;
@@ -158,7 +168,7 @@ public async Task SendMessage(string receiverId, string content)
             {
                 // Update message in MongoDB - only message owner can edit
                 var updated = await _chatService.EditMessageAsync(messageId, senderId, newContent);
-                
+
                 if (!updated)
                 {
                     await Clients.Caller.SendAsync("EditMessageError", "Message not found or you don't have permission");
@@ -167,7 +177,7 @@ public async Task SendMessage(string receiverId, string content)
 
                 // Notify receiver that message was edited
                 await Clients.User(receiverId).SendAsync("MessageEdited", messageId, newContent);
-                
+
                 // Confirm edit to sender
                 await Clients.Caller.SendAsync("MessageEdited", messageId, newContent);
             }

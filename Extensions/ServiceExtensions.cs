@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using StackExchange.Redis;
 using EgyptOnline.Infrastructure;
+using System.Security.Claims;
 /*
 This file is for adding functionalies to program.cs instead of packing everything in one file
 like adding authentication and swagger configuration
@@ -35,6 +36,8 @@ namespace EgyptOnline.Extensions
             services.AddScoped<FawryPaymentStrategy>();
             services.AddScoped<UserRegisterationService>();
             services.AddScoped<UserSubscriptionServices>();
+            services.AddScoped<NotificationService>();
+
             services.AddScoped<UserPointService>();
             services.AddSingleton<IEmailService, EmailService>();
 
@@ -90,29 +93,31 @@ namespace EgyptOnline.Extensions
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.Zero,
+                    RoleClaimType = ClaimTypes.Role
+
                 };
 
                 options.Events = new JwtBearerEvents
-{
-    OnMessageReceived = context =>
-    {
-        var path = context.HttpContext.Request.Path;
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var path = context.HttpContext.Request.Path;
 
-        // Only intercept requests for the SignalR hub
-        if (path.StartsWithSegments("/chathub"))
-        {
-            // SignalR sends the token in query string: ?access_token=...
-            var accessToken = context.Request.Query["access_token"];
-            if (!string.IsNullOrEmpty(accessToken))
-            {
-                context.Token = accessToken;
-            }
-        }
+                        // Only intercept requests for the SignalR hub
+                        if (path.StartsWithSegments("/chathub"))
+                        {
+                            // SignalR sends the token in query string: ?access_token=...
+                            var accessToken = context.Request.Query["access_token"];
+                            if (!string.IsNullOrEmpty(accessToken))
+                            {
+                                context.Token = accessToken;
+                            }
+                        }
 
-        return Task.CompletedTask;
-    }
-};
+                        return Task.CompletedTask;
+                    }
+                };
 
             });
 

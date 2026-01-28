@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore.SqlServer.Migrations.Internal;
 using System.Collections.Concurrent;
 using EgyptOnline.Strategies;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using EgyptOnline.Domain.Attributes;
 namespace EgyptOnline.Controllers
 {
 
@@ -253,8 +254,8 @@ namespace EgyptOnline.Controllers
                 }
 
                 // Generate tokens
-                var accessToken = await _userService.GenerateJwtToken(user, userRole, TokensTypes.AccessToken);
-                var refreshTokenString = await _userService.GenerateJwtToken(user, userRole, TokensTypes.RefreshToken);
+                var accessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
+                var refreshTokenString = await _userService.GenerateJwtToken(user, TokensTypes.RefreshToken);
 
                 var refreshToken = new RefreshToken
                 {
@@ -283,6 +284,39 @@ namespace EgyptOnline.Controllers
             {
                 return StatusCode(500, new { message = "Internal server error", error = ex.Message });
             }
+        }
+        [HttpPost("add-firebase-token")]
+        [Authorize(Roles = Roles.User)]
+        public async Task<IActionResult> AddTokenToUser([FromBody] FCMDto model)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized();
+
+                }
+                var user = await _context.Users
+                    .Include(u => u.FirebaseTokens)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+                Console.WriteLine("Firebase token is : " + model.fcm);
+
+                if (user == null)
+                    throw new Exception("User not found");
+                Console.WriteLine("Firebase token is : " + model.fcm);
+                // Check if token already exists
+                if (!user.FirebaseTokens.Any(t => t.Token == model.fcm))
+                {
+                    user.FirebaseTokens.Add(new FirebaseToken { Token = model.fcm });
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+            return Ok(new { message = "Firebase token added successfully" });
         }
 
         // This password is for logged in user
@@ -357,8 +391,8 @@ namespace EgyptOnline.Controllers
                 }
 
                 // 4. Generate new tokens
-                var newAccessToken = await _userService.GenerateJwtToken(user, Helper.GetUserType(user), TokensTypes.AccessToken);
-                var newRefreshTokenString = await _userService.GenerateJwtToken(user, Helper.GetUserType(user), TokensTypes.RefreshToken);
+                var newAccessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
+                var newRefreshTokenString = await _userService.GenerateJwtToken(user, TokensTypes.RefreshToken);
 
                 var newRefreshToken = new RefreshToken
                 {
@@ -374,6 +408,8 @@ namespace EgyptOnline.Controllers
 
                 return Ok(new
                 {
+                    isExpired = !(user!.ServiceProvider.IsAvailable),
+
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshTokenString,
                     refreshTokenExpiry = newRefreshToken.Expires,
@@ -404,10 +440,17 @@ namespace EgyptOnline.Controllers
 
                 if (storedToken == null)
                     return NotFound(new { message = "Refresh token not found" });
-
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 // Step 2: Revoke the token
                 storedToken.IsRevoked = true;
                 storedToken.Revoked = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                var fcmTokens = _context.FirebaseTokens
+                .Where(t => t.user.Id == userId || t.user.Id == storedToken.UserId)
+                .ToList();
+
+                _context.FirebaseTokens.RemoveRange(fcmTokens);
                 await _context.SaveChangesAsync();
 
                 // Step 3: Optionally, you can also clear other active tokens for this user
@@ -430,7 +473,7 @@ namespace EgyptOnline.Controllers
 
         [Authorize(Roles = Roles.User)]
         [HttpPost("upload-profile-image")]
-
+        [RequireSubscription]
 
         public async Task<IActionResult> UploadProfileImage(IFormFile file)
         {
@@ -461,6 +504,12 @@ namespace EgyptOnline.Controllers
             }
         }
     }
+
+    public class FCMDto
+    {
+        public string fcm { get; set; }
+    }
+
 }
 
 

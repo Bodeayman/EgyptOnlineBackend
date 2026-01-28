@@ -9,6 +9,7 @@ EgyptOnline.sln
 appsettings.json
 appsettings.Development.json
 appsettings.Production.json
+serviceAccountKey.json
 googlekey.json
 
 EgyptOnline.csproj
@@ -24,3 +25,4 @@ Dockerfile
 *.bat
 *.sh
 wwwroot/
+

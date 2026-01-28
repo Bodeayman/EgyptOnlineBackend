@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.FileProviders;
 using StackExchange.Redis;
 using EgyptOnline.Utilities;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,7 +53,7 @@ try
     {
         return ConnectionMultiplexer.Connect(builder.Configuration["RedisSettings:Configuration"]);
     });
- builder.Services.AddDistributedMemoryCache();
+    builder.Services.AddDistributedMemoryCache();
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -75,13 +77,44 @@ try
     builder.Services.ApiVersioningSettings();
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddSwaggerWithJwt();
-    
+
     // SignalR & Chat
     builder.Services.AddSignalR();
-    builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp => 
+    builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>
         new MongoDB.Driver.MongoClient(builder.Configuration["MongoDB:ConnectionString"])); // Placeholder
     builder.Services.AddScoped<EgyptOnline.Services.ChatService>();
     builder.Services.AddSingleton<EgyptOnline.Services.PresenceService>();
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowAll",
+            builder =>
+            {
+                builder
+                    .AllowAnyOrigin()    // Allow all domains
+                    .AllowAnyMethod()    // Allow GET, POST, PUT, DELETE
+                    .AllowAnyHeader();   // Allow headers like Content-Type
+            });
+    });
+
+
+
+
+    FirebaseApp.Create(new AppOptions()
+    {
+        Credential = GoogleCredential.FromFile("/app/config/serviceAccountKey.json")
+    });
+
+
+
+
+
+
+
+
+
+
+
+
 
     var app = builder.Build();
 
@@ -178,7 +211,7 @@ try
        });
 
     app.UseRouting();
-    app.UseCors();
+    app.UseCors("AllowAll");
 
     app.UseAuthentication();
     app.UseAuthorization();

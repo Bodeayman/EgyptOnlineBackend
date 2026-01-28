@@ -31,59 +31,58 @@ namespace EgyptOnline.Services
         }
 
 
-        public async Task<string> GenerateJwtToken(User user, UsersTypes userRole, TokensTypes TokenType)
+        public async Task<string> GenerateJwtToken(User user, TokensTypes TokenType)
         {
             try
             {
-                var rolesAwaiting = await _userManager.GetRolesAsync(user);
-                Console.WriteLine("The roles are");
-                foreach (var role in rolesAwaiting)
-                {
-                    Console.WriteLine(role);
-                }
-                Console.WriteLine("Finishes");
-                SymmetricSecurityKey securityKey;
-                if (TokenType == TokensTypes.AccessToken)
-                {
-                    securityKey =
-              new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+                var roles = await _userManager.GetRolesAsync(user); // REAL DB roles
 
-                }
-                else
-                {
-                    securityKey =
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:RefreshKey"]));
-                }
+                SymmetricSecurityKey securityKey =
+                    TokenType == TokensTypes.AccessToken
+                    ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]))
+                    : new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:RefreshKey"]));
+
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-                Console.WriteLine(userRole.ToString());
-                Console.WriteLine(userRole);
-                var expiry = TokenType == TokensTypes.RefreshToken
-                  ? DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
-                  : DateTime.UtcNow.AddMinutes(TokenPeriod.ACCESS_TOKEN_MINS);
-                var claims = new List<Claim>
-                {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("uid", user.Id),
-                new Claim("worker_type",userRole.ToString()),
-                new Claim("token_type",TokenType.ToString()),
-                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
 
-            };
-                
-                // Add subscription expiry date to token (for client-side checks and non-critical operations)
-                // Note: This may be stale for up to ACCESS_TOKEN_MINS, but critical operations will check DB
+                var expiry = TokenType == TokensTypes.RefreshToken
+                    ? DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
+                    : DateTime.UtcNow.AddMinutes(TokenPeriod.ACCESS_TOKEN_MINS);
+
+                var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim("uid", user.Id),
+            new Claim("token_type", TokenType.ToString()),
+            new Claim(
+                JwtRegisteredClaimNames.Iat,
+                DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
+                ClaimValueTypes.Integer64
+            )
+        };
+
+                // Optional business claim
                 if (user.Subscription != null)
                 {
-                    claims.Add(new Claim("subscription_expires", user.Subscription.EndDate.ToString("yyyy-MM-dd")));
+                    claims.Add(new Claim(
+                        "subscription_expires",
+                        user.Subscription.EndDate.ToString("yyyy-MM-dd")
+                    ));
                 }
-                if (rolesAwaiting.Count > 0)
+
+                Console.WriteLine(roles.Count);
+                if (roles.Any())
                 {
-                    claims.AddRange(rolesAwaiting.Select(r => new Claim(ClaimTypes.Role, r)));
+                    foreach (var role in roles)
+                    {
+                        Console.WriteLine(role);
+
+                        claims.Add(new Claim(ClaimTypes.Role, role));
+                    }
                 }
                 else
                 {
-                    claims.Add(new Claim(ClaimTypes.Role, Roles.User));
+                    claims.Add(new Claim(ClaimTypes.Role, Roles.User)); // default
                 }
 
                 var token = new JwtSecurityToken(
@@ -95,13 +94,13 @@ namespace EgyptOnline.Services
                 );
 
                 return new JwtSecurityTokenHandler().WriteToken(token);
-
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception(ex.Message);
+                throw; // preserve stack trace
             }
         }
+
 
         public string GetUserID(ClaimsPrincipal User)
         {

@@ -65,6 +65,27 @@ namespace EgyptOnline.Controllers
             }
         }
 
+        [HttpGet("subscription-status")]
+        public async Task<IActionResult> GetSubscriptionStatus()
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+                var user = await _context.Users.Include(u => u.Subscription).Select(u => new
+                {
+                    u.Subscription,
+                    u.Id
+                }).FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return NotFound();
+
+                return Ok(user.Subscription);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
         //Update the location and availability and skills of the worker
         // Critical operation: Requires active subscription (checks DB for fresh data)
         [HttpPut]

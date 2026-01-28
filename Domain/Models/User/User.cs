@@ -23,6 +23,7 @@ namespace EgyptOnline.Models
         public ServicesProvider? ServiceProvider { get; set; }
 
         public Subscription? Subscription { get; set; }
+        public List<FirebaseToken>? FirebaseTokens { get; set; }
 
         public int Points { get; set; } = 0;
         public int SubscriptionPoints { get; set; } = 0;

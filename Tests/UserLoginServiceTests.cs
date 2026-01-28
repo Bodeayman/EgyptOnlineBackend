@@ -192,13 +192,13 @@ namespace EgyptOnline.Tests
 
             // Mock: Generate JWT token
             _userServiceMock
-                .Setup(x => x.GenerateJwtToken(user, UsersTypes.Worker, TokensTypes.AccessToken))
+                .Setup(x => x.GenerateJwtToken(user, TokensTypes.AccessToken))
                 .ReturnsAsync("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...");
 
             // ACT
             var foundUser = await _userManagerMock.Object.FindByNameAsync("fatima.hassan");
             var passwordValid = foundUser != null && await _userManagerMock.Object.CheckPasswordAsync(foundUser, "CorrectPassword123!");
-            var token = foundUser != null ? await _userServiceMock.Object.GenerateJwtToken(foundUser, UsersTypes.Worker, TokensTypes.AccessToken) : null;
+            var token = foundUser != null ? await _userServiceMock.Object.GenerateJwtToken(foundUser, TokensTypes.AccessToken) : null;
 
             // ASSERT
             Assert.NotNull(foundUser);

@@ -32,6 +32,8 @@ namespace EgyptOnline.Data
 
         public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
 
+        public DbSet<FirebaseToken> FirebaseTokens { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -49,13 +51,7 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<MarketPlace>().ToTable("MarketPlaces");
             modelBuilder.Entity<Assistant>().ToTable("Assistants");
             modelBuilder.Entity<Engineer>().ToTable("Engineers");
-            modelBuilder.Entity<Subscription>()
-                  .Property(s => s.StartDate)
-                  .HasColumnType("date");
 
-            modelBuilder.Entity<Subscription>()
-                .Property(s => s.EndDate)
-                .HasColumnType("date");
 
 
 

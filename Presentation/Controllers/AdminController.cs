@@ -64,6 +64,7 @@ namespace EgyptOnline.Controllers
                         IsAvailable = u.ServiceProvider != null ? u.ServiceProvider.IsAvailable : (bool?)null,
                         ProviderType = u.ServiceProvider != null ? u.ServiceProvider.ProviderType : null,
                         Profession = u.ServiceProvider != null ? u.ServiceProvider!.GetSpecialization() : "Not Found",
+                        SubscriptionPoints = u.SubscriptionPoints,
                     });
                 Console.WriteLine("Continue");
                 // Apply search filters
@@ -317,7 +318,7 @@ namespace EgyptOnline.Controllers
                     return Forbid();
                 }
 
-                var accessToken = await _userService.GenerateJwtToken(user, UsersTypes.User, TokensTypes.AccessToken);
+                var accessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
 
                 return Ok(new
                 {

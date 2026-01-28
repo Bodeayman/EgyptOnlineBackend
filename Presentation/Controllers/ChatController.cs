@@ -46,5 +46,6 @@ namespace EgyptOnline.Presentation.Controllers
             var messages = await _chatService.GetConversationAsync(currentUserId, targetUserId, pageNumber, pageSize);
             return Ok(messages);
         }
+
     }
 }

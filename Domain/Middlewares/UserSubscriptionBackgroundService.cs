@@ -38,15 +38,7 @@ public class SubscriptionCheckerService : BackgroundService
                     if (user.Subscription.EndDate < now)
                     {
                         // Revoke refresh tokens
-                        if (user.RefreshTokens != null)
-                        {
-                            foreach (var token in user.RefreshTokens.Where(t => !t.IsRevoked))
-                            {
-                                token.IsRevoked = true;
-                                token.Revoked = DateTime.UtcNow;
-                                db.Entry(token).State = EntityState.Modified;
-                            }
-                        }
+
 
                         // Disable service provider
                         if (user.ServiceProvider != null)

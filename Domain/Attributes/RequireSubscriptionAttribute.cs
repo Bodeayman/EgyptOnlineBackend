@@ -59,12 +59,15 @@ namespace EgyptOnline.Domain.Attributes
                 // user.ServiceProvider.IsAvailable = false;
                 await dbContext.SaveChangesAsync();
                 // Match exact format from old CheckSubscription() for backward compatibility
-                context.Result = new UnauthorizedObjectResult(new
+                context.Result = new ObjectResult(new
                 {
                     message = "Your Subscription period Expired",
                     errorCode = UserErrors.SubscriptionInvalid.ToString(),
                     LastDate = user.Subscription?.EndDate.ToString()
-                });
+                })
+                {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
                 return;
             }
         }
