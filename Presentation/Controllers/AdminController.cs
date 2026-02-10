@@ -163,6 +163,10 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(new { message = "The points should be more than or equal 0" });
                 }
+                if (dto.SubscriptionPoints < 0)
+                {
+                    return BadRequest(new { message = "The subscription points should be more than or equal 0" });
+                }
 
                 var phoneRegex = new Regex(@"^\+(2010|2011|2012|2015)\d{8}$");
 
@@ -208,6 +212,8 @@ namespace EgyptOnline.Controllers
 
                 if (dto.Points.HasValue)
                     user.Points = dto.Points.Value;
+                if (dto.SubscriptionPoints.HasValue)
+                    user.SubscriptionPoints = dto.SubscriptionPoints.Value;
 
                 if (user.ServiceProvider != null)
                 {

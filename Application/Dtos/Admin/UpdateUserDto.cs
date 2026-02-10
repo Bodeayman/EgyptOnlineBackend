@@ -4,6 +4,8 @@ namespace EgyptOnline.Dtos
     {
         public string? PhoneNumber { get; set; }
         public int? Points { get; set; }
+        public int? SubscriptionPoints { get; set; }
+
         public bool? IsAvailable { get; set; }
         public string? ProviderType { get; set; }
         public string? Email { get; set; }

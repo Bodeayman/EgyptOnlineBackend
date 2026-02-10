@@ -96,13 +96,23 @@ try
             });
     });
 
-
-
-
-    FirebaseApp.Create(new AppOptions()
+    if (builder.Environment.IsDevelopment())
     {
-        Credential = GoogleCredential.FromFile("/app/config/serviceAccountKey.json")
-    });
+        FirebaseApp.Create(new AppOptions()
+        {
+            Credential = GoogleCredential.FromFile("serviceAccountKey.json")
+        });
+    }
+    else
+    {
+        FirebaseApp.Create(new AppOptions()
+        {
+            Credential = GoogleCredential.FromFile("/app/config/serviceAccountKey.json")
+        });
+    }
+
+
+
 
 
 
@@ -131,7 +141,8 @@ try
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
 
             await IdentityExtensions.SeedRoles(roleManager);
-            await IdentityExtensions.SeedAdmin(userManager);
+            await IdentityExtensions.SeedAdmin(userManager, roleManager, builder.Configuration);
+
         }
         catch (Exception ex)
         {
