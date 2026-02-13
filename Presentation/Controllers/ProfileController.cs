@@ -5,6 +5,7 @@ using EgyptOnline.Data;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
 using EgyptOnline.Models;
+using EgyptOnline.Services;
 using EgyptOnline.Utilities;
 using EgyptOnline.Domain.Attributes;
 using Microsoft.AspNetCore.Authorization;
@@ -24,14 +25,15 @@ namespace EgyptOnline.Controllers
     {
         private readonly IUserService _userService;
         private readonly UserManager<User> _userManager;
-
         private readonly ApplicationDbContext _context;
+        private readonly OccupationService _occupationService;
 
-        public ProfileController(UserManager<User> userManager, IUserService userService, ApplicationDbContext context)
+        public ProfileController(UserManager<User> userManager, IUserService userService, ApplicationDbContext context, OccupationService occupationService)
         {
             _userService = userService;
             _userManager = userManager;
             _context = context;
+            _occupationService = occupationService;
         }
         // Get the profile of the worker
         // Non-critical: Allow viewing profile even if expired (uses token claim, no DB hit for subscription check)
@@ -153,6 +155,8 @@ namespace EgyptOnline.Controllers
                 {
                     var worker = await _context.Workers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
                     worker.ServicePricePerDay = model.Pay;
+                    worker.MarketPlace = model.Marketplace;
+                    worker.DerivedSpec = model.DerivedSpec;
 
                 }
                 else if (user.ServiceProvider.ProviderType == "Contractor")
@@ -177,8 +181,11 @@ namespace EgyptOnline.Controllers
                 }
                 else if (user.ServiceProvider.ProviderType == "Assistant")
                 {
-                    var engineer = await _context.Assistants.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
-                    engineer!.ServicePricePerDay = model.Pay;
+                    var assistant = await _context.Assistants.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
+                    assistant!.ServicePricePerDay = model.Pay;
+                    assistant.MarketPlace = model.Marketplace;
+                    assistant.DerivedSpec = model.DerivedSpec;
+
                 }
                 else
                 {
@@ -190,6 +197,83 @@ namespace EgyptOnline.Controllers
 
                 return Ok(new { message = "Your Profile has been updated Successfully" });
 
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Mark the authenticated user as occupied until midnight
+        /// </summary>
+        [HttpPost("set-occupied")]
+        [RequireSubscription]
+        public async Task<IActionResult> SetOccupied()
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                var expirationTime = await _occupationService.SetUserOccupiedAsync(userId);
+
+                return Ok(new 
+                { 
+                    message = "You have been marked as occupied until midnight",
+                    expiresAt = expirationTime,
+                    isOccupied = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Remove occupation status for the authenticated user
+        /// </summary>
+        [HttpDelete("remove-occupied")]
+        [RequireSubscription]
+        public async Task<IActionResult> RemoveOccupied()
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                await _occupationService.RemoveUserOccupiedAsync(userId);
+
+                return Ok(new 
+                { 
+                    message = "You have been marked as available",
+                    isOccupied = false
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get the current occupation status of the authenticated user
+        /// </summary>
+        [HttpGet("occupation-status")]
+        public async Task<IActionResult> GetOccupationStatus()
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                var isOccupied = await _occupationService.IsUserOccupiedAsync(userId);
+
+                return Ok(new { isOccupied });
             }
             catch (Exception ex)
             {

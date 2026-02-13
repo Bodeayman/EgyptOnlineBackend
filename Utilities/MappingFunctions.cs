@@ -16,7 +16,6 @@ namespace EgyptOnline.Utilities
                 Governorate = user.Governorate,
                 City = user.City,
                 District = user.District ?? "Unknown",
-
                 PhoneNumber = user.PhoneNumber,
                 ImageUrl = user.ImageUrl,
                 Subscription = user.Subscription?.ToSubscriptionDto() ?? new SubscriptionDto(),
@@ -26,6 +25,12 @@ namespace EgyptOnline.Utilities
 
 
             };
+
+            if (user.ServiceProvider is Worker)
+            {
+                dto.Marketplace = user.ServiceProvider.MarketPlace;
+                dto.DerviedSpec = user.ServiceProvider.DerivedSpec;
+            }
 
             return dto;
         }

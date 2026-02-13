@@ -13,6 +13,8 @@ namespace EgyptOnline.Dtos
 
 
 
+        public string? Marketplace { get; set; }
+        public string? DerivedSpec { get; set; }
 
         public string? Governorate { get; set; }
         public string? City { get; set; }

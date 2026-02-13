@@ -13,6 +13,8 @@ namespace EgyptOnline.Dtos
         public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
         public string? ImageUrl { get; set; }
+        public string? Marketplace { get; set; }
+        public string? DerviedSpec { get; set; }
         public int Points { get; set; }
         public int SubscriptionPoints { get; set; }
 

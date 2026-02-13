@@ -35,8 +35,12 @@ namespace EgyptOnline.Dtos
 
     public string? ProviderType { get; set; } = "Worker";
 
-    // Worker
+    // Worker,Assistant attirbute
     public string? Skill { get; set; }
+
+    public string? DerivedSpec { get; set; }
+    public string? Marketplace { get; set; }
+
 
     // WorkerType as int for Swagger
     public int WorkerType { get; set; } = 0; // 0 = PerDay, 1 = Fixed

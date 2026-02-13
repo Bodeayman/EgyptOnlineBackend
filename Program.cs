@@ -83,6 +83,8 @@ try
     builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>
         new MongoDB.Driver.MongoClient(builder.Configuration["MongoDB:ConnectionString"])); // Placeholder
     builder.Services.AddScoped<EgyptOnline.Services.ChatService>();
+    builder.Services.AddScoped<EgyptOnline.Services.NotificationMongoService>();
+    builder.Services.AddScoped<EgyptOnline.Services.OccupationService>();
     builder.Services.AddSingleton<EgyptOnline.Services.PresenceService>();
     builder.Services.AddCors(options =>
     {
@@ -233,6 +235,7 @@ try
 
     // ---------- Map Endpoints ----------
     app.MapHub<EgyptOnline.Presentation.Hubs.ChatHub>("/chatHub");
+    app.MapHub<EgyptOnline.Presentation.Hubs.NotificationHub>("/notificationHub");
     app.MapControllers();
 
     app.MapGet("/health", () => Results.Ok("Healthy"));

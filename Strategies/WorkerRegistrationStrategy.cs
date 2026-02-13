@@ -10,7 +10,10 @@ namespace EgyptOnline.Strategies
         {
             if (model.Skill == null)
                 return "Please Add the Skill";
-
+            if (model.DerivedSpec == null)
+                return "Please Add the Derived Specialization";
+            if (model.Marketplace == null)
+                return "Please Add the Marketplace";
             return null;
         }
 
@@ -26,6 +29,8 @@ namespace EgyptOnline.Strategies
                 ProviderType = model.ProviderType,
                 ServicePricePerDay = model.Pay ?? 0,
                 IsAvailable = true,
+                DerivedSpec = model.DerivedSpec,
+                MarketPlace = model.Marketplace,
             };
         }
     }
