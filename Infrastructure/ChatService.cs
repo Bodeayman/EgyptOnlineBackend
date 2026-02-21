@@ -14,17 +14,17 @@ namespace EgyptOnline.Services
             _messages = database.GetCollection<ChatMessage>("Messages");
 
             // Optimize: Create compound indexes for bidirectional lookups and sorted retrieval
-            // Index 1: (Sender, Receiver, Timestamp)
-            // Index 2: (Receiver, Sender, Timestamp)
+            // Index 1: (Sender, Receiver, Timestamp DESC) - most common query pattern
+            // Index 2: (Receiver, Sender, Timestamp DESC) - bidirectional lookups
             var indexKeys1 = Builders<ChatMessage>.IndexKeys
                 .Ascending(m => m.SenderId)
                 .Ascending(m => m.ReceiverId)
-                .Ascending(m => m.Timestamp);  // ✅ Changed to Ascending
+                .Descending(m => m.Timestamp);  // ✅ Changed to Descending for newest-first queries
 
             var indexKeys2 = Builders<ChatMessage>.IndexKeys
                 .Ascending(m => m.ReceiverId)
                 .Ascending(m => m.SenderId)
-                .Ascending(m => m.Timestamp);  // ✅ Changed to Ascending
+                .Descending(m => m.Timestamp);  // ✅ Changed to Descending for newest-first queries
 
             _messages.Indexes.CreateMany(new[]
             {
@@ -47,8 +47,10 @@ namespace EgyptOnline.Services
             return message.Id; // Return the message ID
         }
 
-        // ✅ FIXED: Changed to SortBy (ascending) for oldest-first ordering
-        public async Task<List<ChatMessage>> GetConversationAsync(string user1Id, string user2Id, int pageNumber = 1, int pageSize = 50)
+        // ✅ FIXED: Added newestFirst parameter for backward compatibility
+        // Default behavior: newest messages first (proper chat UX)
+        // Old clients can pass newestFirst: false to get oldest-first behavior
+        public async Task<List<ChatMessage>> GetConversationAsync(string user1Id, string user2Id, int pageNumber = 1, int pageSize = 50, bool newestFirst = true)
         {
             var filter = Builders<ChatMessage>.Filter.Or(
                 Builders<ChatMessage>.Filter.And(
@@ -61,11 +63,36 @@ namespace EgyptOnline.Services
                 )
             );
 
-            return await _messages.Find(filter)
-                                  .SortBy(m => m.Timestamp) // ✅ Changed from SortByDescending - oldest first
-                                  .Skip((pageNumber - 1) * pageSize)
-                                  .Limit(pageSize)
-                                  .ToListAsync();
+            var query = _messages.Find(filter);
+
+            // Sort descending to get newest messages first for proper UX
+            query = newestFirst
+                ? query.SortByDescending(m => m.Timestamp)
+                : query.SortBy(m => m.Timestamp);
+
+            return await query
+                          .Skip((pageNumber - 1) * pageSize)
+                          .Limit(pageSize)
+                          .ToListAsync();
+        }
+
+        /// <summary>
+        /// Get new messages for a specific receiver optionally after a given UTC timestamp.
+        /// This supports polling clients that don't use SignalR/websockets.
+        /// </summary>
+        public async Task<List<ChatMessage>> GetNewMessagesAsync(string receiverId, DateTime? sinceUtc = null, int pageSize = 50)
+        {
+            var filter = Builders<ChatMessage>.Filter.Eq(m => m.ReceiverId, receiverId);
+            if (sinceUtc.HasValue)
+            {
+                filter = Builders<ChatMessage>.Filter.And(filter, Builders<ChatMessage>.Filter.Gt(m => m.Timestamp, sinceUtc.Value));
+            }
+
+            var query = _messages.Find(filter)
+                                 .SortBy(m => m.Timestamp)
+                                 .Limit(pageSize);
+
+            return await query.ToListAsync();
         }
 
         public async Task<bool> DeleteMessageAsync(string messageId, string senderId)

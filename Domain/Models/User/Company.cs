@@ -10,6 +10,10 @@ namespace EgyptOnline.Models
         {
             return Business;
         }
+        public override string GetDerivedSpecialization()
+        {
+            return Business;
+        }
     }
 
 }

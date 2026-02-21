@@ -132,7 +132,6 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(new { message = "Please Provide the Type Of Service" });
                 }
-                Console.WriteLine("Service Provider is being created right now , but not yet");
 
                 // Get the appropriate strategy for this provider type
                 var strategy = _strategyFactory.GetStrategy(model.ProviderType);
@@ -194,8 +193,8 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-
-
+                if (string.IsNullOrWhiteSpace(model.Email))
+                    return BadRequest(new { message = "Phone number or email is required", errorCode = UserErrors.InvalidInput.ToString() });
 
                 var input = model.Email.Trim();
                 User user;

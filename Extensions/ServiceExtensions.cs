@@ -56,21 +56,41 @@ namespace EgyptOnline.Extensions
                 options.DefaultApiVersion = new ApiVersion(1, 0);
                 options.ReportApiVersions = true;
             });
-            /*
             services.AddRateLimiter(options =>
- {
-     options.AddFixedWindowLimiter("FixedPolicy", opt =>
-     {
-         opt.Window = TimeSpan.FromMinutes(1);
-         opt.PermitLimit = 100;
-         opt.QueueLimit = 2;
-         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-     });
- });
- */
+    {
+        options.RejectionStatusCode = 429;
+
+        // Token Bucket: Most production-friendly algorithm
+        // Allows burst traffic while maintaining average rate
+        options.AddTokenBucketLimiter("tokenBucket", opt =>
+        {
+            opt.TokenLimit = 50;                        // Max burst smaller than 100 to be safe
+            opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            opt.QueueLimit = 15;                        // Slightly higher queue for bursts
+            opt.ReplenishmentPeriod = TimeSpan.FromSeconds(60);
+            opt.TokensPerPeriod = 30;                   // 30 req/min (~0.5 req/sec average)
+            opt.AutoReplenishment = true;
+        });
+
+
+        options.OnRejected = DefaultRejectedHandler;
+    });
+
+
 
             return services;
         }
+
+        private static Func<OnRejectedContext, CancellationToken, ValueTask> DefaultRejectedHandler = async (context, token) =>
+        {
+            context.HttpContext.Response.StatusCode = 429;
+            context.HttpContext.Response.ContentType = "application/json";
+            await context.HttpContext.Response.WriteAsJsonAsync(new
+            {
+                message = "Too many requests. Please try again later.",
+                retryAfter = context.HttpContext.Response.Headers["Retry-After"]
+            }, token);
+        };
 
         public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
         {

@@ -242,50 +242,52 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
             }
         }
-        /*
-                [HttpDelete("users/{userId}")]
-                [Authorize(Roles = Roles.Admin)]
-                public async Task<IActionResult> DeleteUser(string userId)
+        [HttpDelete("users/{userId}")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> DeleteUser(string userId)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.ServiceProvider)
+                    .Include(u => u.Subscription)
+                    .Include(u => u.RefreshTokens)
+                    .Include(u => u.FirebaseTokens)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                    return NotFound(new { message = "User not found" });
+
+                var roles = await _userManager.GetRolesAsync(user);
+                if (roles.Contains(Roles.Admin))
                 {
-                    try
-                    {
-                        var user = await _context.Users
-                            .Include(u => u.ServiceProvider)
-                            .Include(u => u.Subscription)
-                            .Include(u => u.RefreshTokens)
-                            .FirstOrDefaultAsync(u => u.Id == userId);
-
-                        if (user == null)
-                            return NotFound(new { message = "User not found" });
-
-                        var roles = await _userManager.GetRolesAsync(user);
-                        if (roles.Contains(Roles.Admin))
-                        {
-                            return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟" });
-                        }
-
-                        if (user.RefreshTokens != null && user.RefreshTokens.Any())
-                        {
-                            _context.RefreshTokens.RemoveRange(user.RefreshTokens);
-                        }
-
-                        if (user.ServiceProvider != null)
-                            _context.ServiceProviders.Remove(user.ServiceProvider);
-
-                        if (user.Subscription != null)
-                            _context.Subscriptions.Remove(user.Subscription);
-
-                        _context.Users.Remove(user);
-                        await _context.SaveChangesAsync();
-
-                        return Ok(new { message = "User deleted successfully" });
-                    }
-                    catch (Exception ex)
-                    {
-                        return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
-                    }
+                    return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟" });
                 }
-        */
+                if (user.FirebaseTokens != null && user.FirebaseTokens.Any())
+                {
+                    _context.FirebaseTokens.RemoveRange(user.FirebaseTokens);
+
+                }
+                if (user.RefreshTokens != null && user.RefreshTokens.Any())
+                {
+                    _context.RefreshTokens.RemoveRange(user.RefreshTokens);
+                }
+
+                if (user.ServiceProvider != null)
+                    _context.ServiceProviders.Remove(user.ServiceProvider);
+
+                if (user.Subscription != null)
+                    _context.Subscriptions.Remove(user.Subscription);
+
+                var result = await _userManager.DeleteAsync(user);
+
+                return Ok(new { message = "User deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
+            }
+        }
         [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginWorkerDto model)

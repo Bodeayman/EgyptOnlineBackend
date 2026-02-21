@@ -37,8 +37,8 @@ namespace EgyptOnline.Services
                 while (await _context.Users.AnyAsync(u => u.UserName == UserName))
                     UserName = Helper.GenerateUserName(model.FirstName, model.LastName ?? "");
 
-                // Check email
-                if (await _userManager.FindByEmailAsync(model.Email) != null)
+                // Check email only if provided (phone is primary identifier)
+                if (!string.IsNullOrWhiteSpace(model.Email) && await _userManager.FindByEmailAsync(model.Email) != null)
                 {
                     return new UserRegisterationResult
                     {
@@ -64,11 +64,11 @@ namespace EgyptOnline.Services
                     };
                 }
 
-                // Create user object
+                // Create user object (email optional; phone is primary)
                 var user = new User
                 {
                     UserName = UserName,
-                    Email = model.Email,
+                    Email = string.IsNullOrWhiteSpace(model.Email) ? "" : model.Email,
                     PhoneNumber = phone,
                     FirstName = model.FirstName,
                     LastName = model.LastName,

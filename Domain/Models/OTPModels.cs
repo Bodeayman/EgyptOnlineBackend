@@ -2,15 +2,17 @@ namespace EgyptOnline.Models
 {
     public class OtpRequestDto
     {
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
+        /// <summary>Optional; user is identified by phone when email is not used.</summary>
+        public string? Email { get; set; }
+        public string PhoneNumber { get; set; } = string.Empty;
     }
 
     public class OtpVerifyDto
     {
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
-        public string Otp { get; set; }
-        public string NewPassword { get; set; }
+        /// <summary>Optional; user is identified by phone when email is not used.</summary>
+        public string? Email { get; set; }
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Otp { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 }

@@ -27,19 +27,24 @@ namespace EgyptOnline.Controllers
         [HttpPost("request-otp")]
         public async Task<IActionResult> RequestOtp([FromBody] OtpRequestDto request)
         {
-            string phoneNumber = $"+2{request.PhoneNumber}";
+            if (string.IsNullOrWhiteSpace(request.PhoneNumber))
+                return BadRequest(new { message = "Phone number is required" });
 
-            // Ensure both email & phone match
-            var user = await _userManager.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email && u.PhoneNumber == phoneNumber);
+            // Normalize to same format as registration: +2 + digits (e.g. 01012345678 -> +201012345678)
+            string phoneNumber = request.PhoneNumber.Trim();
+            if (!phoneNumber.StartsWith("+"))
+                phoneNumber = $"+2{phoneNumber}";
 
+            // Find user by phone (primary); optionally match email if provided
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
             if (user == null)
                 return NotFound(new { message = "User not found" });
+            if (!string.IsNullOrWhiteSpace(request.Email) && user.Email != request.Email)
+                return NotFound(new { message = "User not found" });
 
-            // Create a key combining email + phone
-            string key = $"{request.Email}:{phoneNumber}";
+            // OTP key is phone-based (email optional)
+            string key = string.IsNullOrWhiteSpace(request.Email) ? phoneNumber : $"{request.Email}:{phoneNumber}";
 
-            // Send OTP
             await _otpService.SendOtpAsync(key, false);
 
             return Ok(new { message = "OTP sent successfully" });
@@ -52,20 +57,24 @@ namespace EgyptOnline.Controllers
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] OtpVerifyDto model)
         {
-            string phoneNumber = $"+2{model.PhoneNumber}";
-            string key = $"{model.Email}:{phoneNumber}";
-            Console.WriteLine(key);
-            // Validate OTP
+            if (string.IsNullOrWhiteSpace(model.PhoneNumber))
+                return BadRequest(new { message = "Phone number is required" });
+
+            string phoneNumber = model.PhoneNumber.Trim();
+            if (!phoneNumber.StartsWith("+"))
+                phoneNumber = $"+2{phoneNumber}";
+
+            // OTP key: phone-only when email not used
+            string key = string.IsNullOrWhiteSpace(model.Email) ? phoneNumber : $"{model.Email}:{phoneNumber}";
+
             bool isOtpValid = await _otpService.ValidateOtpAsync(key, model.Otp);
             if (!isOtpValid)
                 return BadRequest(new { message = "OTP invalid or expired" });
 
-
-            // Check user
-            var user = await _userManager.Users
-                .FirstOrDefaultAsync(u => u.Email == model.Email && u.PhoneNumber == phoneNumber);
-
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
             if (user == null)
+                return NotFound(new { message = "User not found" });
+            if (!string.IsNullOrWhiteSpace(model.Email) && user.Email != model.Email)
                 return NotFound(new { message = "User not found" });
 
             // Reset password
@@ -79,7 +88,6 @@ namespace EgyptOnline.Controllers
             return Ok(new { message = "Password changed successfully" });
         }
     }
+        // ------------------ DTOs ------------------
 
-    // ------------------ DTOs ------------------
-
-}
+    }

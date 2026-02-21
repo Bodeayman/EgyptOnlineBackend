@@ -19,7 +19,9 @@ namespace EgyptOnline.Strategies
                 { "contractor", new ContractorRegistrationStrategy() },
                 { "company", new CompanyRegistrationStrategy() },
                 { "marketplace", new MarketPlaceRegistrationStrategy() },
-                { "engineer", new EngineerRegistrationStrategy() }
+                { "engineer", new EngineerRegistrationStrategy() },
+                { "sculptor", new SculptorRegistrationStrategy() },
+
             };
         }
 

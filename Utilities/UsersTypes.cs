@@ -9,6 +9,7 @@ namespace EgyptOnline.Utilities
         Company,
         Engineer,
         Assistant,
-        Marketplace
+        Marketplace,
+        Sculptor
     }
 }

@@ -33,6 +33,7 @@ namespace EgyptOnline.Data
         public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
 
         public DbSet<FirebaseToken> FirebaseTokens { get; set; }
+        public DbSet<Sculptor> Sculptors { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +52,8 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<MarketPlace>().ToTable("MarketPlaces");
             modelBuilder.Entity<Assistant>().ToTable("Assistants");
             modelBuilder.Entity<Engineer>().ToTable("Engineers");
+            modelBuilder.Entity<Sculptor>().ToTable("Sculptors");
+
 
 
 

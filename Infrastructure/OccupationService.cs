@@ -65,9 +65,20 @@ namespace EgyptOnline.Services
         /// </summary>
         public async Task<bool> IsUserOccupiedAsync(string userId)
         {
-            var key = $"{OCCUPIED_KEY_PREFIX}{userId}";
-            var value = await _cache.GetStringAsync(key);
-            return value != null;
+            try
+            {
+                // Set timeout to 2 seconds
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                
+                var key = $"{OCCUPIED_KEY_PREFIX}{userId}";
+                var value = await _cache.GetStringAsync(key, cts.Token);
+                return value != null;
+            }
+            catch (Exception)
+            {
+                // If Redis fails or times out, default to false (available)
+                return false;
+            }
         }
 
         /// <summary>
@@ -81,23 +92,40 @@ namespace EgyptOnline.Services
             if (userIds == null || !userIds.Any())
                 return occupiedUsers;
 
-            // Check each user (IDistributedCache doesn't have native batch operations)
-            // This is still efficient as Redis operations are very fast
-            var tasks = userIds.Select(async userId =>
+            try
             {
-                var key = $"{OCCUPIED_KEY_PREFIX}{userId}";
-                var value = await _cache.GetStringAsync(key);
-                return new { UserId = userId, IsOccupied = value != null };
-            });
+                // Set timeout to 5 seconds for batch operation
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
-            var results = await Task.WhenAll(tasks);
-
-            foreach (var result in results)
-            {
-                if (result.IsOccupied)
+                // Check each user (IDistributedCache doesn't have native batch operations)
+                // This is still efficient as Redis operations are very fast
+                var tasks = userIds.Select(async userId =>
                 {
-                    occupiedUsers.Add(result.UserId);
+                    try
+                    {
+                        var key = $"{OCCUPIED_KEY_PREFIX}{userId}";
+                        var value = await _cache.GetStringAsync(key, cts.Token);
+                        return new { UserId = userId, IsOccupied = value != null };
+                    }
+                    catch
+                    {
+                        return new { UserId = userId, IsOccupied = false };
+                    }
+                });
+
+                var results = await Task.WhenAll(tasks);
+
+                foreach (var result in results)
+                {
+                    if (result.IsOccupied)
+                    {
+                        occupiedUsers.Add(result.UserId);
+                    }
                 }
+            }
+            catch (Exception)
+            {
+                // If generic Redis failure or timeout occurs, return empty set (all users available)
             }
 
             return occupiedUsers;

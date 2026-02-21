@@ -60,7 +60,7 @@ namespace EgyptOnline.Controllers
         private static object MapResult(dynamic x, bool isCompany, int workerType, decimal pay, bool isOccupied)
         {
             string skill = x.GetSpecialization();
-
+            string derviedSkill = x.GetDerivedSpecialization();
             return new
             {
                 userId = x.User.Id,
@@ -77,7 +77,9 @@ namespace EgyptOnline.Controllers
                 mobileNumber = x.User.PhoneNumber,
                 typeOfService = x.ProviderType?.ToString(),
                 aboutMe = x.Bio,
-                isOccupied = isOccupied
+                isOccupied = isOccupied,
+                marketPlace = x.MarketPlace,
+                derivedSpec = derviedSkill
             };
         }
 
@@ -273,6 +275,11 @@ namespace EgyptOnline.Controllers
                     e.Specialization != null &&
                     e.Specialization.ToLower().Contains(filter.Profession.ToLower()));
 
+            if (!string.IsNullOrEmpty(filter.DerviedSpec))
+                engineers = engineers.Where(a =>
+                    a.DerivedSpec != null &&
+                    a.DerivedSpec.ToLower().Contains(filter.DerviedSpec.ToLower()));
+
             return engineers;
         }
 
@@ -321,6 +328,46 @@ namespace EgyptOnline.Controllers
             return assistants;
         }
 
+        private IQueryable<Sculptor> ApplySculptorsFilters(IQueryable<Sculptor> sculptors, FilterSearchDto? filter)
+        {
+            if (filter == null) return sculptors;
+
+            if (!string.IsNullOrEmpty(filter.FirstName))
+                sculptors = sculptors.Where(s =>
+                    s.User.FirstName != null &&
+                    s.User.FirstName.ToLower().Contains(filter.FirstName.ToLower()));
+
+            if (!string.IsNullOrEmpty(filter.LastName))
+                sculptors = sculptors.Where(s =>
+                    s.User.LastName != null &&
+                    s.User.LastName.ToLower().Contains(filter.LastName.ToLower()));
+
+            if (!string.IsNullOrEmpty(filter.Governorate))
+                sculptors = sculptors.Where(s =>
+                    s.User.Governorate != null &&
+                    s.User.Governorate.ToLower().Contains(filter.Governorate.ToLower()));
+
+            if (filter.WorkerType != null)
+                sculptors = sculptors.Where(s => s.WorkerType == filter.WorkerType);
+
+            if (!string.IsNullOrEmpty(filter.City))
+                sculptors = sculptors.Where(s =>
+                    s.User.City != null &&
+                    s.User.City.ToLower().Contains(filter.City.ToLower()));
+
+            if (!string.IsNullOrEmpty(filter.District))
+                sculptors = sculptors.Where(s =>
+                    s.User.District != null &&
+                    s.User.District.ToLower().Contains(filter.District.ToLower()));
+
+            if (!string.IsNullOrEmpty(filter.Marketplace))
+                sculptors = sculptors.Where(s =>
+                    s.MarketPlace != null &&
+                    s.MarketPlace.ToLower().Contains(filter.Marketplace.ToLower()));
+
+            return sculptors;
+        }
+
         #endregion
 
         #region Search Endpoints
@@ -346,11 +393,11 @@ namespace EgyptOnline.Controllers
                         .Take(Constants.SEARCH_PAGE_SIZE);
 
                     var topList = await workers.ToListAsync();
-                    
+
                     // Batch fetch occupation status
                     var topUserIds = topList.Select(w => w.User.Id).ToList();
                     var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
-                    
+
                     return Ok(topList.Select(w => MapResult(w, false,
                         Convert.ToInt32(w.WorkerType), w.ServicePricePerDay, topOccupiedUsers.Contains(w.User.Id))).ToList());
                 }
@@ -360,11 +407,11 @@ namespace EgyptOnline.Controllers
                 workers = Helper.PaginateUsers(workers, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var finalList = await workers.ToListAsync();
-                
+
                 // Batch fetch occupation status
                 var userIds = finalList.Select(w => w.User.Id).ToList();
                 var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
-                
+
                 return Ok(finalList.Select(w => MapResult(w, false,
                     Convert.ToInt32(w.WorkerType), w.ServicePricePerDay, occupiedUsers.Contains(w.User.Id))).ToList());
             }
@@ -396,11 +443,11 @@ namespace EgyptOnline.Controllers
                         .Take(Constants.SEARCH_PAGE_SIZE);
 
                     var topList = await companies.ToListAsync();
-                    
+
                     // Batch fetch occupation status
                     var topUserIds = topList.Select(c => c.User.Id).ToList();
                     var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
-                    
+
                     return Ok(topList.Select(c => MapResult(c, true, 1, 0, topOccupiedUsers.Contains(c.User.Id))).ToList());
                 }
 
@@ -409,11 +456,11 @@ namespace EgyptOnline.Controllers
                 companies = Helper.PaginateUsers(companies, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var finalList = await companies.ToListAsync();
-                
+
                 // Batch fetch occupation status
                 var userIds = finalList.Select(c => c.User.Id).ToList();
                 var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
-                
+
                 return Ok(finalList.Select(c => MapResult(c, true, 1, 0, occupiedUsers.Contains(c.User.Id))).ToList());
             }
             catch (Exception ex)
@@ -444,11 +491,11 @@ namespace EgyptOnline.Controllers
                         .Take(Constants.SEARCH_PAGE_SIZE);
 
                     var topList = await contractors.ToListAsync();
-                    
+
                     // Batch fetch occupation status
                     var topUserIds = topList.Select(c => c.User.Id).ToList();
                     var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
-                    
+
                     return Ok(topList.Select(c => MapResult(c, false, 1, c.Salary, topOccupiedUsers.Contains(c.User.Id))).ToList());
                 }
 
@@ -457,11 +504,11 @@ namespace EgyptOnline.Controllers
                 contractors = Helper.PaginateUsers(contractors, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var finalList = await contractors.ToListAsync();
-                
+
                 // Batch fetch occupation status
                 var userIds = finalList.Select(c => c.User.Id).ToList();
                 var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
-                
+
                 return Ok(finalList.Select(c => MapResult(c, false, 1, c.Salary, occupiedUsers.Contains(c.User.Id))).ToList());
             }
             catch (Exception ex)
@@ -492,11 +539,11 @@ namespace EgyptOnline.Controllers
                         .Take(Constants.SEARCH_PAGE_SIZE);
 
                     var topList = await marketplaces.ToListAsync();
-                    
+
                     // Batch fetch occupation status
                     var topUserIds = topList.Select(m => m.User.Id).ToList();
                     var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
-                    
+
                     return Ok(topList.Select(m => MapResult(m, true, 1, 0, topOccupiedUsers.Contains(m.User.Id))).ToList());
                 }
 
@@ -505,11 +552,11 @@ namespace EgyptOnline.Controllers
                 marketplaces = Helper.PaginateUsers(marketplaces, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var finalList = await marketplaces.ToListAsync();
-                
+
                 // Batch fetch occupation status
                 var userIds = finalList.Select(m => m.User.Id).ToList();
                 var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
-                
+
                 return Ok(finalList.Select(m => MapResult(m, true, 1, 0, occupiedUsers.Contains(m.User.Id))).ToList());
             }
             catch (Exception ex)
@@ -540,11 +587,11 @@ namespace EgyptOnline.Controllers
                         .Take(Constants.SEARCH_PAGE_SIZE);
 
                     var topList = await engineers.ToListAsync();
-                    
+
                     // Batch fetch occupation status
                     var topUserIds = topList.Select(e => e.User.Id).ToList();
                     var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
-                    
+
                     return Ok(topList.Select(e => MapResult(e, false, 1, e.Salary, topOccupiedUsers.Contains(e.User.Id))).ToList());
                 }
 
@@ -553,11 +600,11 @@ namespace EgyptOnline.Controllers
                 engineers = Helper.PaginateUsers(engineers, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var finalList = await engineers.ToListAsync();
-                
+
                 // Batch fetch occupation status
                 var userIds = finalList.Select(e => e.User.Id).ToList();
                 var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
-                
+
                 return Ok(finalList.Select(e => MapResult(e, false, 1, e.Salary, occupiedUsers.Contains(e.User.Id))).ToList());
             }
             catch (Exception ex)
@@ -588,11 +635,11 @@ namespace EgyptOnline.Controllers
                         .Take(Constants.SEARCH_PAGE_SIZE);
 
                     var topList = await assistants.ToListAsync();
-                    
+
                     // Batch fetch occupation status
                     var topUserIds = topList.Select(a => a.User.Id).ToList();
                     var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
-                    
+
                     return Ok(topList.Select(a => MapResult(a, false, 1, a.ServicePricePerDay, topOccupiedUsers.Contains(a.User.Id))).ToList());
                 }
 
@@ -601,16 +648,64 @@ namespace EgyptOnline.Controllers
                 assistants = Helper.PaginateUsers(assistants, filter!.PageNumber, Constants.PAGE_SIZE);
 
                 var finalList = await assistants.ToListAsync();
-                
+
                 // Batch fetch occupation status
                 var userIds = finalList.Select(a => a.User.Id).ToList();
                 var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
-                
+
                 return Ok(finalList.Select(a => MapResult(a, false, 1, a.ServicePricePerDay, occupiedUsers.Contains(a.User.Id))).ToList());
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SearchAssistants failed: {Message}", ex.Message);
+                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("sculptors")]
+        [RequireSubscription]
+        public async Task<IActionResult> SearchSculptors([FromBody] FilterSearchDto? filter)
+        {
+            try
+            {
+                var sculptors = _context.Sculptors.Include(s => s.User).AsQueryable();
+                filter = TrimAllSearchInputs(filter);
+
+                // Apply filters
+                sculptors = ApplySculptorsFilters(sculptors, filter);
+                sculptors = sculptors.Where(s => s.IsAvailable);
+
+                // BasedOnPoints: Return top performers only (no pagination)
+                if (filter != null && filter.BasedOnPoints == true)
+                {
+                    sculptors = sculptors
+                        .OrderByDescending(s => s.User.Points)
+                        .Take(Constants.SEARCH_PAGE_SIZE);
+
+                    var topList = await sculptors.ToListAsync();
+
+                    // Batch fetch occupation status
+                    var topUserIds = topList.Select(s => s.User.Id).ToList();
+                    var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
+
+                    return Ok(topList.Select(s => MapResult(s, false, Convert.ToInt32(s.WorkerType), s.ServicePricePerDay, topOccupiedUsers.Contains(s.User.Id))).ToList());
+                }
+
+                // Regular search: Point-based ranking with pagination
+                sculptors = sculptors.OrderByDescending(s => s.User.Points);
+                sculptors = Helper.PaginateUsers(sculptors, filter!.PageNumber, Constants.PAGE_SIZE);
+
+                var finalList = await sculptors.ToListAsync();
+
+                // Batch fetch occupation status
+                var userIds = finalList.Select(s => s.User.Id).ToList();
+                var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
+
+                return Ok(finalList.Select(s => MapResult(s, false, Convert.ToInt32(s.WorkerType), s.ServicePricePerDay, occupiedUsers.Contains(s.User.Id))).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SearchSculptors failed: {Message}", ex.Message);
                 return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
             }
         }

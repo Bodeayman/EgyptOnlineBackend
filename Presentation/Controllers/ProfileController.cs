@@ -147,50 +147,86 @@ namespace EgyptOnline.Controllers
                     return NotFound(new { message = "The Service Provider related to this user is not found" });
                 }
 
-
-                user.ServiceProvider.Bio = model.Bio ?? user.ServiceProvider.Bio;
-
-
-                if (user.ServiceProvider.ProviderType == "Worker")
+                // Update Bio safely
+                if (!string.IsNullOrWhiteSpace(model.Bio))
                 {
-                    var worker = await _context.Workers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
-                    worker.ServicePricePerDay = model.Pay;
-                    worker.MarketPlace = model.Marketplace;
-                    worker.DerivedSpec = model.DerivedSpec;
+                    user.ServiceProvider.Bio = model.Bio;
+                }
 
-                }
-                else if (user.ServiceProvider.ProviderType == "Contractor")
+                switch (user.ServiceProvider.ProviderType)
                 {
-                    var contractor = await _context.Contractors.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
-                    contractor.Salary = model.Pay;
+                    case "Worker":
+                        var worker = await _context.Workers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
+                        if (worker == null) return BadRequest(new { message = "Worker not found" });
 
-                }
-                else if (user.ServiceProvider.ProviderType == "Company")
-                {
-                    var company = await _context.Companies.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
-                }
-                else if (user.ServiceProvider.ProviderType == "Marketplace")
-                {
-                    var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
+                        if (model.Pay >= 0)
+                            worker.ServicePricePerDay = model.Pay;
 
-                }
-                else if (user.ServiceProvider.ProviderType == "Engineer")
-                {
-                    var engineer = await _context.Engineers.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
-                    engineer!.Salary = model.Pay;
-                }
-                else if (user.ServiceProvider.ProviderType == "Assistant")
-                {
-                    var assistant = await _context.Assistants.FirstOrDefaultAsync(s => user.ServiceProvider.Id == s.Id);
-                    assistant!.ServicePricePerDay = model.Pay;
-                    assistant.MarketPlace = model.Marketplace;
-                    assistant.DerivedSpec = model.DerivedSpec;
+                        if (!string.IsNullOrWhiteSpace(model.Marketplace))
+                            worker.MarketPlace = model.Marketplace;
 
+                        worker.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? worker.DerivedSpec : model.DerivedSpec;
+                        break;
+
+                    case "Contractor":
+                        var contractor = await _context.Contractors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
+                        if (contractor == null) return BadRequest(new { message = "Contractor not found" });
+
+                        if (model.Pay >= 0)
+                            contractor.Salary = model.Pay;
+                        break;
+
+                    case "Company":
+                        var company = await _context.Companies.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
+                        if (company == null) return BadRequest(new { message = "Company not found" });
+                        break;
+
+                    case "Marketplace":
+                        var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
+                        if (marketPlace == null) return BadRequest(new { message = "Marketplace not found" });
+                        break;
+
+                    case "Engineer":
+                        var engineer = await _context.Engineers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
+                        if (engineer == null) return BadRequest(new { message = "Engineer details not found" });
+
+                        if (model.Pay >= 0)
+                            engineer.Salary = model.Pay;
+
+                        // Ensure DerivedSpec is NOT NULL
+                        engineer.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? engineer.DerivedSpec : model.DerivedSpec;
+                        break;
+
+                    case "Assistant":
+                        var assistant = await _context.Assistants.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
+                        if (assistant == null) return BadRequest(new { message = "Assistant not found" });
+
+                        if (model.Pay >= 0)
+                            assistant.ServicePricePerDay = model.Pay;
+
+                        if (!string.IsNullOrWhiteSpace(model.Marketplace))
+                            assistant.MarketPlace = model.Marketplace;
+
+                        assistant.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? assistant.DerivedSpec : model.DerivedSpec;
+                        break;
+
+                    case "Sculptor":
+                        var sculptor = await _context.Sculptors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
+                        if (sculptor == null) return BadRequest(new { message = "Sculptor not found" });
+
+                        if (model.Pay >= 0)
+                            sculptor.ServicePricePerDay = model.Pay;
+
+                        if (!string.IsNullOrWhiteSpace(model.Marketplace))
+                            sculptor.MarketPlace = model.Marketplace;
+                        break;
+
+                    default:
+                        return BadRequest(new { message = "Put a correct ServiceProvider Name" });
                 }
-                else
-                {
-                    return BadRequest(new { message = "Put a correct ServiceProvider Name" });
-                }
+
+                // Save changes safely
+
 
                 await transaction.CommitAsync();
                 await _context.SaveChangesAsync();
@@ -219,8 +255,8 @@ namespace EgyptOnline.Controllers
 
                 var expirationTime = await _occupationService.SetUserOccupiedAsync(userId);
 
-                return Ok(new 
-                { 
+                return Ok(new
+                {
                     message = "You have been marked as occupied until midnight",
                     expiresAt = expirationTime,
                     isOccupied = true
@@ -247,8 +283,8 @@ namespace EgyptOnline.Controllers
 
                 await _occupationService.RemoveUserOccupiedAsync(userId);
 
-                return Ok(new 
-                { 
+                return Ok(new
+                {
                     message = "You have been marked as available",
                     isOccupied = false
                 });

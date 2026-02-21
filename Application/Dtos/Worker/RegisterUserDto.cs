@@ -11,8 +11,9 @@ namespace EgyptOnline.Dtos
 
     public string? LastName { get; set; }
 
-    [Required, EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    // Optional: app uses phone number as primary identifier
+    [EmailAddress(ErrorMessage = "Invalid email format when provided")]
+    public string? Email { get; set; }
 
 
     [Required]

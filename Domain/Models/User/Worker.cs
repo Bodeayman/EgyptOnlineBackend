@@ -9,10 +9,15 @@ namespace EgyptOnline.Models
         public decimal ServicePricePerDay { get; set; } = 0;
 
         public required WorkerTypes WorkerType { get; set; }
+        public string DerivedSpec { get; set; } = string.Empty;
 
         public override string GetSpecialization()
         {
             return Skill;
+        }
+        public override string GetDerivedSpecialization()
+        {
+            return DerivedSpec;
         }
 
     }

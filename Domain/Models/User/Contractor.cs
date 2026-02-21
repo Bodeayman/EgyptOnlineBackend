@@ -8,5 +8,9 @@ namespace EgyptOnline.Models
         {
             return Specialization;
         }
+        public override string GetDerivedSpecialization()
+        {
+            return Specialization;
+        }
     }
 }

@@ -26,11 +26,7 @@ namespace EgyptOnline.Utilities
 
             };
 
-            if (user.ServiceProvider is Worker)
-            {
-                dto.Marketplace = user.ServiceProvider.MarketPlace;
-                dto.DerviedSpec = user.ServiceProvider.DerivedSpec;
-            }
+
 
             return dto;
         }
@@ -67,10 +63,19 @@ namespace EgyptOnline.Utilities
                     dto.Specialization = worker.Skill;
                     dto.Pay = worker.ServicePricePerDay;
                     dto.WorkerTypes = worker.WorkerType;
+                    dto.Marketplace = worker.MarketPlace ?? "";
+                    dto.DerviedSpec = worker.DerivedSpec ?? "";
                     break;
                 case Assistant worker:
                     dto.Specialization = worker.Skill;
                     dto.Pay = worker.ServicePricePerDay;
+                    dto.Marketplace = worker.MarketPlace ?? "";
+                    dto.DerviedSpec = worker.DerivedSpec ?? "";
+                    break;
+                case Sculptor sculptor:
+                    dto.Specialization = sculptor.WorkerType.ToString();
+                    dto.Pay = sculptor.ServicePricePerDay;
+                    dto.Marketplace = sculptor.MarketPlace ?? "";
                     break;
                 case Contractor contractor:
                     // Assuming Contractor has an Expertise property
@@ -84,6 +89,8 @@ namespace EgyptOnline.Utilities
                     break;
                 case Engineer engineer:
                     dto.Specialization = engineer.Specialization;
+                    dto.DerviedSpec = engineer.DerivedSpec ?? "";
+
                     dto.Pay = engineer.Salary;
                     break;
                 case MarketPlace marketPlace:

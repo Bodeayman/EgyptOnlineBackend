@@ -2,21 +2,21 @@ using EgyptOnline.Utilities;
 
 namespace EgyptOnline.Models
 {
-    public class Assistant : ServicesProvider
+    public class Sculptor : ServicesProvider
     {
-        public required string Skill { get; set; }
 
         public decimal ServicePricePerDay { get; set; } = 0;
-        public string DerivedSpec { get; set; } = string.Empty;
+
+        public required WorkerTypes WorkerType { get; set; }
 
 
         public override string GetSpecialization()
         {
-            return Skill;
+            return "Sculptor";
         }
         public override string GetDerivedSpecialization()
         {
-            return DerivedSpec;
+            return "Sculptor";
         }
 
     }

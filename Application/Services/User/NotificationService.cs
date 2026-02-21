@@ -9,10 +9,12 @@ namespace EgyptOnline.Services
     public class NotificationService
     {
         private readonly ApplicationDbContext _context;
+        private readonly NotificationMongoService _notificationMongoService;
 
-        public NotificationService(ApplicationDbContext context)
+        public NotificationService(ApplicationDbContext context, NotificationMongoService notificationMongoService)
         {
             _context = context;
+            _notificationMongoService = notificationMongoService;
         }
 
         // ✅ UPDATED: Added senderId and senderName parameters
@@ -23,6 +25,9 @@ namespace EgyptOnline.Services
             string senderId = null,
             string senderName = null)
         {
+            // Save to MongoDB
+            await _notificationMongoService.SaveNotificationAsync(userId, title, body, senderId, senderName);
+
             var user = await _context.Users.Include(u => u.FirebaseTokens)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 

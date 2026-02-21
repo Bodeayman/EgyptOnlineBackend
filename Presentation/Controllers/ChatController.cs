@@ -34,6 +34,23 @@ namespace EgyptOnline.Presentation.Controllers
             return Ok(users);
         }
 
+        /// <summary>
+        /// Poll endpoint to retrieve new messages for the authenticated user.
+        /// Query: ?sinceUtc=2026-02-18T12:34:56Z
+        /// </summary>
+        [HttpGet("poll")]
+        public async Task<IActionResult> Poll([FromQuery] DateTime? sinceUtc = null, [FromQuery] int pageSize = 50)
+        {
+            var currentUserId = User.FindFirst("uid")?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized();
+            }
+
+            var messages = await _chatService.GetNewMessagesAsync(currentUserId, sinceUtc, pageSize);
+            return Ok(messages);
+        }
+
         [HttpGet("history/{targetUserId}")]
         public async Task<IActionResult> GetHistory(string targetUserId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
         {

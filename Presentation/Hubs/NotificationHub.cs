@@ -52,7 +52,7 @@ namespace EgyptOnline.Presentation.Hubs
             catch (Exception ex)
             {
                 // Log error but don't throw to avoid breaking the caller
-                Console.WriteLine($"Error sending notification: {ex.Message}");
+                Console.WriteLine($"Error sending notification to {userId}: {ex}");
             }
         }
     }

@@ -1,4 +1,5 @@
 using EgyptOnline.Data;
+using Microsoft.AspNetCore.SignalR;
 using EgyptOnline.Models;
 using EgyptOnline.Extensions;
 using Microsoft.AspNetCore.Identity;
@@ -62,6 +63,7 @@ try
         options.User.AllowedUserNameCharacters =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+"
     + "أابتثجحخدذرزسشصضطظعغفقكلمنهويءآأإىة٤٥٦٧٨٩٠"; // Arabic chars
+        options.User.RequireUniqueEmail = false; // Login/identify by phone; email is optional
         options.Password.RequireDigit = false;
         options.Password.RequireLowercase = false;
         options.Password.RequireUppercase = false;
@@ -80,6 +82,8 @@ try
 
     // SignalR & Chat
     builder.Services.AddSignalR();
+    // Use custom user id provider so SignalR maps our JWT `uid` claim to user identifiers
+    builder.Services.AddSingleton<IUserIdProvider, EgyptOnline.Presentation.Hubs.UidUserIdProvider>();
     builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>
         new MongoDB.Driver.MongoClient(builder.Configuration["MongoDB:ConnectionString"])); // Placeholder
     builder.Services.AddScoped<EgyptOnline.Services.ChatService>();
@@ -87,16 +91,16 @@ try
     builder.Services.AddScoped<EgyptOnline.Services.OccupationService>();
     builder.Services.AddSingleton<EgyptOnline.Services.PresenceService>();
     builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("AllowAll",
-            builder =>
-            {
-                builder
-                    .AllowAnyOrigin()    // Allow all domains
-                    .AllowAnyMethod()    // Allow GET, POST, PUT, DELETE
-                    .AllowAnyHeader();   // Allow headers like Content-Type
-            });
-    });
+  {
+      options.AddPolicy("AllowAll", policy =>
+      {
+          policy
+              .SetIsOriginAllowed(_ => true)  // "allow all" that works with credentials
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();            // required for SignalR WebSocket upgrade
+      });
+  });
 
     if (builder.Environment.IsDevelopment())
     {
@@ -129,6 +133,7 @@ try
 
 
     var app = builder.Build();
+
 
     // ---------- Run Migrations ----------
     using (var scope = app.Services.CreateScope())
@@ -225,7 +230,7 @@ try
 
     app.UseRouting();
     app.UseCors("AllowAll");
-
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
     // app.UseMiddleware<SubscriptionCheckMiddleware>();
@@ -236,7 +241,7 @@ try
     // ---------- Map Endpoints ----------
     app.MapHub<EgyptOnline.Presentation.Hubs.ChatHub>("/chatHub");
     app.MapHub<EgyptOnline.Presentation.Hubs.NotificationHub>("/notificationHub");
-    app.MapControllers();
+    app.MapControllers().RequireRateLimiting("tokenBucket");
 
     app.MapGet("/health", () => Results.Ok("Healthy"));
 

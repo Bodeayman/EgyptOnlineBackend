@@ -9,6 +9,8 @@ namespace EgyptOnline.Strategies
         {
             if (model.Specialization == null)
                 return "Please Add the Specialization";
+            if (model.DerivedSpec == null)
+                return "Please Add the Derived Specialization";
 
             return null;
         }

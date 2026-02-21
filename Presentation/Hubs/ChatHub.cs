@@ -68,23 +68,31 @@ namespace EgyptOnline.Presentation.Hubs
         // Presentation/Hubs/ChatHub.cs - Line 65-90
         public async Task SendMessage(string receiverId, string content)
         {
-            var senderId = Context.User?.FindFirst("uid")?.Value;
-
-            if (string.IsNullOrEmpty(senderId))
-            {
-                await Clients.Caller.SendAsync("SendMessageError", "Unauthorized");
-                return;
-            }
-            var user = await CheckSubscriptionAsync(senderId);
-            // Critical operation: Check subscription from DB
-            if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
-            {
-                await Clients.Caller.SendAsync("SendMessageError", "Your subscription has expired. Please renew to send messages.");
-                return;
-            }
-
             try
             {
+                var senderId = Context.User?.FindFirst("uid")?.Value;
+
+                if (string.IsNullOrEmpty(senderId))
+                {
+                    await Clients.Caller.SendAsync("SendMessageError", "Unauthorized");
+                    return;
+                }
+
+                var user = await CheckSubscriptionAsync(senderId);
+
+                if (user == null)
+                {
+                    await Clients.Caller.SendAsync("SendMessageError", "User not found");
+                    return;
+                }
+
+                // Critical operation: Check subscription from DB
+                if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
+                {
+                    await Clients.Caller.SendAsync("SendMessageError", "Your subscription has expired. Please renew to send messages.");
+                    return;
+                }
+
                 // Save to MongoDB and get message ID
                 var messageId = await _chatService.SaveMessageAsync(senderId, receiverId, content);
 
@@ -99,32 +107,38 @@ namespace EgyptOnline.Presentation.Hubs
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"SendMessage Error: {ex}");
                 await Clients.Caller.SendAsync("SendMessageError", $"Error sending message: {ex.Message}");
             }
         }
 
         public async Task DeleteMessage(string messageId, string receiverId)
         {
-            var senderId = Context.User?.FindFirst("uid")?.Value;
-
-            if (string.IsNullOrEmpty(senderId))
-            {
-                await Clients.Caller.SendAsync("DeleteMessageError", "Unauthorized");
-                return;
-            }
-
-            // Critical operation: Check subscription from DB
-            var user = await CheckSubscriptionAsync(senderId);
-            // Critical operation: Check subscription from DB
-            if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
-            {
-
-                await Clients.Caller.SendAsync("DeleteMessageError", "Your subscription has expired. Please renew to delete messages.");
-                return;
-            }
-
             try
             {
+                var senderId = Context.User?.FindFirst("uid")?.Value;
+
+                if (string.IsNullOrEmpty(senderId))
+                {
+                    await Clients.Caller.SendAsync("DeleteMessageError", "Unauthorized");
+                    return;
+                }
+
+                // Critical operation: Check subscription from DB
+                var user = await CheckSubscriptionAsync(senderId);
+
+                if (user == null)
+                {
+                    await Clients.Caller.SendAsync("DeleteMessageError", "User not found");
+                    return;
+                }
+
+                if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
+                {
+                    await Clients.Caller.SendAsync("DeleteMessageError", "Your subscription has expired. Please renew to delete messages.");
+                    return;
+                }
+
                 // Delete from MongoDB - only message owner can delete
                 var deleted = await _chatService.DeleteMessageAsync(messageId, senderId);
 
@@ -142,30 +156,38 @@ namespace EgyptOnline.Presentation.Hubs
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"DeleteMessage Error: {ex}");
                 await Clients.Caller.SendAsync("DeleteMessageError", $"Error deleting message: {ex.Message}");
             }
         }
 
         public async Task EditMessage(string messageId, string newContent, string receiverId)
         {
-            var senderId = Context.User?.FindFirst("uid")?.Value;
-
-            if (string.IsNullOrEmpty(senderId))
-            {
-                await Clients.Caller.SendAsync("EditMessageError", "Unauthorized");
-                return;
-            }
-            var user = await CheckSubscriptionAsync(senderId);
-
-            // Critical operation: Check subscription from DB
-            if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
-            {
-                await Clients.Caller.SendAsync("EditMessageError", "Your subscription has expired. Please renew to edit messages.");
-                return;
-            }
-
             try
             {
+                var senderId = Context.User?.FindFirst("uid")?.Value;
+
+                if (string.IsNullOrEmpty(senderId))
+                {
+                    await Clients.Caller.SendAsync("EditMessageError", "Unauthorized");
+                    return;
+                }
+
+                var user = await CheckSubscriptionAsync(senderId);
+
+                if (user == null)
+                {
+                    await Clients.Caller.SendAsync("EditMessageError", "User not found");
+                    return;
+                }
+
+                // Critical operation: Check subscription from DB
+                if (user.Subscription == null || !user.ServiceProvider.IsAvailable)
+                {
+                    await Clients.Caller.SendAsync("EditMessageError", "Your subscription has expired. Please renew to edit messages.");
+                    return;
+                }
+
                 // Update message in MongoDB - only message owner can edit
                 var updated = await _chatService.EditMessageAsync(messageId, senderId, newContent);
 
@@ -183,6 +205,7 @@ namespace EgyptOnline.Presentation.Hubs
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"EditMessage Error: {ex}");
                 await Clients.Caller.SendAsync("EditMessageError", $"Error editing message: {ex.Message}");
             }
         }

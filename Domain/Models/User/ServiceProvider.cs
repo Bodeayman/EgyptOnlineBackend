@@ -18,8 +18,9 @@ namespace EgyptOnline.Models
 
         public string ProviderType { get; set; } = "Worker";
         public abstract string GetSpecialization();
+        public abstract string GetDerivedSpecialization();
+
         public string? MarketPlace { get; set; }
-        public string? DerivedSpec { get; set; }
 
 
     }

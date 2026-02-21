@@ -13,8 +13,7 @@ namespace EgyptOnline.Dtos
         public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
         public string? ImageUrl { get; set; }
-        public string? Marketplace { get; set; }
-        public string? DerviedSpec { get; set; }
+     
         public int Points { get; set; }
         public int SubscriptionPoints { get; set; }
 
@@ -46,7 +45,8 @@ namespace EgyptOnline.Dtos
         public string ProviderType { get; set; } = string.Empty;
 
         public string? Specialization { get; set; } = string.Empty; // skill here please 
-
+   public string? Marketplace { get; set; }
+        public string? DerviedSpec { get; set; }
         public decimal Pay { get; set; }
         public string? Business { get; set; } = string.Empty;
         public string? Owner { get; set; } = string.Empty;
