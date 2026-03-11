@@ -23,7 +23,6 @@ namespace EgyptOnline.Strategies
                 Specialization = model.Specialization,
                 ProviderType = model.ProviderType,
                 IsAvailable = true,
-                Salary = model.Pay ?? 0,
             };
         }
     }

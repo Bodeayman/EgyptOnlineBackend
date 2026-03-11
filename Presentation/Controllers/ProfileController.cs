@@ -172,8 +172,6 @@ namespace EgyptOnline.Controllers
                         var contractor = await _context.Contractors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (contractor == null) return BadRequest(new { message = "Contractor not found" });
 
-                        if (model.Pay >= 0)
-                            contractor.Salary = model.Pay;
                         break;
 
                     case "Company":
@@ -190,8 +188,6 @@ namespace EgyptOnline.Controllers
                         var engineer = await _context.Engineers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (engineer == null) return BadRequest(new { message = "Engineer details not found" });
 
-                        if (model.Pay >= 0)
-                            engineer.Salary = model.Pay;
 
                         // Ensure DerivedSpec is NOT NULL
                         engineer.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? engineer.DerivedSpec : model.DerivedSpec;

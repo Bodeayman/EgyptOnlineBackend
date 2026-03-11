@@ -2,6 +2,7 @@ using EgyptOnline.Data;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Models;
 using EgyptOnline.Services;
+using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,7 +35,7 @@ namespace EgyptOnline.Controllers
         /// Google Play Billing on the device.
         /// </summary>
         [HttpPost("verify-subscription")]
-        [Authorize(Roles = Roles.User)]
+        [AllowAnonymous]
         public async Task<IActionResult> VerifyAndActivateSubscription([FromBody] GooglePlaySubscriptionVerificationRequest request)
         {
             if (!ModelState.IsValid)
@@ -134,23 +135,18 @@ namespace EgyptOnline.Controllers
         }
 
         /// <summary>
-        /// Placeholder for Google Play verification logic.
-        /// Replace this with a real call to Google Play Developer API using a service account.
+        /// Verifies the purchase with Google Play Developer API (server-to-server).
+        /// Currently a STUB: it does not call Google yet, so it always returns IsValid = false.
+        /// That way no one can send a fake purchaseToken and get a free subscription.
+        /// When you implement the real call (see GooglePlayBillingFlow.md), this method will
+        /// call Google's API and return IsValid = true only when Google confirms the purchase.
         /// </summary>
         private Task<GooglePlayVerificationResult> VerifyWithGooglePlayAsync(GooglePlaySubscriptionVerificationRequest request)
         {
-            // IMPORTANT:
-            // Implement this method using Google.Apis.AndroidPublisher or direct HTTP calls to:
-            // - purchases.subscriptionsv2.get (recommended for new integrations), or
-            // - purchases.subscriptions.get (legacy).
-            // Validate:
-            //   - purchaseToken belongs to your packageName and productId
-            //   - subscription is active / not expired
-            //   - purchase is acknowledged
-            //   - not already processed (idempotency using purchaseToken / orderId)
-            //
-            // For now we always return an invalid result so that no unverified
-            // purchases can activate subscriptions accidentally.
+            // TODO: Call Google Play Developer API (purchases.subscriptionsv2.get or
+            // purchases.subscriptions.get) with packageName, productId, purchaseToken.
+            // Validate: correct package/product, subscription active, acknowledged, not refunded.
+            // Use idempotency (e.g. store purchaseToken) so the same token cannot activate twice.
 
             var result = new GooglePlayVerificationResult
             {

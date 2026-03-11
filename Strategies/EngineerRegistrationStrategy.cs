@@ -23,7 +23,6 @@ namespace EgyptOnline.Strategies
                 UserId = user.Id,
                 Bio = model.Bio,
                 ProviderType = model.ProviderType,
-                Salary = model.Pay ?? 0,
                 Specialization = model.Specialization,
                 IsAvailable = true,
             };

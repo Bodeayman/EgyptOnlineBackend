@@ -496,7 +496,7 @@ namespace EgyptOnline.Controllers
                     var topUserIds = topList.Select(c => c.User.Id).ToList();
                     var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
 
-                    return Ok(topList.Select(c => MapResult(c, false, 1, c.Salary, topOccupiedUsers.Contains(c.User.Id))).ToList());
+                    return Ok(topList.Select(c => MapResult(c, false, 1, 0, topOccupiedUsers.Contains(c.User.Id))).ToList());
                 }
 
                 // Regular search: Point-based ranking with pagination
@@ -509,7 +509,7 @@ namespace EgyptOnline.Controllers
                 var userIds = finalList.Select(c => c.User.Id).ToList();
                 var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
 
-                return Ok(finalList.Select(c => MapResult(c, false, 1, c.Salary, occupiedUsers.Contains(c.User.Id))).ToList());
+                return Ok(finalList.Select(c => MapResult(c, false, 1, 0, occupiedUsers.Contains(c.User.Id))).ToList());
             }
             catch (Exception ex)
             {
@@ -592,7 +592,7 @@ namespace EgyptOnline.Controllers
                     var topUserIds = topList.Select(e => e.User.Id).ToList();
                     var topOccupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(topUserIds);
 
-                    return Ok(topList.Select(e => MapResult(e, false, 1, e.Salary, topOccupiedUsers.Contains(e.User.Id))).ToList());
+                    return Ok(topList.Select(e => MapResult(e, false, 1, 0, topOccupiedUsers.Contains(e.User.Id))).ToList());
                 }
 
                 // Regular search: Point-based ranking with pagination
@@ -605,7 +605,7 @@ namespace EgyptOnline.Controllers
                 var userIds = finalList.Select(e => e.User.Id).ToList();
                 var occupiedUsers = await _occupationService.GetOccupiedUsersBatchAsync(userIds);
 
-                return Ok(finalList.Select(e => MapResult(e, false, 1, e.Salary, occupiedUsers.Contains(e.User.Id))).ToList());
+                return Ok(finalList.Select(e => MapResult(e, false, 1, 0, occupiedUsers.Contains(e.User.Id))).ToList());
             }
             catch (Exception ex)
             {

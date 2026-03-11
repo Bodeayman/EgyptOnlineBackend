@@ -13,6 +13,8 @@ namespace EgyptOnline.Models
         public bool IsAvailable { get; set; } = true;
 
 
+
+        // That's gonna be changed afterwards
         public string? Bio { get; set; }
 
 

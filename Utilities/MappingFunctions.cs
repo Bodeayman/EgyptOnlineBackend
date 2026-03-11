@@ -79,7 +79,6 @@ namespace EgyptOnline.Utilities
                     break;
                 case Contractor contractor:
                     // Assuming Contractor has an Expertise property
-                    dto.Pay = contractor.Salary;
                     dto.Specialization = contractor.Specialization;
                     break;
                 case Company company:
@@ -91,7 +90,6 @@ namespace EgyptOnline.Utilities
                     dto.Specialization = engineer.Specialization;
                     dto.DerviedSpec = engineer.DerivedSpec ?? "";
 
-                    dto.Pay = engineer.Salary;
                     break;
                 case MarketPlace marketPlace:
                     dto.Business = marketPlace.Business;

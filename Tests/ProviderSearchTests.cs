@@ -174,7 +174,6 @@ namespace EgyptOnline.Tests
                 User = user3,
                 Specialization = "Civil Engineering",
                 ProviderType = "engineer",
-                Salary = 15000,
                 Bio = "Senior civil engineer",
                 IsAvailable = true
             };
@@ -187,7 +186,6 @@ namespace EgyptOnline.Tests
                 User = user4,
                 Specialization = "Construction",
                 ProviderType = "contractor",
-                Salary = 12000,
                 Bio = "General contractor",
                 IsAvailable = true
             };

@@ -214,7 +214,6 @@ namespace EgyptOnline.Tests
                 User = user,
                 Specialization = "Civil Engineering",
                 ProviderType = "contractor",
-                Salary = 8000,
                 Bio = "Licensed civil engineer",
                 IsAvailable = true
             };
@@ -231,7 +230,6 @@ namespace EgyptOnline.Tests
 
             Assert.NotNull(savedContractor);
             Assert.Equal("Civil Engineering", savedContractor.Specialization);
-            Assert.Equal(8000, savedContractor.Salary);
             Assert.Equal("contractor", savedContractor.ProviderType);
         }
 
@@ -400,7 +398,6 @@ namespace EgyptOnline.Tests
                 User = user,
                 Specialization = "Mechanical Engineering",
                 ProviderType = "engineer",
-                Salary = 12000,
                 Bio = "Experienced mechanical engineer",
                 IsAvailable = true
             };
@@ -417,7 +414,6 @@ namespace EgyptOnline.Tests
 
             Assert.NotNull(savedEngineer);
             Assert.Equal("Mechanical Engineering", savedEngineer.Specialization);
-            Assert.Equal(12000, savedEngineer.Salary);
             Assert.Equal("engineer", savedEngineer.ProviderType);
         }
 
@@ -450,11 +446,9 @@ namespace EgyptOnline.Tests
 
             var worker = new Worker { Id = 10, UserId = users[0].Id, User = users[0], Skill = "Skill1", WorkerType = WorkerTypes.PerDay, ProviderType = "worker", ServicePricePerDay = 500, IsAvailable = true };
             var assistant = new Assistant { Id = 11, UserId = users[1].Id, User = users[1], Skill = "Skill2", ProviderType = "assistant", ServicePricePerDay = 300, IsAvailable = true };
-            var engineer = new Engineer { Id = 12, UserId = users[2].Id, User = users[2], Specialization = "Spec1", ProviderType = "engineer", Salary = 10000, IsAvailable = true };
 
             _context.Workers.Add(worker);
             _context.Assistants.Add(assistant);
-            _context.Engineers.Add(engineer);
 
             // ACT
             await _context.SaveChangesAsync();
