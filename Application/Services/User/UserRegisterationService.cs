@@ -108,7 +108,7 @@ namespace EgyptOnline.Services
                 if (!string.IsNullOrEmpty(model.ReferralUserName))
                 {
                     var pointsAdded = _userPointService.AddPointsToUser(model.ReferralUserName, model.ProviderType);
-                    if (!pointsAdded)
+                    /*if (!pointsAdded)
                     {
                         return new UserRegisterationResult
                         {
@@ -118,7 +118,7 @@ namespace EgyptOnline.Services
                                 Code = UserErrors.ReferralUserNotFound.ToString()
                             })
                         };
-                    }
+                    } */
                 }
                 await _userManager.AddToRoleAsync(user, Roles.User);
 
