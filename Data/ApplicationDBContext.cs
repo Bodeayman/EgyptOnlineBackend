@@ -35,6 +35,14 @@ namespace EgyptOnline.Data
         public DbSet<FirebaseToken> FirebaseTokens { get; set; }
         public DbSet<Sculptor> Sculptors { get; set; }
 
+        // ─── Contract / Wallet / KYC Module ─────────────────────────
+        public DbSet<Contract> Contracts { get; set; }
+        public DbSet<UserWallet> UserWallets { get; set; }
+        public DbSet<WalletTransaction> WalletTransactions { get; set; }
+        public DbSet<AttendanceRecord> AttendanceRecords { get; set; }
+        public DbSet<FundMovementLog> FundMovementLogs { get; set; }
+        public DbSet<KycSubmission> KycSubmissions { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -54,11 +62,52 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<Engineer>().ToTable("Engineers");
             modelBuilder.Entity<Sculptor>().ToTable("Sculptors");
 
+            // ─── Contract Module Configurations ─────────────────────
+            modelBuilder.Entity<Contract>(entity =>
+            {
+                entity.ToTable("Contracts");
+                entity.HasIndex(e => e.ContractorId);
+                entity.HasIndex(e => e.EngineerId);
+                entity.HasIndex(e => e.WorkerId);
+                entity.HasIndex(e => e.Status);
+                entity.HasOne(c => c.Contractor).WithMany().HasForeignKey(c => c.ContractorId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(c => c.Engineer).WithMany().HasForeignKey(c => c.EngineerId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(c => c.Worker).WithMany().HasForeignKey(c => c.WorkerId).OnDelete(DeleteBehavior.Restrict);
+            });
 
+            modelBuilder.Entity<UserWallet>(entity =>
+            {
+                entity.ToTable("UserWallets");
+                entity.HasIndex(e => e.UserId).IsUnique();
+                entity.HasOne(w => w.User).WithMany().HasForeignKey(w => w.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
 
+            modelBuilder.Entity<WalletTransaction>(entity =>
+            {
+                entity.ToTable("WalletTransactions");
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.ContractId);
+                entity.HasIndex(e => e.CreatedAt);
+            });
 
+            modelBuilder.Entity<AttendanceRecord>(entity =>
+            {
+                entity.ToTable("AttendanceRecords");
+                entity.HasIndex(e => new { e.ContractId, e.Date }).IsUnique();
+            });
 
+            modelBuilder.Entity<FundMovementLog>(entity =>
+            {
+                entity.ToTable("FundMovementLogs");
+                entity.HasIndex(e => e.ContractId);
+            });
 
+            modelBuilder.Entity<KycSubmission>(entity =>
+            {
+                entity.ToTable("KycSubmissions");
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Status);
+            });
         }
 
 

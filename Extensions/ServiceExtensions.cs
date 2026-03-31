@@ -44,6 +44,11 @@ namespace EgyptOnline.Extensions
 
             services.AddScoped<IOTPService, OtpService>();
 
+            // ─── Contract / Wallet / KYC Module ─────────────────────
+            services.AddScoped<EgyptOnline.Application.Services.Contract.ContractService>();
+            services.AddScoped<EgyptOnline.Application.Services.Wallet.WalletService>();
+            services.AddScoped<EgyptOnline.Application.Services.Kyc.KycService>();
+
             services.AddHttpClient();
 
             return services;
