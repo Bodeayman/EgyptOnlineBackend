@@ -19,20 +19,20 @@ namespace EgyptOnline.Controllers
             _contractService = contractService;
         }
 
-        private string? GetUserId() => User.FindFirst("uid")?.Value;
+        private string? GetUsername() => User.Identity?.Name;
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateContractDto dto)
         {
             try
             {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
 
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
-                var contract = await _contractService.CreateContractAsync(dto, userId);
+                var contract = await _contractService.CreateContractAsync(dto, username);
                 return Ok(new { message = "تم انشاء العقد", data = contract });
             }
             catch (InvalidOperationException ex)
@@ -60,15 +60,36 @@ namespace EgyptOnline.Controllers
             }
         }
 
+        /// <summary>
+        /// GET /api/v1/contract/my
+        /// Returns all contracts where the logged-in user is contractor, engineer, or worker.
+        /// </summary>
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyContracts()
+        {
+            try
+            {
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+                var contracts = await _contractService.GetMyContractsAsync(username);
+                return Ok(new { data = contracts, count = contracts.Count });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
         [HttpPut("{id}/sign")]
         public async Task<IActionResult> Sign(int id, [FromBody] ContractSignDto dto)
         {
             try
             {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
 
-                var contract = await _contractService.SignContractAsync(id, userId, dto.Accepted);
+                var contract = await _contractService.SignContractAsync(id, username, dto.Accepted);
                 return Ok(new { message = "تم التوقيع", data = contract });
             }
             catch (KeyNotFoundException ex)
@@ -90,10 +111,10 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
 
-                var contract = await _contractService.CancelContractAsync(id, userId);
+                var contract = await _contractService.CancelContractAsync(id, username);
                 return Ok(new { message = "تم الغاء العقد", data = contract });
             }
             catch (KeyNotFoundException ex)
@@ -119,13 +140,13 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
 
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
-                var contract = await _contractService.MarkAttendanceAsync(id, userId, dto.Status);
+                var contract = await _contractService.MarkAttendanceAsync(id, username, dto.Status);
                 var statusMsg = dto.Status == "attended" ? "تم تاكيد الحضور" : "تم تسجيل الغياب";
                 return Ok(new { message = statusMsg, data = contract });
             }
@@ -152,10 +173,10 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
 
-                var contract = await _contractService.DisburseInstallmentAsync(id, userId, dto.InstallmentIndex);
+                var contract = await _contractService.DisburseInstallmentAsync(id, username, dto.InstallmentIndex);
                 return Ok(new { message = "تم صرف القسط", data = contract });
             }
             catch (KeyNotFoundException ex)
@@ -199,10 +220,10 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
 
-                var contract = await _contractService.ConfirmArrivalAsync(id, userId);
+                var contract = await _contractService.ConfirmArrivalAsync(id, username);
                 return Ok(new { message = "تم تأكيد حضور العامل", data = contract });
             }
             catch (KeyNotFoundException ex)
@@ -228,10 +249,10 @@ namespace EgyptOnline.Controllers
         {
             try
             {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
 
-                var contract = await _contractService.ApplyPenaltyAsync(id, userId);
+                var contract = await _contractService.ApplyPenaltyAsync(id, username);
                 return Ok(new { message = "تم تطبيق الشرط الجزائي", data = contract });
             }
             catch (KeyNotFoundException ex)

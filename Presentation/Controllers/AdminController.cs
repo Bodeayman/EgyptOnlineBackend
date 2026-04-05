@@ -168,24 +168,23 @@ namespace EgyptOnline.Controllers
                     return BadRequest(new { message = "The subscription points should be more than or equal 0" });
                 }
 
-                var phoneRegex = new Regex(@"^\+(2010|2011|2012|2015)\d{8}$");
-
-                if (!phoneRegex.IsMatch(dto.PhoneNumber))
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Validation failed",
-                        errorCode = "InvalidInput",
-                        errors = new
-                        {
-                            PhoneNumber = "Phone number must start with 010, 011, 012, or 015 and be 11 digits long"
-                        }
-                    });
-                }
-
                 if (dto.PhoneNumber != null)
                 {
+                    var phoneRegex = new Regex(@"^\+(2010|2011|2012|2015)\d{8}$");
+                    if (!phoneRegex.IsMatch(dto.PhoneNumber))
+                    {
+                        return BadRequest(new
+                        {
+                            success = false,
+                            message = "Validation failed",
+                            errorCode = "InvalidInput",
+                            errors = new
+                            {
+                                PhoneNumber = "Phone number must start with 010, 011, 012, or 015 and be 11 digits long"
+                            }
+                        });
+                    }
+
                     if (await _context.Users.AnyAsync(u => u.PhoneNumber == dto.PhoneNumber && u.Id != user.Id))
                     {
                         return BadRequest(new
@@ -219,17 +218,33 @@ namespace EgyptOnline.Controllers
                 {
                     if (dto.IsAvailable.HasValue)
                         user.ServiceProvider.IsAvailable = dto.IsAvailable.Value;
-
-
                 }
 
-                if (user.Subscription != null)
+                if (dto.SubscriptionStartDate.HasValue || dto.SubscriptionEndDate.HasValue)
                 {
-                    if (dto.SubscriptionStartDate.HasValue)
-                        user.Subscription.StartDate = dto.SubscriptionStartDate.Value;
+                    if (user.Subscription == null)
+                    {
+                        // Explicitly create and add to context if it's a first-time subscription
+                        var newSub = new Subscription
+                        {
+                            UserId = user.Id,
+                            StartDate = dto.SubscriptionStartDate ?? DateTime.UtcNow,
+                            EndDate = dto.SubscriptionEndDate ?? DateTime.UtcNow.AddMonths(1),
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        user.Subscription = newSub; // Link it directly to the user object
+                        _context.Subscriptions.Add(newSub);
+                    }
+                    else
+                    {
+                        if (dto.SubscriptionStartDate.HasValue)
+                            user.Subscription.StartDate = dto.SubscriptionStartDate.Value;
 
-                    if (dto.SubscriptionEndDate.HasValue)
-                        user.Subscription.EndDate = dto.SubscriptionEndDate.Value;
+                        if (dto.SubscriptionEndDate.HasValue)
+                            user.Subscription.EndDate = dto.SubscriptionEndDate.Value;
+                        
+                        user.Subscription.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
 
                 await _context.SaveChangesAsync();

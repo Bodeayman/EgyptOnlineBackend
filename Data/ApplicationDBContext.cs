@@ -63,16 +63,15 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<Sculptor>().ToTable("Sculptors");
 
             // ─── Contract Module Configurations ─────────────────────
+            // Parties are stored as usernames (not PKs), so no FK relationships —
+            // just indexes for fast query filtering.
             modelBuilder.Entity<Contract>(entity =>
             {
                 entity.ToTable("Contracts");
-                entity.HasIndex(e => e.ContractorId);
-                entity.HasIndex(e => e.EngineerId);
-                entity.HasIndex(e => e.WorkerId);
+                entity.HasIndex(e => e.ContractorUsername);
+                entity.HasIndex(e => e.EngineerUsername);
+                entity.HasIndex(e => e.WorkerUsername);
                 entity.HasIndex(e => e.Status);
-                entity.HasOne(c => c.Contractor).WithMany().HasForeignKey(c => c.ContractorId).OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne(c => c.Engineer).WithMany().HasForeignKey(c => c.EngineerId).OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne(c => c.Worker).WithMany().HasForeignKey(c => c.WorkerId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<UserWallet>(entity =>

@@ -19,7 +19,7 @@ namespace EgyptOnline.Application.Services.Contract
             _notificationService = notificationService;
         }
 
-        public async Task<Models.Contract> CreateContractAsync(CreateContractDto dto, string creatorUserId)
+        public async Task<Models.Contract> CreateContractAsync(CreateContractDto dto, string creatorUsername)
         {
             // Validate penalty distribution sums to 100%
             if (Math.Abs(dto.PenaltySplitContractorPercent + dto.PenaltySplitEngineerPercent - 100) > 0.01)
@@ -30,9 +30,9 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException("اول يوم عمل لا يمكن ان يكون في الماضي");
 
             // Validate all 3 users exist
-            var contractorExists = await _context.Users.AnyAsync(u => u.Id == dto.ContractorId);
-            var engineerExists = await _context.Users.AnyAsync(u => u.Id == dto.EngineerId);
-            var workerExists = await _context.Users.AnyAsync(u => u.Id == dto.WorkerId);
+            var contractorExists = await _context.Users.AnyAsync(u => u.UserName == dto.ContractorUsername);
+            var engineerExists = await _context.Users.AnyAsync(u => u.UserName == dto.EngineerUsername);
+            var workerExists = await _context.Users.AnyAsync(u => u.UserName == dto.WorkerUsername);
 
             if (!contractorExists) throw new InvalidOperationException("المقاول غير موجود");
             if (!engineerExists) throw new InvalidOperationException("المهندس غير موجود");
@@ -60,9 +60,9 @@ namespace EgyptOnline.Application.Services.Contract
 
             var contract = new Models.Contract
             {
-                ContractorId = dto.ContractorId,
-                EngineerId = dto.EngineerId,
-                WorkerId = dto.WorkerId,
+                ContractorUsername = dto.ContractorUsername,
+                EngineerUsername = dto.EngineerUsername,
+                WorkerUsername = dto.WorkerUsername,
                 TermsAndConditions = dto.TermsAndConditions,
                 AgreedTotalAmount = dto.AgreedTotalAmount,
                 SplitEnabled = dto.SplitEnabled,
@@ -78,9 +78,9 @@ namespace EgyptOnline.Application.Services.Contract
                 Status = "pending_signatures",
                 ApprovalsJson = JsonSerializer.Serialize(new Dictionary<string, bool>
                 {
-                    [dto.ContractorId] = false,
-                    [dto.EngineerId] = false,
-                    [dto.WorkerId] = false
+                    [dto.ContractorUsername] = false,
+                    [dto.EngineerUsername] = false,
+                    [dto.WorkerUsername] = false
                 }),
                 HistoryJson = JsonSerializer.Serialize(new[]
                 {
@@ -92,9 +92,9 @@ namespace EgyptOnline.Application.Services.Contract
             await _context.SaveChangesAsync();
 
             // Notify all parties using Firebase
-            await SafeNotify(dto.ContractorId, "عقد جديد", $"تم انشاء عقد جديد #{contract.Id}");
-            await SafeNotify(dto.EngineerId, "عقد جديد", $"العقد #{contract.Id} بانتظار توقيعك");
-            await SafeNotify(dto.WorkerId, "عقد جديد", $"العقد #{contract.Id} بانتظار توقيعك");
+            await SafeNotify(dto.ContractorUsername, "عقد جديد", $"تم انشاء عقد جديد #{contract.Id}");
+            await SafeNotify(dto.EngineerUsername, "عقد جديد", $"العقد #{contract.Id} بانتظار توقيعك");
+            await SafeNotify(dto.WorkerUsername, "عقد جديد", $"العقد #{contract.Id} بانتظار توقيعك");
 
             return contract;
         }
@@ -104,7 +104,22 @@ namespace EgyptOnline.Application.Services.Contract
             return await _context.Contracts.FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        public async Task<Models.Contract> SignContractAsync(int contractId, string userId, bool accepted)
+        /// <summary>
+        /// Returns all contracts where the given username is any party (contractor, engineer, or worker).
+        /// No join needed — username is stored directly on the contract.
+        /// </summary>
+        public async Task<List<Models.Contract>> GetMyContractsAsync(string username)
+        {
+            return await _context.Contracts
+                .Where(c =>
+                    c.ContractorUsername == username ||
+                    c.EngineerUsername   == username ||
+                    c.WorkerUsername     == username)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<Models.Contract> SignContractAsync(int contractId, string username, bool accepted)
         {
             var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == contractId)
                 ?? throw new KeyNotFoundException("العقد غير موجود");
@@ -112,19 +127,20 @@ namespace EgyptOnline.Application.Services.Contract
             var approvals = JsonSerializer.Deserialize<Dictionary<string, bool>>(contract.ApprovalsJson) ?? new();
 
             // Verify user is a party to this contract
-            if (!approvals.ContainsKey(userId))
+            if (!approvals.ContainsKey(username))
                 throw new UnauthorizedAccessException("ليس لديك صلاحية التوقيع على هذا العقد");
 
-            approvals[userId] = accepted;
+            approvals[username] = accepted;
             contract.ApprovalsJson = JsonSerializer.Serialize(approvals);
 
             // If all three signed, lock escrow and activate
-            if (approvals.TryGetValue(contract.ContractorId, out var c) && c &&
-                approvals.TryGetValue(contract.EngineerId, out var e) && e &&
-                approvals.TryGetValue(contract.WorkerId, out var w) && w)
+            if (approvals.TryGetValue(contract.ContractorUsername, out var c) && c &&
+                approvals.TryGetValue(contract.EngineerUsername, out var e) && e &&
+                approvals.TryGetValue(contract.WorkerUsername, out var w) && w)
             {
                 // Check contractor wallet balance for escrow
-                var contractorWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contract.ContractorId);
+                var contractorId = await GetUserIdByUsername(contract.ContractorUsername);
+                var contractorWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contractorId);
                 if (contractorWallet != null && contractorWallet.Balance >= contract.AgreedTotalAmount)
                 {
                     contractorWallet.Balance -= contract.AgreedTotalAmount;
@@ -134,7 +150,7 @@ namespace EgyptOnline.Application.Services.Contract
 
                     _context.WalletTransactions.Add(new WalletTransaction
                     {
-                        UserId = contract.ContractorId,
+                        UserId = contractorId,
                         Type = "escrow_lock",
                         Amount = contract.AgreedTotalAmount,
                         Description = $"حجز مبلغ العقد #{contract.Id}",
@@ -144,12 +160,12 @@ namespace EgyptOnline.Application.Services.Contract
             }
 
             await _context.SaveChangesAsync();
-            await SafeNotify(userId, "توقيع العقد", $"تم توقيعك على العقد #{contract.Id}");
+            await SafeNotify(username, "توقيع العقد", $"تم توقيعك على العقد #{contract.Id}");
 
             return contract;
         }
 
-        public async Task<Models.Contract> CancelContractAsync(int contractId, string actorUserId)
+        public async Task<Models.Contract> CancelContractAsync(int contractId, string actorUsername)
         {
             var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == contractId)
                 ?? throw new KeyNotFoundException("العقد غير موجود");
@@ -160,7 +176,7 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException("لا يمكن الغاء عقد غير نشط");
 
             // Verify actor is a party to this contract
-            if (actorUserId != contract.ContractorId && actorUserId != contract.EngineerId && actorUserId != contract.WorkerId)
+            if (actorUsername != contract.ContractorUsername && actorUsername != contract.EngineerUsername && actorUsername != contract.WorkerUsername)
                 throw new UnauthorizedAccessException("ليس لديك صلاحية الغاء هذا العقد");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -173,13 +189,13 @@ namespace EgyptOnline.Application.Services.Contract
                     InstallmentIndex = -1,
                     Action = "freeze",
                     Amount = contract.EscrowAmount,
-                    TriggeredBy = actorUserId,
+                    TriggeredBy = actorUsername,
                     Reason = "الغاء العقد"
                 });
 
                 contract.Status = "cancelled";
                 contract.CancelledAt = DateTime.UtcNow;
-                contract.CancelledBy = actorUserId;
+                contract.CancelledBy = actorUsername;
 
                 // Update history
                 var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
@@ -195,14 +211,14 @@ namespace EgyptOnline.Application.Services.Contract
                 throw;
             }
 
-            await SafeNotify(contract.ContractorId, "الغاء العقد", $"تم الغاء العقد #{contract.Id}");
-            await SafeNotify(contract.EngineerId, "الغاء العقد", $"تم الغاء العقد #{contract.Id}");
-            await SafeNotify(contract.WorkerId, "الغاء العقد", $"تم الغاء العقد #{contract.Id}");
+            await SafeNotify(contract.ContractorUsername, "الغاء العقد", $"تم الغاء العقد #{contract.Id}");
+            await SafeNotify(contract.EngineerUsername, "الغاء العقد", $"تم الغاء العقد #{contract.Id}");
+            await SafeNotify(contract.WorkerUsername, "الغاء العقد", $"تم الغاء العقد #{contract.Id}");
 
             return contract;
         }
 
-        public async Task<Models.Contract> MarkAttendanceAsync(int contractId, string actorUserId, string status)
+        public async Task<Models.Contract> MarkAttendanceAsync(int contractId, string actorUsername, string status)
         {
             var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == contractId)
                 ?? throw new KeyNotFoundException("العقد غير موجود");
@@ -211,7 +227,7 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException("العقد غير نشط");
 
             // Only contractor or engineer can mark attendance
-            if (actorUserId != contract.ContractorId && actorUserId != contract.EngineerId)
+            if (actorUsername != contract.ContractorUsername && actorUsername != contract.EngineerUsername)
                 throw new UnauthorizedAccessException("فقط المقاول أو المهندس يمكنه تسجيل الحضور");
 
             var today = DateTime.UtcNow.Date;
@@ -228,7 +244,7 @@ namespace EgyptOnline.Application.Services.Contract
                     ContractId = contractId,
                     Date = today,
                     Status = status,
-                    MarkedBy = actorUserId
+                    MarkedBy = actorUsername
                 });
 
                 var installments = JsonSerializer.Deserialize<List<JsonElement>>(contract.InstallmentsJson) ?? new();
@@ -255,7 +271,8 @@ namespace EgyptOnline.Application.Services.Contract
                             var amount = (decimal)dict["amount"];
 
                             // Release funds to worker wallet
-                            var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contract.WorkerId);
+                            var workerId = await GetUserIdByUsername(contract.WorkerUsername);
+                            var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == workerId);
                             if (workerWallet != null)
                             {
                                 workerWallet.Balance += amount;
@@ -264,7 +281,7 @@ namespace EgyptOnline.Application.Services.Contract
 
                                 _context.WalletTransactions.Add(new WalletTransaction
                                 {
-                                    UserId = contract.WorkerId,
+                                    UserId = workerId,
                                     Type = "installment_release",
                                     Amount = amount,
                                     Description = $"صرف قسط - العقد #{contract.Id}",
@@ -277,7 +294,7 @@ namespace EgyptOnline.Application.Services.Contract
                                     InstallmentIndex = i,
                                     Action = "release",
                                     Amount = amount,
-                                    TriggeredBy = actorUserId,
+                                    TriggeredBy = actorUsername,
                                     Reason = "حضور العامل"
                                 });
                             }
@@ -287,7 +304,7 @@ namespace EgyptOnline.Application.Services.Contract
                     }
                     contract.InstallmentsJson = JsonSerializer.Serialize(updatedInstallments);
 
-                    await SafeNotify(contract.WorkerId, "حضور", $"تم تاكيد حضورك - العقد #{contract.Id}");
+                    await SafeNotify(contract.WorkerUsername, "حضور", $"تم تاكيد حضورك - العقد #{contract.Id}");
                 }
                 else if (status == "absent")
                 {
@@ -316,7 +333,7 @@ namespace EgyptOnline.Application.Services.Contract
                                 InstallmentIndex = i,
                                 Action = "hold",
                                 Amount = amount,
-                                TriggeredBy = actorUserId,
+                                TriggeredBy = actorUsername,
                                 Reason = "غياب العامل"
                             });
                             held = true;
@@ -325,7 +342,7 @@ namespace EgyptOnline.Application.Services.Contract
                     }
                     contract.InstallmentsJson = JsonSerializer.Serialize(updatedInstallments);
 
-                    await SafeNotify(contract.WorkerId, "غياب", $"تم تسجيل غيابك - العقد #{contract.Id}");
+                    await SafeNotify(contract.WorkerUsername, "غياب", $"تم تسجيل غيابك - العقد #{contract.Id}");
                 }
 
                 // Update history
@@ -346,7 +363,7 @@ namespace EgyptOnline.Application.Services.Contract
             }
         }
 
-        public async Task<Models.Contract> DisburseInstallmentAsync(int contractId, string actorUserId, int installmentIndex)
+        public async Task<Models.Contract> DisburseInstallmentAsync(int contractId, string actorUsername, int installmentIndex)
         {
             var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == contractId)
                 ?? throw new KeyNotFoundException("العقد غير موجود");
@@ -355,7 +372,7 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException("العقد غير نشط");
 
             // Only contractor or engineer can disburse
-            if (actorUserId != contract.ContractorId && actorUserId != contract.EngineerId)
+            if (actorUsername != contract.ContractorUsername && actorUsername != contract.EngineerUsername)
                 throw new UnauthorizedAccessException("فقط المقاول أو المهندس يمكنه صرف الأقساط");
 
             var installments = JsonSerializer.Deserialize<List<JsonElement>>(contract.InstallmentsJson) ?? new();
@@ -375,7 +392,8 @@ namespace EgyptOnline.Application.Services.Contract
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contract.WorkerId)
+                var workerId = await GetUserIdByUsername(contract.WorkerUsername);
+                var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == workerId)
                     ?? throw new InvalidOperationException("محفظة العامل غير موجوده");
 
                 workerWallet.Balance += amount;
@@ -384,7 +402,7 @@ namespace EgyptOnline.Application.Services.Contract
 
                 _context.WalletTransactions.Add(new WalletTransaction
                 {
-                    UserId = contract.WorkerId,
+                    UserId = workerId,
                     Type = "manual_disbursement",
                     Amount = amount,
                     Description = $"صرف يدوي - العقد #{contract.Id} - القسط {installmentIndex + 1}",
@@ -397,7 +415,7 @@ namespace EgyptOnline.Application.Services.Contract
                     InstallmentIndex = installmentIndex,
                     Action = "release",
                     Amount = amount,
-                    TriggeredBy = actorUserId,
+                    TriggeredBy = actorUsername,
                     Reason = "صرف يدوي"
                 });
 
@@ -432,7 +450,7 @@ namespace EgyptOnline.Application.Services.Contract
                 throw;
             }
 
-            await SafeNotify(contract.WorkerId, "صرف قسط", $"تم صرف القسط {installmentIndex + 1} لك - العقد #{contract.Id}");
+            await SafeNotify(contract.WorkerUsername, "صرف قسط", $"تم صرف القسط {installmentIndex + 1} لك - العقد #{contract.Id}");
 
             return contract;
         }
@@ -445,7 +463,7 @@ namespace EgyptOnline.Application.Services.Contract
             return JsonSerializer.Deserialize<List<JsonElement>>(contract.InstallmentsJson) ?? new List<JsonElement>();
         }
 
-        public async Task<Models.Contract> ConfirmArrivalAsync(int contractId, string actorUserId)
+        public async Task<Models.Contract> ConfirmArrivalAsync(int contractId, string actorUsername)
         {
             var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == contractId)
                 ?? throw new KeyNotFoundException("العقد غير موجود");
@@ -454,13 +472,15 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException("العقد غير نشط");
             if (contract.ArrivalConfirmed)
                 throw new InvalidOperationException("تم تأكيد الحضور بالفعل");
-            if (actorUserId != contract.ContractorId && actorUserId != contract.EngineerId)
+            if (actorUsername != contract.ContractorUsername && actorUsername != contract.EngineerUsername)
                 throw new UnauthorizedAccessException("فقط المقاول أو المهندس يمكنه تأكيد الحضور");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contract.WorkerId);
+                var workerId = await GetUserIdByUsername(contract.WorkerUsername);
+                var contractorId = await GetUserIdByUsername(contract.ContractorUsername);
+                var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == workerId);
                 if (workerWallet == null)
                     throw new InvalidOperationException("محفظة العامل غير موجوده");
 
@@ -473,12 +493,12 @@ namespace EgyptOnline.Application.Services.Contract
 
                 _context.WalletTransactions.Add(new WalletTransaction
                 {
-                    UserId = contract.WorkerId,
+                    UserId = workerId,
                     Type = "transfer_in",
                     Amount = amount,
                     Description = $"دفعة العقد #{contract.Id}",
-                    FromUserId = contract.ContractorId,
-                    ToUserId = contract.WorkerId,
+                    FromUserId = contractorId,
+                    ToUserId = workerId,
                     ContractId = contract.Id
                 });
 
@@ -491,14 +511,14 @@ namespace EgyptOnline.Application.Services.Contract
                 throw;
             }
 
-            await SafeNotify(contract.ContractorId, "تأكيد حضور", $"تم تأكيد حضور العامل - العقد #{contract.Id}");
-            await SafeNotify(contract.EngineerId, "تأكيد حضور", $"تم تأكيد حضور العامل - العقد #{contract.Id}");
-            await SafeNotify(contract.WorkerId, "تحويل مبلغ", $"تم تحويل مبلغ العقد #{contract.Id}");
+            await SafeNotify(contract.ContractorUsername, "تأكيد حضور", $"تم تأكيد حضور العامل - العقد #{contract.Id}");
+            await SafeNotify(contract.EngineerUsername, "تأكيد حضور", $"تم تأكيد حضور العامل - العقد #{contract.Id}");
+            await SafeNotify(contract.WorkerUsername, "تحويل مبلغ", $"تم تحويل مبلغ العقد #{contract.Id}");
 
             return contract;
         }
 
-        public async Task<Models.Contract> ApplyPenaltyAsync(int contractId, string actorUserId)
+        public async Task<Models.Contract> ApplyPenaltyAsync(int contractId, string actorUsername)
         {
             var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == contractId)
                 ?? throw new KeyNotFoundException("العقد غير موجود");
@@ -507,14 +527,16 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException("العقد غير نشط");
 
             // Only contractor or engineer can apply penalty
-            if (actorUserId != contract.ContractorId && actorUserId != contract.EngineerId)
+            if (actorUsername != contract.ContractorUsername && actorUsername != contract.EngineerUsername)
                 throw new UnauthorizedAccessException("فقط المقاول أو المهندس يمكنه تطبيق الشرط الجزائي");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var contractorWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contract.ContractorId);
-                var engineerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contract.EngineerId);
+                var contractorId = await GetUserIdByUsername(contract.ContractorUsername);
+                var engineerId = await GetUserIdByUsername(contract.EngineerUsername);
+                var contractorWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contractorId);
+                var engineerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == engineerId);
 
                 if (contractorWallet == null || engineerWallet == null)
                     throw new InvalidOperationException("محافظ اطراف العقد غير موجوده");
@@ -535,7 +557,7 @@ namespace EgyptOnline.Application.Services.Contract
                 _context.WalletTransactions.AddRange(
                     new WalletTransaction
                     {
-                        UserId = contract.ContractorId,
+                        UserId = contractorId,
                         Type = "penalty_distribution",
                         Amount = contractorShare,
                         Description = $"توزيع الشرط الجزائي من العقد #{contract.Id}",
@@ -543,7 +565,7 @@ namespace EgyptOnline.Application.Services.Contract
                     },
                     new WalletTransaction
                     {
-                        UserId = contract.EngineerId,
+                        UserId = engineerId,
                         Type = "penalty_distribution",
                         Amount = engineerShare,
                         Description = $"توزيع الشرط الجزائي من العقد #{contract.Id}",
@@ -557,7 +579,7 @@ namespace EgyptOnline.Application.Services.Contract
                     InstallmentIndex = -1,
                     Action = "release",
                     Amount = penalty,
-                    TriggeredBy = actorUserId,
+                    TriggeredBy = actorUsername,
                     Reason = "تطبيق الشرط الجزائي"
                 });
 
@@ -570,26 +592,34 @@ namespace EgyptOnline.Application.Services.Contract
                 throw;
             }
 
-            await SafeNotify(contract.ContractorId, "شرط جزائي", $"تم تطبيق الشرط الجزائي على العقد #{contract.Id}");
-            await SafeNotify(contract.EngineerId, "شرط جزائي", $"تم تطبيق الشرط الجزائي على العقد #{contract.Id}");
-            await SafeNotify(contract.WorkerId, "شرط جزائي", $"تم تطبيق الشرط الجزائي على العقد #{contract.Id}");
+            await SafeNotify(contract.ContractorUsername, "شرط جزائي", $"تم تطبيق الشرط الجزائي على العقد #{contract.Id}");
+            await SafeNotify(contract.EngineerUsername, "شرط جزائي", $"تم تطبيق الشرط الجزائي على العقد #{contract.Id}");
+            await SafeNotify(contract.WorkerUsername, "شرط جزائي", $"تم تطبيق الشرط الجزائي على العقد #{contract.Id}");
 
             return contract;
         }
 
         /// <summary>
-        /// Fire-and-forget notification with error swallowing
+        /// Fire-and-forget notification with error swallowing. Accepts username, resolves to user ID internally.
         /// </summary>
-        private async Task SafeNotify(string userId, string title, string body)
+        private async Task SafeNotify(string username, string title, string body)
         {
             try
             {
+                var userId = (await _context.Users.FirstOrDefaultAsync(u => u.UserName == username))?.Id;
+                if (string.IsNullOrEmpty(userId)) return;
                 await _notificationService.SendNotificationToUser(userId, title, body);
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Failed to send notification to {UserId}: {Title}", userId, title);
+                Log.Warning(ex, "Failed to send notification to {Username}: {Title}", username, title);
             }
+        }
+
+        private async Task<string> GetUserIdByUsername(string username)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
+            return user?.Id ?? throw new InvalidOperationException($"User '{username}' not found");
         }
     }
 }

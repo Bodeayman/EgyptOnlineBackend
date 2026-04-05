@@ -9,22 +9,13 @@ namespace EgyptOnline.Models
         public int Id { get; set; }
 
         [Required]
-        public string ContractorId { get; set; } = string.Empty;
-
-        [ForeignKey(nameof(ContractorId))]
-        public User? Contractor { get; set; }
+        public string ContractorUsername { get; set; } = string.Empty;
 
         [Required]
-        public string EngineerId { get; set; } = string.Empty;
-
-        [ForeignKey(nameof(EngineerId))]
-        public User? Engineer { get; set; }
+        public string EngineerUsername { get; set; } = string.Empty;
 
         [Required]
-        public string WorkerId { get; set; } = string.Empty;
-
-        [ForeignKey(nameof(WorkerId))]
-        public User? Worker { get; set; }
+        public string WorkerUsername { get; set; } = string.Empty;
 
         public string TermsAndConditions { get; set; } = string.Empty;
 
@@ -59,7 +50,7 @@ namespace EgyptOnline.Models
         public string Status { get; set; } = "pending_signatures";
 
         /// <summary>
-        /// JSON object of approvals: {"userId": true/false}
+        /// JSON object of approvals: {"username": true/false}
         /// Stored as jsonb in PostgreSQL
         /// </summary>
         [Column(TypeName = "jsonb")]

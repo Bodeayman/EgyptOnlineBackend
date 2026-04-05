@@ -107,7 +107,9 @@ namespace EgyptOnline.Controllers
 
                 if (model.Pay < 100 &&
                  !model.ProviderType!.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase) &&
-                 !model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase)
+                 !model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase) &&
+                 !model.ProviderType.Equals("engineer", StringComparison.CurrentCultureIgnoreCase) &&
+                 !model.ProviderType.Equals("contractor", StringComparison.CurrentCultureIgnoreCase) 
                  )
                 {
                     return BadRequest(new

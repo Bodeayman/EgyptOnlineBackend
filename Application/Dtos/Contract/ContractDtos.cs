@@ -4,14 +4,14 @@ namespace EgyptOnline.Dtos.Contract
 {
     public class CreateContractDto
     {
-        [Required(ErrorMessage = "ContractorId is required")]
-        public string ContractorId { get; set; } = string.Empty;
+        [Required(ErrorMessage = "ContractorUsername is required")]
+        public string ContractorUsername { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "EngineerId is required")]
-        public string EngineerId { get; set; } = string.Empty;
+        [Required(ErrorMessage = "EngineerUsername is required")]
+        public string EngineerUsername { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "WorkerId is required")]
-        public string WorkerId { get; set; } = string.Empty;
+        [Required(ErrorMessage = "WorkerUsername is required")]
+        public string WorkerUsername { get; set; } = string.Empty;
 
         public string TermsAndConditions { get; set; } = string.Empty;
 
