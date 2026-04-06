@@ -14,7 +14,7 @@ appsettings.Production.json
 serviceAccountKey.json
 googlekey.json
 
-EgyptOnline.csproj
+
 EgyptOnline.http
 Migrations/
 fly.toml
