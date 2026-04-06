@@ -17,8 +17,8 @@ namespace EgyptOnline.Utilities
 
         public static async Task SeedAdmin(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
         {
-            string adminEmail = configuration["AdminSettings:Email"] ;
-            string adminPassword = configuration["AdminSettings:Password"] ;
+            string adminEmail = configuration["AdminUser:Email"] ;
+            string adminPassword = configuration["AdminUser:Password"] ;
 
             var admin = await userManager.FindByEmailAsync(adminEmail);
             if (admin == null)
