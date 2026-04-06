@@ -5,7 +5,6 @@ Properties/
 .idea/
 Logs/
 Utilities/AdminFunctions.cs
-Utilities/IdentityExtensions.cs
 wwwroot/images/profiles
 EgyptOnline.sln
 appsettings.json
