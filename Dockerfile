@@ -5,15 +5,14 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 WORKDIR /src
 
-# Copy csproj first for restore cache
-COPY EgyptOnline/*.csproj ./EgyptOnline/
-RUN dotnet restore ./EgyptOnline/EgyptOnline.csproj
+# Copy project file explicitly
+COPY EgyptOnline.csproj ./
+RUN dotnet restore EgyptOnline.csproj
 
-# Copy full source
-COPY . .
+# Copy everything else
+COPY . ./
 
 # Publish
-WORKDIR /src/EgyptOnline
 RUN dotnet publish EgyptOnline.csproj -c Release -o /app/publish --no-restore
 
 
@@ -26,7 +25,7 @@ WORKDIR /app
 
 RUN mkdir -p /app/uploads && chmod 755 /app/uploads
 
-COPY --from=build /app/publish .
+COPY --from=build /app/publish ./
 
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
