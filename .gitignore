@@ -4,26 +4,18 @@ Properties/
 .vscode/
 .idea/
 Logs/
-Utilities/AdminFunctions.cs
 wwwroot/images/profiles
 EgyptOnline.sln
-appsettings.json
 appsettings.Development.json
-appsettings.Production.json
 serviceAccountKey.json
 googlekey.json
-
 
 EgyptOnline.http
 Migrations/
 fly.toml
 docker-compose.yaml
-Dockerfile
 *.log
 *.txt
-*.conf
 *.md
 *.bat
 *.sh
-wwwroot/
-
