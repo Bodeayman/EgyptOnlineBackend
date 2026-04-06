@@ -228,6 +228,7 @@ namespace EgyptOnline.Controllers
                         var newSub = new Subscription
                         {
                             UserId = user.Id,
+                            User = user,
                             StartDate = dto.SubscriptionStartDate ?? DateTime.UtcNow,
                             EndDate = dto.SubscriptionEndDate ?? DateTime.UtcNow.AddMonths(1),
                             UpdatedAt = DateTime.UtcNow
