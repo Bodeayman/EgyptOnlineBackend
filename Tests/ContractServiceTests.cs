@@ -25,7 +25,7 @@ namespace EgyptOnline.Tests
     public class ContractServiceTests
     {
         private readonly ApplicationDbContext _context;
-        private readonly Mock<NotificationService> _notificationMock;
+        private readonly Mock<INotificationService> _notificationMock;
         private readonly ContractService _service;
 
         public ContractServiceTests()
@@ -35,7 +35,7 @@ namespace EgyptOnline.Tests
                 .Options;
 
             _context = new ApplicationDbContext(options);
-            _notificationMock = new Mock<NotificationService>();
+            _notificationMock = new Mock<INotificationService>();
             _service = new ContractService(_context, _notificationMock.Object);
         }
 

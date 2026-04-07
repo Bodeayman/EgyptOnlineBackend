@@ -11,9 +11,9 @@ namespace EgyptOnline.Application.Services.Contract
     public class ContractService
     {
         private readonly ApplicationDbContext _context;
-        private readonly NotificationService _notificationService;
+        private readonly INotificationService _notificationService;
 
-        public ContractService(ApplicationDbContext context, NotificationService notificationService)
+        public ContractService(ApplicationDbContext context, INotificationService notificationService)
         {
             _context = context;
             _notificationService = notificationService;

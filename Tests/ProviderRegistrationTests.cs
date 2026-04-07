@@ -446,9 +446,11 @@ namespace EgyptOnline.Tests
 
             var worker = new Worker { Id = 10, UserId = users[0].Id, User = users[0], Skill = "Skill1", WorkerType = WorkerTypes.PerDay, ProviderType = "worker", ServicePricePerDay = 500, IsAvailable = true };
             var assistant = new Assistant { Id = 11, UserId = users[1].Id, User = users[1], Skill = "Skill2", ProviderType = "assistant", ServicePricePerDay = 300, IsAvailable = true };
+            var engineer = new Engineer { Id = 12, UserId = users[2].Id, User = users[2], Specialization = "Architecture", ProviderType = "engineer", IsAvailable = true };
 
             _context.Workers.Add(worker);
             _context.Assistants.Add(assistant);
+            _context.Engineers.Add(engineer);
 
             // ACT
             await _context.SaveChangesAsync();

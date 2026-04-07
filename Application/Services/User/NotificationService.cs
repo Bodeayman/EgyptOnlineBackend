@@ -6,7 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EgyptOnline.Services
 {
-    public class NotificationService
+    public interface INotificationService
+    {
+        Task SendNotificationToUser(string userId, string title, string body, string senderId = null, string senderName = null);
+    }
+
+    public class NotificationService : INotificationService
     {
         private readonly ApplicationDbContext _context;
         private readonly NotificationMongoService _notificationMongoService;

@@ -36,7 +36,7 @@ namespace EgyptOnline.Extensions
             services.AddScoped<FawryPaymentStrategy>();
             services.AddScoped<UserRegisterationService>();
             services.AddScoped<UserSubscriptionServices>();
-            services.AddScoped<NotificationService>();
+            services.AddScoped<INotificationService, NotificationService>();
 
             services.AddScoped<UserPointService>();
             services.AddSingleton<IEmailService, EmailService>();

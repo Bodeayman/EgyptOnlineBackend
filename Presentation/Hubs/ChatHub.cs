@@ -14,10 +14,10 @@ namespace EgyptOnline.Presentation.Hubs
         private readonly ChatService _chatService;
         private readonly PresenceService _presenceService;
         private readonly ApplicationDbContext _context;
-        private readonly NotificationService _notificationService;
+        private readonly INotificationService _notificationService;
 
 
-        public ChatHub(ChatService chatService, PresenceService presenceService, ApplicationDbContext context, NotificationService notificationService)
+        public ChatHub(ChatService chatService, PresenceService presenceService, ApplicationDbContext context, INotificationService notificationService)
         {
             _chatService = chatService;
             _presenceService = presenceService;
