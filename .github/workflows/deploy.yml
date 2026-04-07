@@ -23,6 +23,11 @@ jobs:
       - name: Build
         run: dotnet build EgyptOnline.sln --no-restore --configuration Release
 
+      - name: Run Tests
+        run: |
+          chmod +x scripts/run_tests.sh
+          ./scripts/run_tests.sh
+
       - name: Docker Login
         uses: docker/login-action@v3
         with:
