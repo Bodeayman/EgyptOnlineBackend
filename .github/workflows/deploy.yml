@@ -18,10 +18,10 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore EgyptOnline.sln
+        run: dotnet restore EgyptOnline.csproj
 
       - name: Build
-        run: dotnet build EgyptOnline.sln --no-restore --configuration Release
+        run: dotnet build EgyptOnline.csproj --no-restore --configuration Release
 
       - name: Run Tests
         run: |
