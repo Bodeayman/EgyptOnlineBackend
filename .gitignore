@@ -18,3 +18,4 @@ docker-compose.yaml
 *.md
 *.bat
 *.sh
+!run_tests.sh
