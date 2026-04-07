@@ -5,7 +5,6 @@ Properties/
 .idea/
 Logs/
 wwwroot/images/profiles
-EgyptOnline.sln
 appsettings.Development.json
 serviceAccountKey.json
 googlekey.json
