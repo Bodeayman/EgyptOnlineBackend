@@ -14,7 +14,7 @@ namespace EgyptOnline.Services
             _context = context;
             _userPointService = userPointService;
         }
-        public Subscription? AddSubscriptionForANewUser(User user)
+        public virtual Subscription? AddSubscriptionForANewUser(User user)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace EgyptOnline.Services
                 return null;
             }
         }
-        public async Task<Subscription?> RenewSubscription(User user)
+        public virtual async Task<Subscription?> RenewSubscription(User user)
         {
             try
             {
