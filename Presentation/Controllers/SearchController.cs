@@ -383,7 +383,6 @@ namespace EgyptOnline.Controllers
 
                 // Apply filters
                 workers = ApplyWorkerFilters(workers, filter);
-                workers = workers.Where(w => w.IsAvailable);
 
                 // BasedOnPoints: Return top performers only (no pagination)
                 if (filter != null && filter.BasedOnPoints == true)
@@ -433,7 +432,6 @@ namespace EgyptOnline.Controllers
 
                 // Apply filters
                 companies = ApplyCompanyFilters(companies, filter);
-                companies = companies.Where(c => c.IsAvailable);
 
                 // BasedOnPoints: Return top performers only (no pagination)
                 if (filter != null && filter.BasedOnPoints == true)
@@ -481,7 +479,6 @@ namespace EgyptOnline.Controllers
 
                 // Apply filters
                 contractors = ApplyContractorFilters(contractors, filter);
-                contractors = contractors.Where(c => c.IsAvailable);
 
                 // BasedOnPoints: Return top performers only (no pagination)
                 if (filter != null && filter.BasedOnPoints == true)
@@ -529,7 +526,6 @@ namespace EgyptOnline.Controllers
 
                 // Apply filters
                 marketplaces = ApplyMarketPlaceFilters(marketplaces, filter);
-                marketplaces = marketplaces.Where(m => m.IsAvailable);
 
                 // BasedOnPoints: Return top performers only (no pagination)
                 if (filter != null && filter.BasedOnPoints == true)
@@ -577,7 +573,6 @@ namespace EgyptOnline.Controllers
 
                 // Apply filters
                 engineers = ApplyEngineerFilters(engineers, filter);
-                engineers = engineers.Where(e => e.IsAvailable);
 
                 // BasedOnPoints: Return top performers only (no pagination)
                 if (filter != null && filter.BasedOnPoints == true)
@@ -625,7 +620,6 @@ namespace EgyptOnline.Controllers
 
                 // Apply filters
                 assistants = ApplyAssistantFilters(assistants, filter);
-                assistants = assistants.Where(a => a.IsAvailable);
 
                 // BasedOnPoints: Return top performers only (no pagination)
                 if (filter != null && filter.BasedOnPoints == true)
@@ -673,7 +667,6 @@ namespace EgyptOnline.Controllers
 
                 // Apply filters
                 sculptors = ApplySculptorsFilters(sculptors, filter);
-                sculptors = sculptors.Where(s => s.IsAvailable);
 
                 // BasedOnPoints: Return top performers only (no pagination)
                 if (filter != null && filter.BasedOnPoints == true)
