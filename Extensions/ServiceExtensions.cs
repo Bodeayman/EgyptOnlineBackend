@@ -28,7 +28,7 @@ namespace EgyptOnline.Extensions
         {
             services.AddScoped<UserImageService>();
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<ICDNService, LocalStorageService>();
+            services.AddScoped<ICDNService, MinioStorageService>();
             services.AddScoped<IPaymentStrategy, MobileWalletPaymentStrategy>();
             services.AddScoped<IPaymentStrategy, CreditCardPaymentStrategy>();
             services.AddScoped<IPaymentService, PaymobService>();
@@ -50,6 +50,7 @@ namespace EgyptOnline.Extensions
             services.AddScoped<EgyptOnline.Application.Services.Wallet.WalletService>();
             services.AddScoped<EgyptOnline.Application.Services.Kyc.KycService>();
             services.AddScoped<EgyptOnline.Application.Services.Complaint.ComplaintService>();
+            services.AddScoped<EgyptOnline.Application.Services.JobRequest.JobRequestService>();
 
             services.AddHttpClient();
 

@@ -45,6 +45,8 @@ namespace EgyptOnline.Data
         public DbSet<Complaint> Complaints { get; set; }
         public DbSet<DepositRequest> DepositRequests { get; set; }
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
+        public DbSet<JobRequest> JobRequests { get; set; }
+        public DbSet<JobRequestInterest> JobRequestInterests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -141,6 +143,22 @@ namespace EgyptOnline.Data
                 entity.ToTable("WithdrawRequests");
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.Status);
+            });
+
+            modelBuilder.Entity<JobRequest>(entity =>
+            {
+                entity.ToTable("JobRequests");
+                entity.HasIndex(e => e.ClientUserId);
+                entity.HasIndex(e => e.Governorate);
+                entity.HasOne(r => r.ClientUser).WithMany().HasForeignKey(r => r.ClientUserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<JobRequestInterest>(entity =>
+            {
+                entity.ToTable("JobRequestInterests");
+                entity.HasIndex(e => new { e.JobRequestId, e.ServiceProviderUserId }).IsUnique();
+                entity.HasOne(i => i.JobRequest).WithMany(r => r.Interests).HasForeignKey(i => i.JobRequestId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(i => i.ServiceProviderUser).WithMany().HasForeignKey(i => i.ServiceProviderUserId).OnDelete(DeleteBehavior.Cascade);
             });
         }
 

@@ -96,7 +96,7 @@ namespace EgyptOnline.Controllers
             }
 
             var uniqueFileName = $"{filePrefix}_{Guid.NewGuid()}{extension}";
-            return await _cdnService.UploadImageAsync(fileBytes, uniqueFileName, "kyc");
+            return await _cdnService.UploadPrivateImageAsync(fileBytes, uniqueFileName, "kyc");
         }
 
         [HttpGet("status")]
