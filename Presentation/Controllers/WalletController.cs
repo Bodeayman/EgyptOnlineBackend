@@ -1,5 +1,6 @@
 using EgyptOnline.Application.Services.Wallet;
 using EgyptOnline.Dtos.Wallet;
+using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +14,12 @@ namespace EgyptOnline.Controllers
     public class WalletController : ControllerBase
     {
         private readonly WalletService _walletService;
+        private readonly ICDNService _cdnService;
 
-        public WalletController(WalletService walletService)
+        public WalletController(WalletService walletService, ICDNService cdnService)
         {
             _walletService = walletService;
+            _cdnService = cdnService;
         }
 
         private string? GetUserId() => User.FindFirst("uid")?.Value;
@@ -38,8 +41,13 @@ namespace EgyptOnline.Controllers
             }
         }
 
+        /// <summary>
+        /// Submit a manual deposit request with a receipt image.
+        /// POST /api/v1/Wallet/deposit (multipart/form-data)
+        /// </summary>
         [HttpPost("deposit")]
-        public async Task<IActionResult> Deposit([FromBody] WalletDepositDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Deposit([FromForm] SubmitDepositRequestDto dto)
         {
             try
             {
@@ -49,8 +57,25 @@ namespace EgyptOnline.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
-                var wallet = await _walletService.DepositAsync(userId, dto.Amount);
-                return Ok(new { message = "تم الايداع بنجاح", data = new { balance = wallet.Balance } });
+                // Validate and upload receipt image
+                var receiptPath = await ValidateAndUploadReceiptAsync(dto.ReceiptImage, $"receipt_{userId}");
+                if (string.IsNullOrEmpty(receiptPath))
+                    return BadRequest(new { message = "فشل رفع صورة الإيصال" });
+
+                var request = await _walletService.SubmitDepositRequestAsync(userId, dto.Amount, dto.SourceWalletNumber, receiptPath);
+
+                return Ok(new
+                {
+                    message = "تم تقديم طلب الإيداع بنجاح وهو قيد المراجعة من الإدارة",
+                    data = new
+                    {
+                        request.Id,
+                        request.Amount,
+                        request.SourceWalletNumber,
+                        request.Status,
+                        request.CreatedAt
+                    }
+                });
             }
             catch (InvalidOperationException ex)
             {
@@ -62,8 +87,12 @@ namespace EgyptOnline.Controllers
             }
         }
 
+        /// <summary>
+        /// Submit a withdrawal request.
+        /// POST /api/v1/Wallet/withdraw
+        /// </summary>
         [HttpPost("withdraw")]
-        public async Task<IActionResult> Withdraw([FromBody] WalletWithdrawDto dto)
+        public async Task<IActionResult> Withdraw([FromBody] SubmitWithdrawRequestDto dto)
         {
             try
             {
@@ -73,8 +102,21 @@ namespace EgyptOnline.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
-                var wallet = await _walletService.WithdrawAsync(userId, dto.Amount);
-                return Ok(new { message = "تم السحب بنجاح", data = new { balance = wallet.Balance } });
+                var request = await _walletService.SubmitWithdrawRequestAsync(userId, dto.Amount, dto.DestinationWalletNumber, dto.WalletOwnerName);
+
+                return Ok(new
+                {
+                    message = "تم تقديم طلب السحب بنجاح وهو قيد المراجعة من الإدارة",
+                    data = new
+                    {
+                        request.Id,
+                        request.Amount,
+                        request.DestinationWalletNumber,
+                        request.WalletOwnerName,
+                        request.Status,
+                        request.CreatedAt
+                    }
+                });
             }
             catch (InvalidOperationException ex)
             {
@@ -84,6 +126,31 @@ namespace EgyptOnline.Controllers
             {
                 return StatusCode(500, new { message = "Internal server error", error = ex.Message });
             }
+        }
+
+        private async Task<string?> ValidateAndUploadReceiptAsync(IFormFile file, string filePrefix)
+        {
+            if (file == null || file.Length == 0)
+                throw new ArgumentException("ملف الإيصال فارغ أو غير موجود.");
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(extension))
+                throw new ArgumentException("نوع الملف غير صالح. يرجى رفع صورة إيصال بصيغة JPG, PNG أو WEBP.");
+
+            const int maxFileSize = 5 * 1024 * 1024; // 5MB
+            if (file.Length > maxFileSize)
+                throw new ArgumentException("حجم الملف كبير جداً. الحد الأقصى هو 5 ميجابايت.");
+
+            byte[] fileBytes;
+            using (var ms = new MemoryStream())
+            {
+                await file.CopyToAsync(ms);
+                fileBytes = ms.ToArray();
+            }
+
+            var uniqueFileName = $"{filePrefix}_{Guid.NewGuid()}{extension}";
+            return await _cdnService.UploadImageAsync(fileBytes, uniqueFileName, "receipts");
         }
 
         [HttpPost("transfer")]

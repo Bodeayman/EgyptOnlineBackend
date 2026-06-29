@@ -474,7 +474,7 @@ namespace EgyptOnline.Controllers
 
         [Authorize(Roles = Roles.User)]
         [HttpPost("upload-profile-image")]
-        [RequireSubscription]
+        // [RequireSubscription]
 
         public async Task<IActionResult> UploadProfileImage(IFormFile file)
         {

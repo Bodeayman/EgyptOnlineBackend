@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace EgyptOnline.Dtos.Kyc
 {
@@ -14,10 +15,22 @@ namespace EgyptOnline.Dtos.Kyc
         public string SelfieImagePath { get; set; } = string.Empty;
     }
 
+    public class SubmitKycUploadDto
+    {
+        [Required(ErrorMessage = "صورة وجه البطاقة مطلوبة")]
+        public IFormFile FrontImage { get; set; } = null!;
+
+        [Required(ErrorMessage = "صورة ظهر البطاقة مطلوبة")]
+        public IFormFile BackImage { get; set; } = null!;
+
+        [Required(ErrorMessage = "الصورة الشخصية (سيلفي) مطلوبة")]
+        public IFormFile SelfieImage { get; set; } = null!;
+    }
+
     public class ReviewKycDto
     {
         [Required]
-        [RegularExpression("^(approved|rejected)$", ErrorMessage = "Status must be 'approved' or 'rejected'")]
+        [RegularExpression("^(approved|rejected|edit_required)$", ErrorMessage = "Status must be 'approved', 'rejected', or 'edit_required'")]
         public string Status { get; set; } = string.Empty;
 
         public string? RejectionReason { get; set; }

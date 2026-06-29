@@ -31,6 +31,47 @@ namespace EgyptOnline.Services
                 throw;
             }
         }
+        /// <summary>
+        /// Allowed image MIME magic-byte signatures.
+        /// Each entry is (magic bytes, offset from start of file).
+        /// </summary>
+        private static readonly IReadOnlyList<(byte[] Magic, int Offset)> AllowedMagicBytes =
+            new List<(byte[], int)>
+            {
+                // JPEG: FF D8 FF
+                (new byte[] { 0xFF, 0xD8, 0xFF }, 0),
+                // PNG: 89 50 4E 47 0D 0A 1A 0A
+                (new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }, 0),
+                // GIF87a / GIF89a
+                (new byte[] { 0x47, 0x49, 0x46, 0x38, 0x37, 0x61 }, 0),
+                (new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }, 0),
+                // WEBP: RIFF????WEBP  (bytes 0-3 = RIFF, bytes 8-11 = WEBP)
+                (new byte[] { 0x52, 0x49, 0x46, 0x46 }, 0),
+            };
+
+        private static readonly string[] AllowedExtensions =
+            { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+
+        /// <summary>
+        /// Validates that the file bytes start with a recognised image magic signature.
+        /// </summary>
+        private static bool HasValidImageMagicBytes(byte[] fileBytes)
+        {
+            foreach (var (magic, offset) in AllowedMagicBytes)
+            {
+                if (fileBytes.Length < offset + magic.Length)
+                    continue;
+
+                bool match = true;
+                for (int i = 0; i < magic.Length; i++)
+                {
+                    if (fileBytes[offset + i] != magic[i]) { match = false; break; }
+                }
+                if (match) return true;
+            }
+            return false;
+        }
+
         public async Task<string> UploadImageAsync(byte[] fileBytes, string fileName, string folder = "images")
         {
             try
@@ -38,31 +79,41 @@ namespace EgyptOnline.Services
                 if (fileBytes == null || fileBytes.Length == 0)
                     throw new ArgumentException("File bytes cannot be empty");
 
-                // Sanitize inputs
+                // ── 1. Validate file extension ──────────────────────────────────
+                var extension = Path.GetExtension(fileName).ToLowerInvariant();
+                if (!AllowedExtensions.Contains(extension))
+                    throw new ArgumentException($"Invalid file extension '{extension}'. Allowed: {string.Join(", ", AllowedExtensions)}");
+
+                // ── 2. Validate magic bytes (prevents content-type spoofing) ────
+                if (!HasValidImageMagicBytes(fileBytes))
+                    throw new ArgumentException("File content does not match a recognised image format (JPEG, PNG, WEBP, GIF).");
+
+                // ── 3. Sanitize inputs ──────────────────────────────────────────
                 fileName = SanitizeFileName(fileName);
                 folder = SanitizeFolder(folder);
 
-                // Ensure target folder exists
+                // ── 4. Ensure target folder exists ──────────────────────────────
                 var targetFolder = Path.Combine(_storageRoot, folder);
                 Directory.CreateDirectory(targetFolder);
 
-                // Full file path
-                var filePath = Path.Combine(targetFolder, fileName);
-
-                // Write file
-                await File.WriteAllBytesAsync(filePath, fileBytes);
-
-                // FIX: Remove wwwroot from the path when constructing URL
-                var relativePath = Path.Combine(folder, fileName).Replace("\\", "/");
-
-                // Remove 'wwwroot/' or 'wwwroot\' from the beginning if present
-                if (relativePath.StartsWith("wwwroot/") || relativePath.StartsWith("wwwroot\\"))
+                // ── 5. Resolve full path and prevent path-traversal ─────────────
+                var filePath = Path.GetFullPath(Path.Combine(targetFolder, fileName));
+                var normalizedRoot = Path.GetFullPath(_storageRoot);
+                if (!filePath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
                 {
-                    relativePath = relativePath.Substring(8); // Remove "wwwroot/"
+                    _logger.LogWarning("Path traversal attempt blocked: {FilePath}", filePath);
+                    throw new ArgumentException("Invalid file path detected.");
                 }
 
-                var imageUrl = $"{_imageServerBaseUrl}/{relativePath}";
+                // ── 6. Write file ───────────────────────────────────────────────
+                await File.WriteAllBytesAsync(filePath, fileBytes);
 
+                // ── 7. Build public URL (strip leading wwwroot/ if present) ─────
+                var relativePath = Path.Combine(folder, fileName).Replace("\\", "/");
+                if (relativePath.StartsWith("wwwroot/") || relativePath.StartsWith("wwwroot\\"))
+                    relativePath = relativePath.Substring(8);
+
+                var imageUrl = $"{_imageServerBaseUrl}/{relativePath}";
                 _logger.LogInformation("Image uploaded successfully: {FilePath} -> {ImageUrl}", filePath, imageUrl);
 
                 return imageUrl;

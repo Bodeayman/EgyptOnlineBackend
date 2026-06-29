@@ -7,6 +7,9 @@ using System;
 using System.Threading.Tasks;
 using System.Linq;
 
+using Moq;
+using EgyptOnline.Services;
+
 namespace EgyptOnline.Tests
 {
     public class WalletServiceTests
@@ -22,7 +25,8 @@ namespace EgyptOnline.Tests
                 .Options;
 
             _context = new ApplicationDbContext(options);
-            _service = new WalletService(_context);
+            var mockNotificationService = new Mock<INotificationService>();
+            _service = new WalletService(_context, mockNotificationService.Object);
         }
 
         private async Task SeedUserWithApprovedKyc(string userId)

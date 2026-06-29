@@ -62,7 +62,7 @@ try
     {
         options.User.AllowedUserNameCharacters =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+"
-    + "أابتثجحخدذرزسشصضطظعغفقكلمنهويءآأإىة٤٥٦٧٨٩٠"; // Arabic chars
+    + "أابتثجحخدذرزسشصضطظعغفقكلمنهوؤيءآأإىة٤٥٦٧٨٩٠"; // Arabic chars
         options.User.RequireUniqueEmail = false; // Login/identify by phone; email is optional
         options.Password.RequireDigit = false;
         options.Password.RequireLowercase = false;
@@ -73,8 +73,8 @@ try
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
-    // Modular service registrations
-    builder.Services.AddHostedService<SubscriptionCheckerService>();
+    // SUBSCRIPTION VALIDATION DISABLED — re-enable by uncommenting the line below
+    // builder.Services.AddHostedService<SubscriptionCheckerService>();
     builder.Services.AddApplicationServices();
     builder.Services.ApiVersioningSettings();
     builder.Services.AddJwtAuthentication(builder.Configuration);

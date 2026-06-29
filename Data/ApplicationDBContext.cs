@@ -42,6 +42,9 @@ namespace EgyptOnline.Data
         public DbSet<AttendanceRecord> AttendanceRecords { get; set; }
         public DbSet<FundMovementLog> FundMovementLogs { get; set; }
         public DbSet<KycSubmission> KycSubmissions { get; set; }
+        public DbSet<Complaint> Complaints { get; set; }
+        public DbSet<DepositRequest> DepositRequests { get; set; }
+        public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -104,6 +107,38 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<KycSubmission>(entity =>
             {
                 entity.ToTable("KycSubmissions");
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Status);
+            });
+
+            modelBuilder.Entity<Complaint>(entity =>
+            {
+                entity.ToTable("Complaints");
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.ContractId);
+                entity.HasIndex(e => e.ReporterUserId);
+                entity
+                    .HasOne(c => c.Reporter)
+                    .WithMany()
+                    .HasForeignKey(c => c.ReporterUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity
+                    .HasOne(c => c.Contract)
+                    .WithMany()
+                    .HasForeignKey(c => c.ContractId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<DepositRequest>(entity =>
+            {
+                entity.ToTable("DepositRequests");
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Status);
+            });
+
+            modelBuilder.Entity<WithdrawRequest>(entity =>
+            {
+                entity.ToTable("WithdrawRequests");
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.Status);
             });

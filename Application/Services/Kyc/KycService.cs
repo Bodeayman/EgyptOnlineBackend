@@ -20,13 +20,18 @@ namespace EgyptOnline.Application.Services.Kyc
             if (!userExists)
                 throw new InvalidOperationException("المستخدم غير موجود");
 
-            // Check if there's already a pending KYC submission
+            // Check if there's already a pending or approved KYC submission
+            // Prevents resetting verified identity or flooding the review queue
             var existing = await _context.KycSubmissions
-                .Where(k => k.UserId == userId && k.Status == "pending")
+                .Where(k => k.UserId == userId && (k.Status == "pending" || k.Status == "approved"))
                 .FirstOrDefaultAsync();
 
-            if (existing != null)
+            if (existing != null && existing.Status == "approved")
+                throw new InvalidOperationException("تم التحقق من هويتك بالفعل ولا يمكن إعادة تقديم طلب التحقق");
+
+            if (existing != null && existing.Status == "pending")
                 throw new InvalidOperationException("يوجد طلب تحقق قيد المراجعة بالفعل");
+
 
             var submission = new KycSubmission
             {
@@ -57,14 +62,14 @@ namespace EgyptOnline.Application.Services.Kyc
             var submission = await _context.KycSubmissions.FirstOrDefaultAsync(k => k.Id == kycId)
                 ?? throw new KeyNotFoundException("طلب التحقق غير موجود");
 
-            if (submission.Status != "pending")
+            if (submission.Status != "pending" && submission.Status != "edit_required")
                 throw new InvalidOperationException("هذا الطلب تمت مراجعته بالفعل");
 
             submission.Status = status;
             submission.ReviewedByAdminId = adminUserId;
             submission.ReviewedAt = DateTime.UtcNow;
 
-            if (status == "rejected" && !string.IsNullOrWhiteSpace(rejectionReason))
+            if ((status == "rejected" || status == "edit_required") && !string.IsNullOrWhiteSpace(rejectionReason))
             {
                 submission.RejectionReason = rejectionReason;
             }

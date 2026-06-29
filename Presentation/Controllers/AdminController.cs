@@ -10,6 +10,11 @@ using EgyptOnline.Data;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Identity.Data;
 using System.Text.RegularExpressions;
+using EgyptOnline.Application.Services.Kyc;
+using EgyptOnline.Application.Services.Complaint;
+using EgyptOnline.Application.Services.Wallet;
+using System.ComponentModel.DataAnnotations;
+using Serilog;
 
 namespace EgyptOnline.Controllers
 {
@@ -21,12 +26,27 @@ namespace EgyptOnline.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<User> _userManager;
         private readonly IUserService _userService;
+        private readonly KycService _kycService;
+        private readonly ComplaintService _complaintService;
+        private readonly WalletService _walletService;
+        private readonly INotificationService _notificationService;
 
-        public AdminController(ApplicationDbContext context, UserManager<User> userManager, IUserService userService)
+        public AdminController(
+            ApplicationDbContext context,
+            UserManager<User> userManager,
+            IUserService userService,
+            KycService kycService,
+            ComplaintService complaintService,
+            WalletService walletService,
+            INotificationService notificationService)
         {
-            _context = context;
-            _userManager = userManager;
-            _userService = userService;
+            _context          = context;
+            _userManager      = userManager;
+            _userService      = userService;
+            _kycService       = kycService;
+            _complaintService = complaintService;
+            _walletService     = walletService;
+            _notificationService = notificationService;
         }
 
         [HttpGet("users")]
@@ -375,6 +395,280 @@ namespace EgyptOnline.Controllers
 
             return Ok(new { message = "Logout successful, refresh token revoked" });
         }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // KYC — Identity Verification
+        // ═══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// List all pending KYC submissions (queue for admin review).
+        /// GET /api/v1/Admin/kyc/pending?pageNumber=1&pageSize=20
+        /// </summary>
+        [HttpGet("kyc/pending")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetPendingKyc(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var submissions = await _kycService.GetPendingKycSubmissionsAsync(pageNumber, pageSize);
+                return Ok(new { data = submissions, pageNumber, pageSize });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Approve or reject a KYC submission.
+        /// PUT /api/v1/Admin/kyc/{kycId}/review
+        /// Body: { "status": "approved" | "rejected" | "edit_required", "rejectionReason": "optional" }
+        /// </summary>
+        [HttpPut("kyc/{kycId:int}/review")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> ReviewKyc(int kycId, [FromBody] ReviewKycDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
+                var result  = await _kycService.ReviewKycAsync(kycId, adminId, dto.Status, dto.RejectionReason);
+
+                // Send Firebase Notification based on new status
+                string title = "تحديث طلب التحقق الشخصي";
+                string body = dto.Status switch
+                {
+                    "approved" => "تهانينا! تم الموافقة على التحقق من هويتك وتفعيل حسابك بالكامل.",
+                    "rejected" => $"تم رفض طلب التحقق الشخصي. السبب: {dto.RejectionReason ?? "غير محدد"}",
+                    "edit_required" => $"الصور المرفوعة غير واضحة أو غير كاملة: {dto.RejectionReason ?? "يرجى إعادة تصوير البطاقة الشخصية بوضوح وإعادة الرفع."}",
+                    _ => "تم تحديث حالة التحقق الشخصي الخاصة بك"
+                };
+
+                try
+                {
+                    await _notificationService.SendNotificationToUser(result.UserId, title, body);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to send KYC notification to user {UserId}", result.UserId);
+                }
+
+                string responseMsg = dto.Status switch
+                {
+                    "approved" => "تمت الموافقة على التحقق",
+                    "rejected" => "تم رفض التحقق",
+                    "edit_required" => "تم طلب تعديل المستندات وإشعار المستخدم",
+                    _ => "تم مراجعة الطلب"
+                };
+
+                return Ok(new
+                {
+                    message = responseMsg,
+                    data    = new { result.Id, result.UserId, result.Status, result.ReviewedAt, result.RejectionReason }
+                });
+            }
+            catch (KeyNotFoundException ex)     { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)                 { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Deposits
+        // ═══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// List all pending deposits.
+        /// GET /api/v1/Admin/deposits/pending
+        /// </summary>
+        [HttpGet("deposits/pending")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetPendingDeposits(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var deposits = await _walletService.GetPendingDepositsAsync(pageNumber, pageSize);
+                var formatted = deposits.Select(d => new
+                {
+                    depositId = d.Id,
+                    userId = d.UserId,
+                    userName = d.User?.UserName,
+                    firstName = d.User?.FirstName,
+                    lastName = d.User?.LastName,
+                    amount = d.Amount,
+                    receiptImagePath = d.ReceiptImagePath,
+                    sourceWalletNumber = d.SourceWalletNumber,
+                    status = d.Status,
+                    createdAt = d.CreatedAt
+                });
+                return Ok(new { data = formatted, pageNumber, pageSize });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Review deposit request (Accept/Reject).
+        /// PUT /api/v1/Admin/deposits/{id}/review
+        /// </summary>
+        [HttpPut("deposits/{id:int}/review")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> ReviewDeposit(int id, [FromBody] ReviewKycDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
+                var result = await _walletService.ReviewDepositRequestAsync(id, adminId, dto.Status, dto.RejectionReason);
+                return Ok(new
+                {
+                    message = dto.Status == "approved" ? "تم قبول طلب الإيداع" : "تم رفض طلب الإيداع",
+                    data = result
+                });
+            }
+            catch (KeyNotFoundException ex)     { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)                 { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Withdrawals
+        // ═══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// List all pending withdrawals.
+        /// GET /api/v1/Admin/withdrawals/pending
+        /// </summary>
+        [HttpGet("withdrawals/pending")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetPendingWithdrawals(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var withdrawals = await _walletService.GetPendingWithdrawalsAsync(pageNumber, pageSize);
+                var formatted = withdrawals.Select(w => new
+                {
+                    withdrawId = w.Id,
+                    userId = w.UserId,
+                    userName = w.User?.UserName,
+                    firstName = w.User?.FirstName,
+                    lastName = w.User?.LastName,
+                    amount = w.Amount,
+                    destinationWalletNumber = w.DestinationWalletNumber,
+                    walletOwnerName = w.WalletOwnerName,
+                    status = w.Status,
+                    createdAt = w.CreatedAt
+                });
+                return Ok(new { data = formatted, pageNumber, pageSize });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Review withdrawal request (Accept/Reject).
+        /// PUT /api/v1/Admin/withdrawals/{id}/review
+        /// </summary>
+        [HttpPut("withdrawals/{id:int}/review")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> ReviewWithdraw(int id, [FromBody] ReviewKycDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
+                var result = await _walletService.ReviewWithdrawRequestAsync(id, adminId, dto.Status, dto.RejectionReason);
+                return Ok(new
+                {
+                    message = dto.Status == "approved" ? "تم قبول طلب السحب" : "تم رفض طلب السحب",
+                    data = result
+                });
+            }
+            catch (KeyNotFoundException ex)     { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)                 { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Complaints
+        // ═══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// List all complaints — optionally filter by status.
+        /// GET /api/v1/Admin/complaints?status=open&pageNumber=1&pageSize=20
+        /// status options: open | under_review | resolved | rejected
+        /// </summary>
+        [HttpGet("complaints")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetComplaints(
+            [FromQuery] string? status     = null,
+            [FromQuery] int pageNumber     = 1,
+            [FromQuery] int pageSize       = 20)
+        {
+            try
+            {
+                var (items, total) = await _complaintService.GetAllComplaintsAsync(status, pageNumber, pageSize);
+                return Ok(new
+                {
+                    data        = items,
+                    totalCount  = total,
+                    pageNumber,
+                    pageSize,
+                    totalPages  = (int)Math.Ceiling(total / (double)pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Review a complaint — change its status and optionally leave a note.
+        /// PUT /api/v1/Admin/complaints/{id}/review
+        /// Body: { "status": "under_review" | "resolved" | "rejected", "adminNote": "optional" }
+        /// </summary>
+        [HttpPut("complaints/{id:int}/review")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> ReviewComplaint(int id, [FromBody] ReviewComplaintDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var adminId   = User.FindFirst("uid")?.Value ?? string.Empty;
+                var complaint = await _complaintService.ReviewComplaintAsync(id, adminId, dto.Status, dto.AdminNote);
+
+                return Ok(new
+                {
+                    message = "تم تحديث حالة الشكوى بنجاح",
+                    data    = new
+                    {
+                        complaint.Id,
+                        complaint.Status,
+                        complaint.AdminNote,
+                        complaint.ResolvedAt,
+                        complaint.ContractId
+                    }
+                });
+            }
+            catch (KeyNotFoundException ex)     { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (ArgumentException ex)         { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)                 { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
     }
 
     public class SearchAdminDto
@@ -386,5 +680,25 @@ namespace EgyptOnline.Controllers
         public string? Governorate { get; set; }
         public string? City { get; set; }
         public string? District { get; set; }
+    }
+
+    public class ReviewKycDto
+    {
+        /// <summary>approved | rejected</summary>
+        [Required]
+        public string Status { get; set; } = string.Empty;
+
+        /// <summary>Required when Status == "rejected"</summary>
+        public string? RejectionReason { get; set; }
+    }
+
+    public class ReviewComplaintDto
+    {
+        /// <summary>under_review | resolved | rejected</summary>
+        [Required]
+        public string Status { get; set; } = string.Empty;
+
+        [MaxLength(2000)]
+        public string? AdminNote { get; set; }
     }
 }

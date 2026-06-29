@@ -373,7 +373,7 @@ namespace EgyptOnline.Controllers
         #region Search Endpoints
 
         [HttpPost("workers")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> SearchWorkers([FromBody] FilterSearchDto? filter)
         {
             try
@@ -423,7 +423,7 @@ namespace EgyptOnline.Controllers
         }
 
         [HttpPost("companies")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> SearchCompanies([FromBody] FilterSearchDto? filter)
         {
             try
@@ -471,7 +471,7 @@ namespace EgyptOnline.Controllers
         }
 
         [HttpPost("contractors")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> SearchContractors([FromBody] FilterSearchDto? filter)
         {
             try
@@ -519,7 +519,7 @@ namespace EgyptOnline.Controllers
         }
 
         [HttpPost("marketplaces")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> SearchMarketPlaces([FromBody] FilterSearchDto? filter)
         {
             try
@@ -567,7 +567,7 @@ namespace EgyptOnline.Controllers
         }
 
         [HttpPost("engineers")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> SearchEngineers([FromBody] FilterSearchDto? filter)
         {
             try
@@ -615,7 +615,7 @@ namespace EgyptOnline.Controllers
         }
 
         [HttpPost("assistants")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> SearchAssistants([FromBody] FilterSearchDto? filter)
         {
             try
@@ -663,7 +663,7 @@ namespace EgyptOnline.Controllers
         }
 
         [HttpPost("sculptors")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> SearchSculptors([FromBody] FilterSearchDto? filter)
         {
             try

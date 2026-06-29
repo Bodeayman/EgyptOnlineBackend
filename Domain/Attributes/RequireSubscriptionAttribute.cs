@@ -17,59 +17,67 @@ namespace EgyptOnline.Domain.Attributes
     {
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
-            // Skip if already unauthorized
-            if (!context.HttpContext.User.Identity?.IsAuthenticated ?? true)
-                return;
+            // -------------------------------------------------------
+            // SUBSCRIPTION VALIDATION DISABLED
+            // All checks below are commented out — no subscription
+            // enforcement is performed. Re-enable by uncommenting.
+            // -------------------------------------------------------
 
-            var userId = context.HttpContext.User.FindFirst("uid")?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                context.Result = new UnauthorizedObjectResult(new
-                {
-                    message = "User ID not found in token",
-                    errorCode = "Unauthorized"
-                });
-                return;
-            }
+            // // Skip if already unauthorized
+            // if (!context.HttpContext.User.Identity?.IsAuthenticated ?? true)
+            //     return;
 
-            // Get DB context from service provider
-            var dbContext = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+            // var userId = context.HttpContext.User.FindFirst("uid")?.Value;
+            // if (string.IsNullOrEmpty(userId))
+            // {
+            //     context.Result = new UnauthorizedObjectResult(new
+            //     {
+            //         message = "User ID not found in token",
+            //         errorCode = "Unauthorized"
+            //     });
+            //     return;
+            // }
 
-            // Check subscription from database (fresh check)
-            var user = await dbContext.Users
-                .Include(u => u.Subscription)
-                .Include(u => u.ServiceProvider)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+            // // Get DB context from service provider
+            // var dbContext = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
 
-            if (user == null)
-            {
-                context.Result = new NotFoundObjectResult(new
-                {
-                    message = "User not found",
-                    errorCode = "UserNotFound"
-                });
-                return;
-            }
+            // // Check subscription from database (fresh check)
+            // var user = await dbContext.Users
+            //     .Include(u => u.Subscription)
+            //     .Include(u => u.ServiceProvider)
+            //     .FirstOrDefaultAsync(u => u.Id == userId);
 
-            // Check if subscription is active
-            if (user.Subscription == null ||
-                (user.ServiceProvider != null &&
-                (!user.ServiceProvider.IsAvailable)))
-            {
-                // user.ServiceProvider.IsAvailable = false;
-                await dbContext.SaveChangesAsync();
-                // Match exact format from old CheckSubscription() for backward compatibility
-                context.Result = new ObjectResult(new
-                {
-                    message = "Your Subscription period Expired",
-                    errorCode = UserErrors.SubscriptionInvalid.ToString(),
-                    LastDate = user.Subscription?.EndDate.ToString()
-                })
-                {
-                    StatusCode = StatusCodes.Status403Forbidden
-                };
-                return;
-            }
+            // if (user == null)
+            // {
+            //     context.Result = new NotFoundObjectResult(new
+            //     {
+            //         message = "User not found",
+            //         errorCode = "UserNotFound"
+            //     });
+            //     return;
+            // }
+
+            // // Check if subscription is active
+            // if (user.Subscription == null ||
+            //     (user.ServiceProvider != null &&
+            //     (!user.ServiceProvider.IsAvailable)))
+            // {
+            //     // user.ServiceProvider.IsAvailable = false;
+            //     await dbContext.SaveChangesAsync();
+            //     // Match exact format from old CheckSubscription() for backward compatibility
+            //     context.Result = new ObjectResult(new
+            //     {
+            //         message = "Your Subscription period Expired",
+            //         errorCode = UserErrors.SubscriptionInvalid.ToString(),
+            //         LastDate = user.Subscription?.EndDate.ToString()
+            //     })
+            //     {
+            //         StatusCode = StatusCodes.Status403Forbidden
+            //     };
+            //     return;
+            // }
+
+            await Task.CompletedTask; // no-op, keeps the async signature valid
         }
     }
 }

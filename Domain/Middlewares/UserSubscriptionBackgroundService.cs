@@ -37,17 +37,19 @@ public class SubscriptionCheckerService : BackgroundService
                 {
                     if (user.Subscription.EndDate < now)
                     {
-                        // Revoke refresh tokens
+                        // SUBSCRIPTION VALIDATION DISABLED
+                        // Re-enable by uncommenting the block below
 
+                        // // Revoke refresh tokens
 
-                        // Disable service provider
-                        if (user.ServiceProvider != null)
-                        {
-                            user.ServiceProvider.IsAvailable = false;
-                            db.Entry(user.ServiceProvider).State = EntityState.Modified;
-                        }
+                        // // Disable service provider
+                        // if (user.ServiceProvider != null)
+                        // {
+                        //     user.ServiceProvider.IsAvailable = false;
+                        //     db.Entry(user.ServiceProvider).State = EntityState.Modified;
+                        // }
 
-                        db.Entry(user).State = EntityState.Modified;
+                        // db.Entry(user).State = EntityState.Modified;
                     }
                 }
 

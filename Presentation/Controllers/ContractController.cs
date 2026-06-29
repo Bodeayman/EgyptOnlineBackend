@@ -21,6 +21,15 @@ namespace EgyptOnline.Controllers
 
         private string? GetUsername() => User.Identity?.Name;
 
+        /// <summary>
+        /// Returns true when the logged-in username is one of the three contract parties.
+        /// </summary>
+        private static bool IsPartyToContract(Models.Contract contract, string username)
+            => contract.ContractorUsername == username ||
+               contract.EngineerUsername   == username ||
+               contract.WorkerUsername     == username;
+
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateContractDto dto)
         {
@@ -28,6 +37,13 @@ namespace EgyptOnline.Controllers
             {
                 var username = GetUsername();
                 if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+                // The logged-in user must be one of the named parties (contractor, engineer, or worker).
+                // This prevents a user from creating a contract between entirely unrelated parties.
+                if (dto.ContractorUsername != username &&
+                    dto.EngineerUsername   != username &&
+                    dto.WorkerUsername     != username)
+                    return StatusCode(403, new { message = "يجب أن تكون أحد أطراف العقد لإنشائه" });
 
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
@@ -50,8 +66,16 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
+
                 var contract = await _contractService.GetByIdAsync(id);
                 if (contract == null) return NotFound(new { message = "العقد غير موجود" });
+
+                // Only parties to the contract may view its details
+                if (!IsPartyToContract(contract, username))
+                    return StatusCode(403, new { message = "ليس لديك صلاحية لعرض هذا العقد" });
+
                 return Ok(new { data = contract });
             }
             catch (Exception ex)
@@ -202,6 +226,15 @@ namespace EgyptOnline.Controllers
         {
             try
             {
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+                // Verify caller is a party to the contract before exposing financial installment data
+                var contract = await _contractService.GetByIdAsync(id);
+                if (contract == null) return NotFound(new { message = "العقد غير موجود" });
+                if (!IsPartyToContract(contract, username))
+                    return StatusCode(403, new { message = "ليس لديك صلاحية لعرض أقساط هذا العقد" });
+
                 var installments = await _contractService.GetInstallmentsAsync(id);
                 return Ok(new { data = installments });
             }

@@ -89,9 +89,9 @@ namespace EgyptOnline.Controllers
             }
         }
         //Update the location and availability and skills of the worker
-        // Critical operation: Requires active subscription (checks DB for fresh data)
+        // SUBSCRIPTION VALIDATION DISABLED — re-enable by uncommenting [RequireSubscription]
         [HttpPut]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileDto model)
         {
             try
@@ -240,7 +240,7 @@ namespace EgyptOnline.Controllers
         /// Mark the authenticated user as occupied until midnight
         /// </summary>
         [HttpPost("set-occupied")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> SetOccupied()
         {
             try
@@ -268,7 +268,7 @@ namespace EgyptOnline.Controllers
         /// Remove occupation status for the authenticated user
         /// </summary>
         [HttpDelete("remove-occupied")]
-        [RequireSubscription]
+        // [RequireSubscription]
         public async Task<IActionResult> RemoveOccupied()
         {
             try

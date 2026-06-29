@@ -15,6 +15,7 @@ using System.Threading.RateLimiting;
 using StackExchange.Redis;
 using EgyptOnline.Infrastructure;
 using System.Security.Claims;
+using EgyptOnline.Application.Configuration;
 /*
 This file is for adding functionalies to program.cs instead of packing everything in one file
 like adding authentication and swagger configuration
@@ -44,12 +45,26 @@ namespace EgyptOnline.Extensions
 
             services.AddScoped<IOTPService, OtpService>();
 
-            // ─── Contract / Wallet / KYC Module ─────────────────────
+            // ─── Contract / Wallet / KYC Module ─────────────────────────────────
             services.AddScoped<EgyptOnline.Application.Services.Contract.ContractService>();
             services.AddScoped<EgyptOnline.Application.Services.Wallet.WalletService>();
             services.AddScoped<EgyptOnline.Application.Services.Kyc.KycService>();
+            services.AddScoped<EgyptOnline.Application.Services.Complaint.ComplaintService>();
 
             services.AddHttpClient();
+
+            // ─── AI / Gemini ──────────────────────────────────────────
+            // AiConfig is a singleton so the guardrails are loaded once at startup.
+            // To change rules at runtime, restart the app or override via env vars.
+            services.AddSingleton(sp =>
+            {
+                var cfg = sp.GetRequiredService<IConfiguration>();
+                var aiConfig = new AiConfig();
+                cfg.GetSection("AiAssistant").Bind(aiConfig);
+                return aiConfig;
+            });
+            services.AddHttpClient<GeminiService>();   // named HttpClient for Gemini
+            services.AddScoped<GeminiService>();
 
             return services;
         }
