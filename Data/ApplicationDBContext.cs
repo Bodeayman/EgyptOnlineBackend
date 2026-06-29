@@ -151,6 +151,7 @@ namespace EgyptOnline.Data
                 entity.HasIndex(e => e.ClientUserId);
                 entity.HasIndex(e => e.Governorate);
                 entity.HasOne(r => r.ClientUser).WithMany().HasForeignKey(r => r.ClientUserId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(r => r.AcceptedProviderUser).WithMany().HasForeignKey(r => r.AcceptedProviderUserId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<JobRequestInterest>(entity =>

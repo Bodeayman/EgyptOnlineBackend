@@ -3,6 +3,7 @@ using EgyptOnline.Data;
 using EgyptOnline.Dtos.Contract;
 using EgyptOnline.Models;
 using EgyptOnline.Services;
+using EgyptOnline.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -108,14 +109,20 @@ namespace EgyptOnline.Application.Services.Contract
         /// Returns all contracts where the given username is any party (contractor, engineer, or worker).
         /// No join needed — username is stored directly on the contract.
         /// </summary>
-        public async Task<List<Models.Contract>> GetMyContractsAsync(string username)
+        public async Task<List<Models.Contract>> GetMyContractsAsync(string username, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
         {
-            return await _context.Contracts
-                .Where(c =>
-                    c.ContractorUsername == username ||
-                    c.EngineerUsername   == username ||
-                    c.WorkerUsername     == username)
-                .OrderByDescending(c => c.CreatedAt)
+            pageNumber = Math.Max(1, pageNumber);
+            pageSize = Math.Max(1, pageSize);
+
+            return await Helper.PaginateUsers(
+                    _context.Contracts
+                        .Where(c =>
+                            c.ContractorUsername == username ||
+                            c.EngineerUsername == username ||
+                            c.WorkerUsername == username)
+                        .OrderByDescending(c => c.CreatedAt),
+                    pageNumber,
+                    pageSize)
                 .ToListAsync();
         }
 

@@ -26,8 +26,8 @@ namespace EgyptOnline.Controllers
         /// </summary>
         private static bool IsPartyToContract(Models.Contract contract, string username)
             => contract.ContractorUsername == username ||
-               contract.EngineerUsername   == username ||
-               contract.WorkerUsername     == username;
+               contract.EngineerUsername == username ||
+               contract.WorkerUsername == username;
 
 
         [HttpPost]
@@ -41,8 +41,8 @@ namespace EgyptOnline.Controllers
                 // The logged-in user must be one of the named parties (contractor, engineer, or worker).
                 // This prevents a user from creating a contract between entirely unrelated parties.
                 if (dto.ContractorUsername != username &&
-                    dto.EngineerUsername   != username &&
-                    dto.WorkerUsername     != username)
+                    dto.EngineerUsername != username &&
+                    dto.WorkerUsername != username)
                     return StatusCode(403, new { message = "يجب أن تكون أحد أطراف العقد لإنشائه" });
 
                 if (!ModelState.IsValid)
@@ -85,19 +85,21 @@ namespace EgyptOnline.Controllers
         }
 
         /// <summary>
-        /// GET /api/v1/contract/my
-        /// Returns all contracts where the logged-in user is contractor, engineer, or worker.
+        /// GET /api/v1/contract/my?pageNumber=1&pageSize=20
+        /// Returns contracts where the logged-in user is contractor, engineer, or worker.
         /// </summary>
         [HttpGet("my")]
-        public async Task<IActionResult> GetMyContracts()
+        public async Task<IActionResult> GetMyContracts(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = Constants.PAGE_SIZE)
         {
             try
             {
                 var username = GetUsername();
                 if (string.IsNullOrEmpty(username)) return Unauthorized();
 
-                var contracts = await _contractService.GetMyContractsAsync(username);
-                return Ok(new { data = contracts, count = contracts.Count });
+                var contracts = await _contractService.GetMyContractsAsync(username, pageNumber, pageSize);
+                return Ok(new { data = contracts, pageNumber, pageSize, count = contracts.Count });
             }
             catch (Exception ex)
             {

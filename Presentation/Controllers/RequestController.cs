@@ -62,18 +62,20 @@ namespace EgyptOnline.Presentation.Controllers
 
         /// <summary>
         /// Get all job requests created by the authenticated user.
-        /// GET /api/v1/Request/my
+        /// GET /api/v1/Request/my?pageNumber=1&pageSize=20
         /// </summary>
         [HttpGet("my")]
-        public async Task<IActionResult> GetMyRequests()
+        public async Task<IActionResult> GetMyRequests(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = Constants.PAGE_SIZE)
         {
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             try
             {
-                var requests = await _service.GetMyRequestsAsync(userId);
-                return Ok(new { data = requests });
+                var requests = await _service.GetMyRequestsAsync(userId, pageNumber, pageSize);
+                return Ok(new { data = requests, pageNumber, pageSize, count = requests.Count });
             }
             catch (Exception ex)
             {
@@ -84,18 +86,20 @@ namespace EgyptOnline.Presentation.Controllers
         /// <summary>
         /// Get all job requests created by other users (Other Requests tab),
         /// showing whether the current user is interested.
-        /// GET /api/v1/Request/others
+        /// GET /api/v1/Request/others?pageNumber=1&pageSize=20
         /// </summary>
         [HttpGet("others")]
-        public async Task<IActionResult> GetOtherRequests()
+        public async Task<IActionResult> GetOtherRequests(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = Constants.PAGE_SIZE)
         {
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             try
             {
-                var requests = await _service.GetOtherRequestsAsync(userId);
-                return Ok(new { data = requests });
+                var requests = await _service.GetOtherRequestsAsync(userId, pageNumber, pageSize);
+                return Ok(new { data = requests, pageNumber, pageSize, count = requests.Count });
             }
             catch (Exception ex)
             {
@@ -125,6 +129,93 @@ namespace EgyptOnline.Presentation.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Remove/Delete a job request.
+        /// DELETE /api/v1/Request/{id}
+        /// </summary>
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            try
+            {
+                await _service.DeleteRequestAsync(id, userId);
+                return Ok(new { message = "تم حذف طلب العمل بنجاح" });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Cancel a job request.
+        /// PUT /api/v1/Request/{id}/cancel
+        /// </summary>
+        [HttpPut("{id:int}/cancel")]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            try
+            {
+                var request = await _service.CancelRequestAsync(id, userId);
+                return Ok(new { message = "تم إلغاء طلب العمل بنجاح", data = request });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Complete a job request.
+        /// PUT /api/v1/Request/{id}/complete
+        /// </summary>
+        [HttpPut("{id:int}/complete")]
+        public async Task<IActionResult> Complete(int id)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            try
+            {
+                var request = await _service.CompleteRequestAsync(id, userId);
+                return Ok(new { message = "تم اكتمال طلب العمل بنجاح", data = request });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {

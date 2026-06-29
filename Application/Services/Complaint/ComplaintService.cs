@@ -1,6 +1,7 @@
 using EgyptOnline.Data;
 using EgyptOnline.Models;
 using EgyptOnline.Services;
+using EgyptOnline.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -40,8 +41,8 @@ namespace EgyptOnline.Application.Services.Complaint
                 ?? throw new InvalidOperationException("المستخدم غير موجود");
 
             bool isParty = contract.ContractorUsername == reporterUsername
-                        || contract.EngineerUsername   == reporterUsername
-                        || contract.WorkerUsername     == reporterUsername;
+                        || contract.EngineerUsername == reporterUsername
+                        || contract.WorkerUsername == reporterUsername;
 
             if (!isParty)
                 throw new UnauthorizedAccessException("أنت لست طرفاً في هذا العقد");
@@ -61,10 +62,10 @@ namespace EgyptOnline.Application.Services.Complaint
             var complaint = new Models.Complaint
             {
                 ReporterUserId = reporterUserId,
-                ContractId     = contractId,
-                Reason         = reason,
-                Description    = description,
-                Status         = "open"
+                ContractId = contractId,
+                Reason = reason,
+                Description = description,
+                Status = "open"
             };
 
             _context.Complaints.Add(complaint);
@@ -72,8 +73,8 @@ namespace EgyptOnline.Application.Services.Complaint
 
             // Notify the other parties
             await SafeNotifyByUsername(contract.ContractorUsername, reporterUsername, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
-            await SafeNotifyByUsername(contract.EngineerUsername,   reporterUsername, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
-            await SafeNotifyByUsername(contract.WorkerUsername,     reporterUsername, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
+            await SafeNotifyByUsername(contract.EngineerUsername, reporterUsername, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
+            await SafeNotifyByUsername(contract.WorkerUsername, reporterUsername, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
 
             return complaint;
         }
@@ -81,14 +82,18 @@ namespace EgyptOnline.Application.Services.Complaint
         /// <summary>
         /// Get all complaints submitted by the current user.
         /// </summary>
-        public async Task<List<Models.Complaint>> GetMyComplaintsAsync(string userId, int pageNumber = 1, int pageSize = 20)
+        public async Task<List<Models.Complaint>> GetMyComplaintsAsync(string userId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
         {
-            return await _context.Complaints
-                .Include(c => c.Contract)
-                .Where(c => c.ReporterUserId == userId)
-                .OrderByDescending(c => c.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+            pageNumber = Math.Max(1, pageNumber);
+            pageSize = Math.Max(1, pageSize);
+
+            return await Helper.PaginateUsers(
+                    _context.Complaints
+                        .Include(c => c.Contract)
+                        .Where(c => c.ReporterUserId == userId)
+                        .OrderByDescending(c => c.CreatedAt),
+                    pageNumber,
+                    pageSize)
                 .ToListAsync();
         }
 
@@ -123,10 +128,13 @@ namespace EgyptOnline.Application.Services.Complaint
 
             var total = await query.CountAsync();
 
-            var items = await query
-                .OrderByDescending(c => c.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+            pageNumber = Math.Max(1, pageNumber);
+            pageSize = Math.Max(1, pageSize);
+
+            var items = await Helper.PaginateUsers(
+                    query.OrderByDescending(c => c.CreatedAt),
+                    pageNumber,
+                    pageSize)
                 .ToListAsync();
 
             return (items, total);
@@ -155,9 +163,9 @@ namespace EgyptOnline.Application.Services.Complaint
             if (complaint.Status == "resolved" || complaint.Status == "rejected")
                 throw new InvalidOperationException("هذه الشكوى تمت معالجتها بالفعل");
 
-            complaint.Status           = newStatus;
+            complaint.Status = newStatus;
             complaint.ResolvedByAdminId = adminUserId;
-            complaint.AdminNote        = adminNote;
+            complaint.AdminNote = adminNote;
 
             if (newStatus == "resolved" || newStatus == "rejected")
                 complaint.ResolvedAt = DateTime.UtcNow;
@@ -168,9 +176,9 @@ namespace EgyptOnline.Application.Services.Complaint
             var statusText = newStatus switch
             {
                 "under_review" => "قيد المراجعة",
-                "resolved"     => "تم حلها",
-                "rejected"     => "مرفوضة",
-                _              => newStatus
+                "resolved" => "تم حلها",
+                "rejected" => "مرفوضة",
+                _ => newStatus
             };
 
             await SafeNotifyById(

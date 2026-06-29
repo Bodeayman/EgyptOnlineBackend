@@ -48,6 +48,15 @@ namespace EgyptOnline.Models
         [Column(TypeName = "timestamptz")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [Required]
+        [MaxLength(20)]
+        public string Status { get; set; } = "Pending"; // Pending, Accepted, Cancelled
+
+        public string? AcceptedProviderUserId { get; set; }
+
+        [ForeignKey(nameof(AcceptedProviderUserId))]
+        public User? AcceptedProviderUser { get; set; }
+
         // List of interests from service providers
         public List<JobRequestInterest> Interests { get; set; } = new();
     }
