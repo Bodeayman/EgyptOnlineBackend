@@ -161,16 +161,7 @@ try
     // ---------- Middleware ----------
     app.UseStaticFiles(); // Serves from wwwroot by default
 
-    // Also explicitly serve images folder
-    var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-    Console.WriteLine($"Images path: {imagesPath}");
-    Console.WriteLine($"Images path exists: {Directory.Exists(imagesPath)}");
 
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(imagesPath),
-        RequestPath = "/images"
-    });
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
