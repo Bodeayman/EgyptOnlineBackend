@@ -11,7 +11,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: Test TCP
+        run: |
+          timeout 10 bash -c "</dev/tcp/${{ secrets.SERVER_HOST }}/22"
+          
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
