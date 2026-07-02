@@ -4,6 +4,7 @@ using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace EgyptOnline.Presentation.Controllers
 {
@@ -20,7 +21,16 @@ namespace EgyptOnline.Presentation.Controllers
             _service = service;
         }
 
-        private string? GetUserId() => User.FindFirst("uid")?.Value;
+        private string? GetUserId()
+        {
+            var claim = User.FindFirst("uid")
+                        ?? User.FindFirst(ClaimTypes.NameIdentifier)
+                        ?? User.FindFirst("sub")
+                        ?? User.FindFirst("user_id")
+                        ?? User.FindFirst("id");
+
+            return claim?.Value;
+        }
 
         /// <summary>
         /// Post a new job request.
