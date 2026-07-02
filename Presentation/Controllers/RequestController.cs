@@ -94,6 +94,38 @@ namespace EgyptOnline.Presentation.Controllers
         }
 
         /// <summary>
+        /// Get paginated interested service providers for a job request created by the current user.
+        /// GET /api/v1/Request/{id}/interested?pageNumber=1&pageSize=20
+        /// </summary>
+        [HttpGet("{id:int}/interested")]
+        public async Task<IActionResult> GetInterestedProviders(
+            int id,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = Constants.PAGE_SIZE)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            try
+            {
+                var result = await _service.GetInterestedProvidersAsync(id, userId, pageNumber, pageSize);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Get all job requests created by other users (Other Requests tab),
         /// showing whether the current user is interested.
         /// GET /api/v1/Request/others?pageNumber=1&pageSize=20

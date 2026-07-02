@@ -109,7 +109,7 @@ namespace EgyptOnline.Controllers
                  !model.ProviderType!.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase) &&
                  !model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase) &&
                  !model.ProviderType.Equals("engineer", StringComparison.CurrentCultureIgnoreCase) &&
-                 !model.ProviderType.Equals("contractor", StringComparison.CurrentCultureIgnoreCase) 
+                 !model.ProviderType.Equals("contractor", StringComparison.CurrentCultureIgnoreCase)
                  )
                 {
                     return BadRequest(new
@@ -274,9 +274,11 @@ namespace EgyptOnline.Controllers
                 {
                     message = "Login successful",
                     accessToken,
-                    isExpired = !(user!.ServiceProvider.IsAvailable),
+                    // Removed isExpired from login response per request: client should not rely on subscription status here.
+                    // isExpired = !(user!.ServiceProvider.IsAvailable),
                     refreshToken = refreshTokenString,
-                    subscriptionExpiry = user.Subscription!.EndDate,
+                    // Removed subscriptionExpiry from login response per request.
+                    // subscriptionExpiry = user.Subscription!.EndDate,
                     refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
                 });
 
@@ -409,12 +411,14 @@ namespace EgyptOnline.Controllers
 
                 return Ok(new
                 {
-                    isExpired = !(user!.ServiceProvider.IsAvailable),
+                    // Removed isExpired from refresh response per request: subscription state should not be returned here.
+                    // isExpired = !(user!.ServiceProvider.IsAvailable),
 
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshTokenString,
                     refreshTokenExpiry = newRefreshToken.Expires,
-                    subscriptionExpiry = user.Subscription?.EndDate,
+                    // Removed subscriptionExpiry from refresh response per request.
+                    // subscriptionExpiry = user.Subscription?.EndDate,
                 });
             }
             catch (Exception ex)

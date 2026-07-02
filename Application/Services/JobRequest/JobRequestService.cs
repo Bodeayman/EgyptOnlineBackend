@@ -142,6 +142,51 @@ namespace EgyptOnline.Application.Services.JobRequest
         }
 
         /// <summary>
+        /// Retrieve paginated interested service providers for a job request created by the current user.
+        /// </summary>
+        public async Task<object> GetInterestedProvidersAsync(int requestId, string clientUserId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
+        {
+            pageNumber = Math.Max(1, pageNumber);
+            pageSize = Math.Max(1, pageSize);
+
+            var request = await _context.JobRequests
+                .Include(r => r.Interests)
+                    .ThenInclude(i => i.ServiceProviderUser!)
+                        .ThenInclude(u => u.ServiceProvider)
+                .FirstOrDefaultAsync(r => r.Id == requestId && r.ClientUserId == clientUserId);
+
+            if (request == null)
+                throw new KeyNotFoundException("طلب العمل غير موجود أو لا تملك صلاحية الوصول إليه");
+
+            var interestedInterests = request.Interests
+                .Where(i => i.IsInterested && i.ServiceProviderUser != null)
+                .ToList();
+
+            var totalInterested = interestedInterests.Count;
+            var providerIds = interestedInterests
+                .Select(i => i.ServiceProviderUserId)
+                .Distinct()
+                .ToList();
+
+            var occupiedProviders = await _occupationService.GetOccupiedUsersBatchAsync(providerIds);
+
+            var pageItems = interestedInterests
+                .Skip(pageSize * (pageNumber - 1))
+                .Take(pageSize)
+                .Select(i => MapServiceProvider(i.ServiceProviderUser!, occupiedProviders.Contains(i.ServiceProviderUserId)))
+                .ToList();
+
+            return new
+            {
+                requestId = request.Id,
+                totalInterested,
+                pageNumber,
+                pageSize,
+                items = pageItems
+            };
+        }
+
+        /// <summary>
         /// Retrieve other people's requests (Pending only) with 'isInterested' status for the current user.
         /// </summary>
         public async Task<List<object>> GetOtherRequestsAsync(string currentUserId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
