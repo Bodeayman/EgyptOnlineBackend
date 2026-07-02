@@ -324,58 +324,8 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
             }
         }
-        [AllowAnonymous]
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginWorkerDto model)
-        {
-            try
-            {
-                var input = model.Email.Trim();
-                User user = null;
-
-                if (Helper.IsEmail(input))
-                {
-                    user = await _context.Users
-                        .Include(u => u.Subscription)
-                        .Include(u => u.ServiceProvider)
-                        .FirstOrDefaultAsync(u => u.Email == input);
-                }
-                else if (Helper.IsPhone(input))
-                {
-                    string phoneNumber = $"+20{input.Substring(1)}";
-                    user = await _context.Users
-                        .Include(u => u.Subscription)
-                        .Include(u => u.ServiceProvider)
-                        .FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
-                }
-                else
-                {
-                    return BadRequest(new { message = "Invalid email or phone format" });
-                }
-
-                if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
-                    return Unauthorized(new { message = "Email/Phone or password is incorrect" });
-
-                var roles = await _userManager.GetRolesAsync(user);
-                if (!roles.Contains(Roles.Admin))
-                {
-                    return Forbid();
-                }
-
-                var accessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
-
-                return Ok(new
-                {
-                    message = "Login successful",
-                    accessToken,
-                    subscriptionExpiry = user.Subscription?.EndDate,
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
+        // Admin login moved to AuthController for centralized authentication handling.
+        // See AuthController.AdminLogin
         //Useless function no use really
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([FromBody] RefreshRequest refreshRequest)

@@ -238,24 +238,31 @@ namespace EgyptOnline.Controllers
                     return NotFound(new { message = "The Email/Phone or password is incorrect", errorCode = UserErrors.EmailOrPasswordInCorrect.ToString() });
                 var roles = await _userManager.GetRolesAsync(user);
 
+                // Generate access token for all authenticated principals
+                var accessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
+
+                // If admin, return access token only (no refresh token)
                 if (roles.Contains(Roles.Admin))
                 {
-                    return BadRequest(new
+                    return Ok(new
                     {
-                        message = "You are an admin, can't access the app",
-                        errorCode = UserErrors.GeneralError.ToString()
+                        message = "Login successful",
+                        accessToken,
+                        role = Roles.Admin
                     });
                 }
 
-
-                // Determine user role
-                if (!Enum.TryParse<UsersTypes>(user.ServiceProvider.ProviderType, out UsersTypes userRole))
+                // Regular user: determine provider role when available
+                UsersTypes userRole = UsersTypes.Worker;
+                if (user.ServiceProvider != null)
                 {
-                    return StatusCode(500, new { message = "Error while fetching the user role" });
+                    if (!Enum.TryParse<UsersTypes>(user.ServiceProvider.ProviderType, out userRole))
+                    {
+                        return StatusCode(500, new { message = "Error while fetching the user role" });
+                    }
                 }
 
-                // Generate tokens
-                var accessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
+                // Generate refresh token for regular users
                 var refreshTokenString = await _userService.GenerateJwtToken(user, TokensTypes.RefreshToken);
 
                 var refreshToken = new RefreshToken
@@ -274,12 +281,9 @@ namespace EgyptOnline.Controllers
                 {
                     message = "Login successful",
                     accessToken,
-                    // Removed isExpired from login response per request: client should not rely on subscription status here.
-                    // isExpired = !(user!.ServiceProvider.IsAvailable),
                     refreshToken = refreshTokenString,
-                    // Removed subscriptionExpiry from login response per request.
-                    // subscriptionExpiry = user.Subscription!.EndDate,
-                    refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
+                    refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
+                    role = "User"
                 });
 
             }
@@ -288,6 +292,9 @@ namespace EgyptOnline.Controllers
                 return StatusCode(500, new { message = "Internal server error", error = ex.Message });
             }
         }
+
+        // Admin-specific login removed. Admins are authenticated via the unified `Login` endpoint.
+
         [HttpPost("add-firebase-token")]
         [Authorize(Roles = Roles.User)]
         public async Task<IActionResult> AddTokenToUser([FromBody] FCMDto model)
