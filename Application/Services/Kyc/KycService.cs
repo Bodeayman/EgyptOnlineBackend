@@ -1,16 +1,20 @@
 using EgyptOnline.Data;
 using EgyptOnline.Models;
+using EgyptOnline.Services;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace EgyptOnline.Application.Services.Kyc
 {
     public class KycService
     {
         private readonly ApplicationDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public KycService(ApplicationDbContext context)
+        public KycService(ApplicationDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         public async Task<KycSubmission> SubmitKycAsync(string userId, string frontImagePath, string backImagePath, string selfieImagePath)
@@ -46,6 +50,18 @@ namespace EgyptOnline.Application.Services.Kyc
             _context.KycSubmissions.Add(submission);
             await _context.SaveChangesAsync();
 
+            try
+            {
+                await _notificationService.SendNotificationToUser(
+                    userId,
+                    "تم استلام طلب التحقق الشخصي",
+                    "تم استلام صور التحقق الخاصة بك وسيتم مراجعتها قريبًا.");
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to send KYC submission notification to user {UserId}", userId);
+            }
+
             return submission;
         }
 
@@ -75,6 +91,24 @@ namespace EgyptOnline.Application.Services.Kyc
             }
 
             await _context.SaveChangesAsync();
+
+            try
+            {
+                var title = "تحديث طلب التحقق الشخصي";
+                var body = status switch
+                {
+                    "approved" => "تهانينا! تم الموافقة على التحقق من هويتك وتفعيل حسابك بالكامل.",
+                    "rejected" => $"تم رفض طلب التحقق الشخصي. السبب: {rejectionReason ?? "غير محدد"}",
+                    "edit_required" => $"الصور المرفوعة غير واضحة أو غير كاملة: {rejectionReason ?? "يرجى إعادة تصوير البطاقة الشخصية بوضوح وإعادة الرفع."}",
+                    _ => "تم تحديث حالة التحقق الشخصي الخاصة بك"
+                };
+
+                await _notificationService.SendNotificationToUser(submission.UserId, title, body);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to send KYC review notification to user {UserId}", submission.UserId);
+            }
 
             return submission;
         }

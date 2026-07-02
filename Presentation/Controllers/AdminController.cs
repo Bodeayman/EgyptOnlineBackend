@@ -40,12 +40,12 @@ namespace EgyptOnline.Controllers
             WalletService walletService,
             INotificationService notificationService)
         {
-            _context          = context;
-            _userManager      = userManager;
-            _userService      = userService;
-            _kycService       = kycService;
+            _context = context;
+            _userManager = userManager;
+            _userService = userService;
+            _kycService = kycService;
             _complaintService = complaintService;
-            _walletService     = walletService;
+            _walletService = walletService;
             _notificationService = notificationService;
         }
 
@@ -263,7 +263,7 @@ namespace EgyptOnline.Controllers
 
                         if (dto.SubscriptionEndDate.HasValue)
                             user.Subscription.EndDate = dto.SubscriptionEndDate.Value;
-                        
+
                         user.Subscription.UpdatedAt = DateTime.UtcNow;
                     }
                 }
@@ -435,7 +435,7 @@ namespace EgyptOnline.Controllers
             try
             {
                 var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
-                var result  = await _kycService.ReviewKycAsync(kycId, adminId, dto.Status, dto.RejectionReason);
+                var result = await _kycService.ReviewKycAsync(kycId, adminId, dto.Status, dto.RejectionReason);
 
                 // Send Firebase Notification based on new status
                 string title = "تحديث طلب التحقق الشخصي";
@@ -467,12 +467,12 @@ namespace EgyptOnline.Controllers
                 return Ok(new
                 {
                     message = responseMsg,
-                    data    = new { result.Id, result.UserId, result.Status, result.ReviewedAt, result.RejectionReason }
+                    data = new { result.Id, result.UserId, result.Status, result.ReviewedAt, result.RejectionReason }
                 });
             }
-            catch (KeyNotFoundException ex)     { return NotFound(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex)                 { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -533,9 +533,9 @@ namespace EgyptOnline.Controllers
                     data = result
                 });
             }
-            catch (KeyNotFoundException ex)     { return NotFound(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex)                 { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -596,9 +596,9 @@ namespace EgyptOnline.Controllers
                     data = result
                 });
             }
-            catch (KeyNotFoundException ex)     { return NotFound(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex)                 { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -613,20 +613,20 @@ namespace EgyptOnline.Controllers
         [HttpGet("complaints")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> GetComplaints(
-            [FromQuery] string? status     = null,
-            [FromQuery] int pageNumber     = 1,
-            [FromQuery] int pageSize       = 20)
+            [FromQuery] string? status = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
         {
             try
             {
                 var (items, total) = await _complaintService.GetAllComplaintsAsync(status, pageNumber, pageSize);
                 return Ok(new
                 {
-                    data        = items,
-                    totalCount  = total,
+                    data = items,
+                    totalCount = total,
                     pageNumber,
                     pageSize,
-                    totalPages  = (int)Math.Ceiling(total / (double)pageSize)
+                    totalPages = (int)Math.Ceiling(total / (double)pageSize)
                 });
             }
             catch (Exception ex)
@@ -648,13 +648,13 @@ namespace EgyptOnline.Controllers
 
             try
             {
-                var adminId   = User.FindFirst("uid")?.Value ?? string.Empty;
+                var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
                 var complaint = await _complaintService.ReviewComplaintAsync(id, adminId, dto.Status, dto.AdminNote);
 
                 return Ok(new
                 {
                     message = "تم تحديث حالة الشكوى بنجاح",
-                    data    = new
+                    data = new
                     {
                         complaint.Id,
                         complaint.Status,
@@ -664,10 +664,10 @@ namespace EgyptOnline.Controllers
                     }
                 });
             }
-            catch (KeyNotFoundException ex)     { return NotFound(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (ArgumentException ex)         { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex)                 { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
     }
 

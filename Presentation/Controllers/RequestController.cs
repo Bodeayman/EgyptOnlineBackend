@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 namespace EgyptOnline.Presentation.Controllers
 {
     [ApiController]
-    [Route("api/v{version:apiVersion}/[controller]")]
+    [Route("api/v{version:apiVersion}/requests")]
     [ApiVersion("1.0")]
     [Authorize(Roles = Roles.User)]
     public class RequestController : ControllerBase

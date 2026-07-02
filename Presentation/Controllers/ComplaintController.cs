@@ -11,7 +11,7 @@ namespace EgyptOnline.Presentation.Controllers
     /// Any authenticated user can file a complaint on a contract they are part of.
     /// </summary>
     [ApiController]
-    [Route("api/v{version:apiVersion}/[controller]")]
+    [Route("api/v{version:apiVersion}/complaints")]
     [ApiVersion("1.0")]
     [Authorize(Roles = Roles.User)]
     public class ComplaintController : ControllerBase
@@ -69,10 +69,10 @@ namespace EgyptOnline.Presentation.Controllers
                     }
                 });
             }
-            catch (KeyNotFoundException ex)       { return NotFound(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
-            catch (InvalidOperationException ex)   { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex)                   { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
 
         /// <summary>
