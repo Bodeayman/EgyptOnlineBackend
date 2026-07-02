@@ -10,7 +10,6 @@ serviceAccountKey.json
 googlekey.json
 
 EgyptOnline.http
-Migrations/
 fly.toml
 docker-compose.yaml
 *.log
