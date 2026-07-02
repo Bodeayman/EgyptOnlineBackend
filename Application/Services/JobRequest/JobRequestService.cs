@@ -1,4 +1,5 @@
 using EgyptOnline.Data;
+using EgyptOnline.Dtos.JobRequest;
 using EgyptOnline.Models;
 using EgyptOnline.Services;
 using EgyptOnline.Utilities;
@@ -23,7 +24,7 @@ namespace EgyptOnline.Application.Services.JobRequest
         /// <summary>
         /// Create a new job request and notify all users in the same governorate.
         /// </summary>
-        public async Task<Models.JobRequest> CreateRequestAsync(
+        public async Task<JobRequestSummaryDto> CreateRequestAsync(
             string clientUserId,
             string providerType,
             string skill,
@@ -70,7 +71,20 @@ namespace EgyptOnline.Application.Services.JobRequest
                 }
             }
 
-            return request;
+            return new JobRequestSummaryDto
+            {
+                Id = request.Id,
+                ClientUserId = request.ClientUserId,
+                ProviderType = request.ProviderType,
+                Skill = request.Skill,
+                Governorate = request.Governorate,
+                City = request.City,
+                WorkerType = request.WorkerType.HasValue ? (int?)request.WorkerType.Value : null,
+                PayRate = request.PayRate,
+                CreatedAt = request.CreatedAt,
+                Status = request.Status,
+                AcceptedProviderUserId = request.AcceptedProviderUserId
+            };
         }
 
         /// <summary>
@@ -115,7 +129,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                     r.Skill,
                     r.Governorate,
                     r.City,
-                    r.WorkerType,
+                    WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                     r.PayRate,
                     r.CreatedAt,
                     r.Status,
@@ -168,7 +182,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                     r.Skill,
                     r.Governorate,
                     r.City,
-                    r.WorkerType,
+                    WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                     r.PayRate,
                     r.CreatedAt,
                     isInterested = interest?.IsInterested ?? false,
@@ -187,7 +201,7 @@ namespace EgyptOnline.Application.Services.JobRequest
         /// Update interested/not-interested status for a job request.
         /// Notifies the request creator when a provider marks interest.
         /// </summary>
-        public async Task<JobRequestInterest> SetInterestAsync(int requestId, string serviceProviderUserId, bool isInterested)
+        public async Task<JobRequestInterestResultDto> SetInterestAsync(int requestId, string serviceProviderUserId, bool isInterested)
         {
             var request = await _context.JobRequests
                 .FirstOrDefaultAsync(r => r.Id == requestId);
@@ -243,7 +257,14 @@ namespace EgyptOnline.Application.Services.JobRequest
                 }
             }
 
-            return interest;
+            return new JobRequestInterestResultDto
+            {
+                Id = interest.Id,
+                JobRequestId = interest.JobRequestId,
+                ServiceProviderUserId = interest.ServiceProviderUserId,
+                IsInterested = interest.IsInterested,
+                UpdatedAt = interest.UpdatedAt
+            };
         }
 
         private static object MapServiceProvider(User user, bool isOccupied)
@@ -319,7 +340,7 @@ namespace EgyptOnline.Application.Services.JobRequest
         /// <summary>
         /// Cancel a job request (marking it as Cancelled without deleting).
         /// </summary>
-        public async Task<Models.JobRequest> CancelRequestAsync(int requestId, string clientUserId)
+        public async Task<JobRequestSummaryDto> CancelRequestAsync(int requestId, string clientUserId)
         {
             var request = await _context.JobRequests
                 .FirstOrDefaultAsync(r => r.Id == requestId && r.ClientUserId == clientUserId);
@@ -332,10 +353,23 @@ namespace EgyptOnline.Application.Services.JobRequest
 
             request.Status = "Cancelled";
             await _context.SaveChangesAsync();
-            return request;
+            return new JobRequestSummaryDto
+            {
+                Id = request.Id,
+                ClientUserId = request.ClientUserId,
+                ProviderType = request.ProviderType,
+                Skill = request.Skill,
+                Governorate = request.Governorate,
+                City = request.City,
+                WorkerType = request.WorkerType.HasValue ? (int?)request.WorkerType.Value : null,
+                PayRate = request.PayRate,
+                CreatedAt = request.CreatedAt,
+                Status = request.Status,
+                AcceptedProviderUserId = request.AcceptedProviderUserId
+            };
         }
 
-        public async Task<Models.JobRequest> CompleteRequestAsync(int requestId, string clientUserId)
+        public async Task<JobRequestSummaryDto> CompleteRequestAsync(int requestId, string clientUserId)
         {
             var request = await _context.JobRequests
                 .FirstOrDefaultAsync(r => r.Id == requestId && r.ClientUserId == clientUserId);
@@ -351,7 +385,20 @@ namespace EgyptOnline.Application.Services.JobRequest
 
             request.Status = "Completed";
             await _context.SaveChangesAsync();
-            return request;
+            return new JobRequestSummaryDto
+            {
+                Id = request.Id,
+                ClientUserId = request.ClientUserId,
+                ProviderType = request.ProviderType,
+                Skill = request.Skill,
+                Governorate = request.Governorate,
+                City = request.City,
+                WorkerType = request.WorkerType.HasValue ? (int?)request.WorkerType.Value : null,
+                PayRate = request.PayRate,
+                CreatedAt = request.CreatedAt,
+                Status = request.Status,
+                AcceptedProviderUserId = request.AcceptedProviderUserId
+            };
         }
     }
 }
