@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EgyptOnline.Controllers
 {
     [ApiController]
-    [Route("api/v{version:apiVersion}/[controller]")]
+    [Route("api/v{version:apiVersion}/contracts")]
     [ApiVersion("1.0")]
     [Authorize(Roles = Roles.User)]
     public class ContractController : ControllerBase
