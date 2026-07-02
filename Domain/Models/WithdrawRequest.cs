@@ -30,6 +30,10 @@ namespace EgyptOnline.Models
         [MaxLength(200)]
         public string WalletOwnerName { get; set; } = string.Empty;
 
+        [Required]
+        [MaxLength(100)]
+        public string SourceWalletNumber { get; set; } = string.Empty;
+
         /// <summary>pending, approved, rejected</summary>
         [Required]
         [MaxLength(30)]

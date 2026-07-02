@@ -30,6 +30,7 @@ namespace EgyptOnline.Controllers
         private readonly ComplaintService _complaintService;
         private readonly WalletService _walletService;
         private readonly INotificationService _notificationService;
+        private readonly ICDNService _cdnService;
 
         public AdminController(
             ApplicationDbContext context,
@@ -38,7 +39,8 @@ namespace EgyptOnline.Controllers
             KycService kycService,
             ComplaintService complaintService,
             WalletService walletService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ICDNService cdnService)
         {
             _context = context;
             _userManager = userManager;
@@ -47,6 +49,7 @@ namespace EgyptOnline.Controllers
             _complaintService = complaintService;
             _walletService = walletService;
             _notificationService = notificationService;
+            _cdnService = cdnService;
         }
 
         [HttpGet("users")]
@@ -363,7 +366,26 @@ namespace EgyptOnline.Controllers
             try
             {
                 var submissions = await _kycService.GetPendingKycSubmissionsAsync(pageNumber, pageSize);
-                return Ok(new { data = submissions, pageNumber, pageSize });
+                var formatted = new List<object>();
+                foreach (var s in submissions)
+                {
+                    formatted.Add(new
+                    {
+                        s.Id,
+                        s.UserId,
+                        userName = s.User?.UserName,
+                        firstName = s.User?.FirstName,
+                        lastName = s.User?.LastName,
+                        s.Status,
+                        s.SubmittedAt,
+                        frontImageUrl = !string.IsNullOrEmpty(s.FrontImagePath) ? await _cdnService.GetPresignedUrlAsync(s.FrontImagePath) : null,
+                        backImageUrl = !string.IsNullOrEmpty(s.BackImagePath) ? await _cdnService.GetPresignedUrlAsync(s.BackImagePath) : null,
+                        selfieImageUrl = !string.IsNullOrEmpty(s.SelfieImagePath) ? await _cdnService.GetPresignedUrlAsync(s.SelfieImagePath) : null,
+                        s.RejectionReason,
+                        s.ReviewedAt
+                    });
+                }
+                return Ok(new { data = formatted, pageNumber, pageSize });
             }
             catch (Exception ex)
             {
@@ -442,19 +464,25 @@ namespace EgyptOnline.Controllers
             try
             {
                 var deposits = await _walletService.GetPendingDepositsAsync(pageNumber, pageSize);
-                var formatted = deposits.Select(d => new
+                var formatted = new List<object>();
+                foreach (var d in deposits)
                 {
-                    depositId = d.Id,
-                    userId = d.UserId,
-                    userName = d.User?.UserName,
-                    firstName = d.User?.FirstName,
-                    lastName = d.User?.LastName,
-                    amount = d.Amount,
-                    receiptImagePath = d.ReceiptImagePath,
-                    sourceWalletNumber = d.SourceWalletNumber,
-                    status = d.Status,
-                    createdAt = d.CreatedAt
-                });
+                    formatted.Add(new
+                    {
+                        depositId = d.Id,
+                        userId = d.UserId,
+                        userName = d.User?.UserName,
+                        firstName = d.User?.FirstName,
+                        lastName = d.User?.LastName,
+                        amount = d.Amount,
+                        receiptImageUrl = !string.IsNullOrEmpty(d.ReceiptImagePath) ? await _cdnService.GetPresignedUrlAsync(d.ReceiptImagePath) : null,
+                        sourceWalletNumber = d.SourceWalletNumber,
+                        walletOwnerName = d.WalletOwnerName,
+                        recipientPhoneNumber = d.RecipientPhoneNumber,
+                        status = d.Status,
+                        createdAt = d.CreatedAt
+                    });
+                }
                 return Ok(new { data = formatted, pageNumber, pageSize });
             }
             catch (Exception ex)
@@ -515,6 +543,7 @@ namespace EgyptOnline.Controllers
                     amount = w.Amount,
                     destinationWalletNumber = w.DestinationWalletNumber,
                     walletOwnerName = w.WalletOwnerName,
+                    sourceWalletNumber = w.SourceWalletNumber,
                     status = w.Status,
                     createdAt = w.CreatedAt
                 });

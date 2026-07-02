@@ -34,6 +34,14 @@ namespace EgyptOnline.Dtos.Wallet
         [MaxLength(100)]
         public string SourceWalletNumber { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "اسم صاحب المحفظة مطلوب")]
+        [MaxLength(200)]
+        public string WalletOwnerName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "رقم المحفظة المحول إليها (المستلم) مطلوب")]
+        [MaxLength(100)]
+        public string RecipientPhoneNumber { get; set; } = string.Empty;
+
         [Required(ErrorMessage = "صورة إيصال التحويل مطلوبة")]
         public IFormFile ReceiptImage { get; set; } = null!;
     }
@@ -51,5 +59,12 @@ namespace EgyptOnline.Dtos.Wallet
         [Required(ErrorMessage = "اسم صاحب المحفظة مطلوب")]
         [MaxLength(200)]
         public string WalletOwnerName { get; set; } = string.Empty;
+    }
+
+    public class UpdateWalletNumberDto
+    {
+        [Required(ErrorMessage = "رقم المحفظة مطلوب")]
+        [MaxLength(50)]
+        public string WalletNumber { get; set; } = string.Empty;
     }
 }

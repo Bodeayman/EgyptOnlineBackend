@@ -33,7 +33,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 var wallet = await _walletService.GetBalanceAsync(userId);
-                return Ok(new { data = new { userId, balance = wallet.Balance } });
+                return Ok(new { data = new { userId, balance = wallet.Balance, walletNumber = wallet.WalletNumber } });
             }
             catch (Exception ex)
             {
@@ -62,7 +62,13 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(receiptPath))
                     return BadRequest(new { message = "فشل رفع صورة الإيصال" });
 
-                var request = await _walletService.SubmitDepositRequestAsync(userId, dto.Amount, dto.SourceWalletNumber, receiptPath);
+                var request = await _walletService.SubmitDepositRequestAsync(
+                    userId, 
+                    dto.Amount, 
+                    dto.SourceWalletNumber, 
+                    dto.WalletOwnerName, 
+                    dto.RecipientPhoneNumber, 
+                    receiptPath);
 
                 return Ok(new
                 {
@@ -72,6 +78,8 @@ namespace EgyptOnline.Controllers
                         request.Id,
                         request.Amount,
                         request.SourceWalletNumber,
+                        request.WalletOwnerName,
+                        request.RecipientPhoneNumber,
                         request.Status,
                         request.CreatedAt
                     }
@@ -113,6 +121,7 @@ namespace EgyptOnline.Controllers
                         request.Amount,
                         request.DestinationWalletNumber,
                         request.WalletOwnerName,
+                        request.SourceWalletNumber,
                         request.Status,
                         request.CreatedAt
                     }
@@ -191,6 +200,29 @@ namespace EgyptOnline.Controllers
 
                 var transactions = await _walletService.GetTransactionHistoryAsync(userId, pageNumber, pageSize);
                 return Ok(new { data = transactions, pageNumber, pageSize });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Update user's wallet number.
+        /// PUT /api/v1/Wallet/number
+        /// </summary>
+        [HttpPut("number")]
+        public async Task<IActionResult> UpdateWalletNumber([FromBody] UpdateWalletNumberDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+                var wallet = await _walletService.UpdateWalletNumberAsync(userId, dto.WalletNumber);
+                return Ok(new { message = "تم تحديث رقم المحفظة بنجاح", data = new { userId, walletNumber = wallet.WalletNumber } });
             }
             catch (Exception ex)
             {

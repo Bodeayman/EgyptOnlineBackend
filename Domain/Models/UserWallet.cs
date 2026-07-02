@@ -17,6 +17,10 @@ namespace EgyptOnline.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Balance { get; set; } = 0;
 
+        [Required]
+        [MaxLength(50)]
+        public string WalletNumber { get; set; } = string.Empty;
+
         [Column(TypeName = "timestamptz")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

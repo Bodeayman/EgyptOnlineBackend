@@ -25,7 +25,12 @@ namespace EgyptOnline.Application.Services.Wallet
             var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId);
             if (wallet == null)
             {
-                wallet = new UserWallet { UserId = userId };
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                wallet = new UserWallet 
+                { 
+                    UserId = userId,
+                    WalletNumber = user?.PhoneNumber ?? string.Empty
+                };
                 _context.UserWallets.Add(wallet);
                 await _context.SaveChangesAsync();
             }
@@ -202,6 +207,8 @@ namespace EgyptOnline.Application.Services.Wallet
             string userId,
             decimal amount,
             string sourceWalletNumber,
+            string walletOwnerName,
+            string recipientPhoneNumber,
             string receiptImagePath)
         {
             if (amount <= 0)
@@ -214,6 +221,8 @@ namespace EgyptOnline.Application.Services.Wallet
                 UserId = userId,
                 Amount = amount,
                 SourceWalletNumber = sourceWalletNumber,
+                WalletOwnerName = walletOwnerName,
+                RecipientPhoneNumber = recipientPhoneNumber,
                 ReceiptImagePath = receiptImagePath,
                 Status = "pending"
             };
@@ -321,6 +330,7 @@ namespace EgyptOnline.Application.Services.Wallet
                     Amount = amount,
                     DestinationWalletNumber = destinationWalletNumber,
                     WalletOwnerName = walletOwnerName,
+                    SourceWalletNumber = wallet.WalletNumber,
                     Status = "pending"
                 };
 
@@ -418,6 +428,15 @@ namespace EgyptOnline.Application.Services.Wallet
             {
                 Log.Warning(ex, "Failed to send notification to {UserId}: {Title}", userId, title);
             }
+        }
+
+        public async Task<UserWallet> UpdateWalletNumberAsync(string userId, string walletNumber)
+        {
+            var wallet = await GetOrCreateWalletAsync(userId);
+            wallet.WalletNumber = walletNumber;
+            wallet.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return wallet;
         }
     }
 }

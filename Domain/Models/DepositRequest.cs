@@ -27,6 +27,14 @@ namespace EgyptOnline.Models
         public string SourceWalletNumber { get; set; } = string.Empty;
 
         [Required]
+        [MaxLength(200)]
+        public string WalletOwnerName { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(100)]
+        public string RecipientPhoneNumber { get; set; } = string.Empty;
+
+        [Required]
         [MaxLength(500)]
         public string ReceiptImagePath { get; set; } = string.Empty;
 
