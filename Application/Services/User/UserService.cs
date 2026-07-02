@@ -54,6 +54,7 @@ namespace EgyptOnline.Services
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim("uid", user.Id),
             new Claim("token_type", TokenType.ToString()),
+            new Claim(ClaimTypes.Name,user.UserName),
             new Claim(
                 JwtRegisteredClaimNames.Iat,
                 DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
