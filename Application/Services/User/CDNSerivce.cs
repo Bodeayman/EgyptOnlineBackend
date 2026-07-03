@@ -126,12 +126,11 @@ namespace EgyptOnline.Services
                 if (!string.IsNullOrEmpty(_publicEndpoint) && _publicEndpoint != _internalEndpoint)
                 {
                     var uri = new Uri(url);
-                    var publicUri = new UriBuilder(uri)
-                    {
-                        Host = _publicEndpoint.Split(':')[0],
-                        Port = _publicEndpoint.Contains(':') ? int.Parse(_publicEndpoint.Split(':')[1]) : (uri.Scheme == "https" ? 443 : 80)
-                    };
-                    url = publicUri.ToString();
+                    var queryString = uri.Query;
+
+                    // Construct the public URL in the expected format: https://domain/files/bucket/object?query
+                    var publicUrl = $"https://{_publicEndpoint}/files/{_privateBucket}/{objectKey}{queryString}";
+                    url = publicUrl;
                 }
 
                 _logger.LogInformation("Presigned URL generated for {ObjectKey}, expires in {Expiry}s", objectKey, expirySeconds);

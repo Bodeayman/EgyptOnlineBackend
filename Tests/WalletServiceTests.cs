@@ -46,21 +46,31 @@ namespace EgyptOnline.Tests
         }
 
         [Fact]
-        public async Task GetOrCreateWallet_ShouldCreateNewWallet_IfNoneExists()
+        public async Task GetWallet_ShouldReturnExistingWallet_IfExists()
         {
             // Arrange
             string userId = "user1";
+            var existingWallet = new UserWallet { UserId = userId, Balance = 100m };
+            _context.UserWallets.Add(existingWallet);
+            await _context.SaveChangesAsync();
 
             // Act
-            var wallet = await _service.GetOrCreateWalletAsync(userId);
+            var wallet = await _service.GetWalletAsync(userId);
 
             // Assert
             Assert.NotNull(wallet);
             Assert.Equal(userId, wallet.UserId);
-            Assert.Equal(0, wallet.Balance);
-            
-            var dbWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId);
-            Assert.NotNull(dbWallet);
+            Assert.Equal(100m, wallet.Balance);
+        }
+
+        [Fact]
+        public async Task GetWallet_ShouldThrow_IfNotExists()
+        {
+            // Arrange
+            string userId = "user1";
+
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetWalletAsync(userId));
         }
 
         [Fact]

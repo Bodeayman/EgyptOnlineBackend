@@ -67,7 +67,6 @@ namespace EgyptOnline.Controllers
                     dto.Amount,
                     dto.SourceWalletNumber,
                     dto.WalletOwnerName,
-                    dto.RecipientPhoneNumber,
                     receiptPath);
 
                 return Ok(new
@@ -79,7 +78,6 @@ namespace EgyptOnline.Controllers
                         request.Amount,
                         request.SourceWalletNumber,
                         request.WalletOwnerName,
-                        request.RecipientPhoneNumber,
                         request.Status,
                         request.CreatedAt
                     }
@@ -114,8 +112,7 @@ namespace EgyptOnline.Controllers
                     userId,
                     dto.Amount,
                     dto.DestinationWalletNumber,
-                    dto.WalletOwnerName,
-                    dto.SourceWalletNumber);
+                    dto.WalletOwnerName);
 
                 return Ok(new
                 {
@@ -126,7 +123,6 @@ namespace EgyptOnline.Controllers
                         request.Amount,
                         request.DestinationWalletNumber,
                         request.WalletOwnerName,
-                        request.SourceWalletNumber,
                         request.Status,
                         request.CreatedAt
                     }
