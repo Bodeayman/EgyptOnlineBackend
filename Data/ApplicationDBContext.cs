@@ -1,4 +1,5 @@
 using EgyptOnline.Models;
+using EgyptOnline.Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -69,27 +70,16 @@ namespace EgyptOnline.Data
             modelBuilder.Entity<Sculptor>().ToTable("Sculptors");
 
             // ─── Contract Module Configurations ─────────────────────
-            // Parties are stored as usernames (not PKs), so no FK relationships —
-            // just indexes for fast query filtering.
             modelBuilder.Entity<Contract>(entity =>
             {
                 entity.ToTable("Contracts");
-                entity.HasIndex(e => e.ContractorUsername);
-                entity.HasIndex(e => e.EngineerUsername);
-                entity.HasIndex(e => e.WorkerUsername);
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.ClientUserId);
-                entity.HasIndex(e => e.WorkerUserId);
                 entity.HasIndex(e => e.ServiceProviderUserId);
 
                 entity.HasOne(c => c.ClientUser)
                     .WithMany()
                     .HasForeignKey(c => c.ClientUserId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(c => c.WorkerUser)
-                    .WithMany()
-                    .HasForeignKey(c => c.WorkerUserId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(c => c.ServiceProviderUser)

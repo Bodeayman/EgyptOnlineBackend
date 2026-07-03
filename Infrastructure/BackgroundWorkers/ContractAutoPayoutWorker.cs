@@ -1,7 +1,8 @@
 using EgyptOnline.Data;
 using EgyptOnline.Domain.Models;
 using EgyptOnline.Domain.Models.Enums;
-using EgyptOnline.Application.Services;
+using EgyptOnline.Application.Services.Wallet;
+using EgyptOnline.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

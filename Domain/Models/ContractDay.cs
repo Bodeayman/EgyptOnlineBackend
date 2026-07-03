@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using EgyptOnline.Domain.Models.Enums;
+using EgyptOnline.Models;
 
 namespace EgyptOnline.Domain.Models
 {

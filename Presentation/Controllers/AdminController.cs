@@ -15,6 +15,7 @@ using EgyptOnline.Application.Services.Complaint;
 using EgyptOnline.Application.Services.Wallet;
 using System.ComponentModel.DataAnnotations;
 using Serilog;
+using EgyptOnline.Domain.Models.Enums;
 
 namespace EgyptOnline.Controllers
 {

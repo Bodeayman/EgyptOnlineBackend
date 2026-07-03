@@ -160,7 +160,7 @@ namespace EgyptOnline.Controllers
                     _context.UserWallets.Add(new UserWallet
                     {
                         UserId = UserRegisterationResult.User.Id,
-                        Balance = 0
+                        FreeBalance = 0
                     });
                 }
 
@@ -292,7 +292,7 @@ namespace EgyptOnline.Controllers
                     _context.UserWallets.Add(new UserWallet
                     {
                         UserId = user.Id,
-                        Balance = 0
+                        FreeBalance = 0
                     });
                 }
 

@@ -25,9 +25,8 @@ public class AutoPayoutBackgroundService : BackgroundService
                 // Only run heavy DB queries at or after 5:00 PM Egypt time
                 if (egyptTime.TimeOfDay >= new TimeSpan(17, 0, 0))
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var contractService = scope.ServiceProvider.GetRequiredService<ContractService>();
-                    await contractService.ProcessAutoPayoutsAsync(egyptTime);
+                    // ContractAutoPayoutWorker handles auto-payouts independently
+                    // This service is kept for potential future scheduling logic
                 }
             }
             catch (Exception ex)

@@ -40,15 +40,14 @@ namespace EgyptOnline.Application.Services.Complaint
                 .FirstOrDefaultAsync()
                 ?? throw new InvalidOperationException("المستخدم غير موجود");
 
-            bool isParty = contract.ContractorUsername == reporterUsername
-                        || contract.EngineerUsername == reporterUsername
-                        || contract.WorkerUsername == reporterUsername;
+            bool isParty = contract.ClientUserId == reporterUserId
+                        || contract.ServiceProviderUserId == reporterUserId;
 
             if (!isParty)
                 throw new UnauthorizedAccessException("أنت لست طرفاً في هذا العقد");
 
             if (contract.Status == "completed" || contract.Status == "cancelled")
-                throw new InvalidOperationException("لا يمكن تقديم شكوى على عقد منتهٍ أو ملغى");
+                throw new InvalidOperationException("لا يمكن تقديم شكوى على عقد منتهٍ أو ملغا");
 
             // Check if there's already an open complaint on this contract by this user
             var existingOpen = await _context.Complaints
@@ -71,10 +70,9 @@ namespace EgyptOnline.Application.Services.Complaint
             _context.Complaints.Add(complaint);
             await _context.SaveChangesAsync();
 
-            // Notify the other parties
-            await SafeNotifyByUsername(contract.ContractorUsername, reporterUsername, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
-            await SafeNotifyByUsername(contract.EngineerUsername, reporterUsername, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
-            await SafeNotifyByUsername(contract.WorkerUsername, reporterUsername, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
+            // Notify the other party
+            var otherPartyId = contract.ClientUserId == reporterUserId ? contract.ServiceProviderUserId : contract.ClientUserId;
+            await SafeNotifyByUserId(otherPartyId, reporterUserId, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
 
             return complaint;
         }
@@ -197,9 +195,16 @@ namespace EgyptOnline.Application.Services.Complaint
             catch (Exception ex) { Log.Warning(ex, "Failed to notify user {UserId}", userId); }
         }
 
+        private async Task SafeNotifyByUserId(string userId, string senderId, string title, string body)
+        {
+            if (userId == senderId) return;
+            try { await _notificationService.SendNotificationToUser(userId, title, body); }
+            catch (Exception ex) { Log.Warning(ex, "Failed to notify user {UserId}", userId); }
+        }
+
         private async Task SafeNotifyByUsername(string targetUsername, string senderUsername, string title, string body)
         {
-            if (targetUsername == senderUsername) return; // don't notify the reporter themselves
+            if (targetUsername == senderUsername) return;
             try
             {
                 var userId = (await _context.Users.FirstOrDefaultAsync(u => u.UserName == targetUsername))?.Id;

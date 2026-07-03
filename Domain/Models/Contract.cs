@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using EgyptOnline.Domain.Models.Enums;
+using EgyptOnline.Domain.Models;
 
 namespace EgyptOnline.Models
 {
@@ -63,6 +64,6 @@ namespace EgyptOnline.Models
         public string? TerminationReason { get; set; }
 
         // Navigation Property
-        public ICollection<ContractDay> ContractDays { get; set; } = new List<ContractDay>();
+        public ICollection<Domain.Models.ContractDay> ContractDays { get; set; } = new List<Domain.Models.ContractDay>();
     }
 }

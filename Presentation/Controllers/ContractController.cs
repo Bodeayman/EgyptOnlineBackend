@@ -1,5 +1,6 @@
 using EgyptOnline.Application.Services.Contract;
 using EgyptOnline.Domain.Models;
+using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -329,7 +330,7 @@ namespace EgyptOnline.Controllers
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-                var contracts = await _contractService.GetContractsByUserIdAsync(userId, pageNumber, pageSize);
+                var contracts = await _contractService.GetContractsByUserIdAsync(userId, null, pageNumber, pageSize);
                 return Ok(new { data = contracts, pageNumber, pageSize });
             }
             catch (Exception ex)

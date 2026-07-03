@@ -1,5 +1,6 @@
 using EgyptOnline.Data;
 using EgyptOnline.Domain.Models;
+using EgyptOnline.Application.Services.Wallet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

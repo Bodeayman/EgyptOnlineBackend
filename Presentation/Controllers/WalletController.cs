@@ -33,7 +33,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 var wallet = await _walletService.GetBalanceAsync(userId);
-                return Ok(new { data = new { userId, balance = wallet.Balance } });
+                return Ok(new { data = new { userId, balance = wallet.FreeBalance } });
             }
             catch (Exception ex)
             {
@@ -178,7 +178,7 @@ namespace EgyptOnline.Controllers
                 return Ok(new
                 {
                     message = "تم التحويل بنجاح",
-                    data = new { fromBalance = fromWallet.Balance, toBalance = toWallet.Balance }
+                    data = new { fromBalance = fromWallet.FreeBalance, toBalance = toWallet.FreeBalance }
                 });
             }
             catch (InvalidOperationException ex)

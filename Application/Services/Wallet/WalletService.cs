@@ -48,7 +48,7 @@ namespace EgyptOnline.Application.Services.Wallet
             try
             {
                 var wallet = await GetWalletAsync(userId);
-                wallet.Balance += amount;
+                wallet.FreeBalance += amount;
                 wallet.UpdatedAt = DateTime.UtcNow;
 
                 _context.WalletTransactions.Add(new WalletTransaction
@@ -84,10 +84,10 @@ namespace EgyptOnline.Application.Services.Wallet
             {
                 var wallet = await GetWalletAsync(userId);
 
-                if (wallet.Balance < amount)
+                if (wallet.FreeBalance < amount)
                     throw new InvalidOperationException("الرصيد غير كافي");
 
-                wallet.Balance -= amount;
+                wallet.FreeBalance -= amount;
                 wallet.UpdatedAt = DateTime.UtcNow;
 
                 _context.WalletTransactions.Add(new WalletTransaction
@@ -133,12 +133,12 @@ namespace EgyptOnline.Application.Services.Wallet
                 var fromWallet = await GetWalletAsync(fromUserId);
                 var toWallet = await GetWalletAsync(toUserId);
 
-                if (fromWallet.Balance < amount)
+                if (fromWallet.FreeBalance < amount)
                     throw new InvalidOperationException("الرصيد غير كافي");
 
-                fromWallet.Balance -= amount;
+                fromWallet.FreeBalance -= amount;
                 fromWallet.UpdatedAt = DateTime.UtcNow;
-                toWallet.Balance += amount;
+                toWallet.FreeBalance += amount;
                 toWallet.UpdatedAt = DateTime.UtcNow;
 
                 _context.WalletTransactions.AddRange(
@@ -263,7 +263,7 @@ namespace EgyptOnline.Application.Services.Wallet
                 if (status == "approved")
                 {
                     var wallet = await GetWalletAsync(request.UserId);
-                    wallet.Balance += request.Amount;
+                    wallet.FreeBalance += request.Amount;
                     wallet.UpdatedAt = DateTime.UtcNow;
 
                     _context.WalletTransactions.Add(new WalletTransaction
@@ -313,11 +313,11 @@ namespace EgyptOnline.Application.Services.Wallet
             try
             {
                 var wallet = await GetWalletAsync(userId);
-                if (wallet.Balance < amount)
+                if (wallet.FreeBalance < amount)
                     throw new InvalidOperationException("الرصيد غير كافي لطلب السحب");
 
                 // Lock/deduct the funds immediately upon request to prevent double-spending
-                wallet.Balance -= amount;
+                wallet.FreeBalance -= amount;
                 wallet.UpdatedAt = DateTime.UtcNow;
 
                 // Get user's phone number as source wallet number
@@ -398,7 +398,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
                     // Refund the locked money back to user's wallet
                     var wallet = await GetWalletAsync(request.UserId);
-                    wallet.Balance += request.Amount;
+                    wallet.FreeBalance += request.Amount;
                     wallet.UpdatedAt = DateTime.UtcNow;
 
                     // Send reject notification using Firebase
