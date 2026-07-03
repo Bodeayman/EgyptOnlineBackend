@@ -75,16 +75,11 @@ namespace EgyptOnline.Data
                 entity.ToTable("Contracts");
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.ClientUserId);
-                entity.HasIndex(e => e.ServiceProviderUserId);
+                entity.HasIndex(e => e.ServiceProviderPhoneNumber);
 
                 entity.HasOne(c => c.ClientUser)
                     .WithMany()
                     .HasForeignKey(c => c.ClientUserId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(c => c.ServiceProviderUser)
-                    .WithMany()
-                    .HasForeignKey(c => c.ServiceProviderUserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 

@@ -36,23 +36,16 @@ namespace EgyptOnline.Application.Services.Contract
         public async Task<ContractModel> CreateContractAsync(ContractModel contract)
         {
             var clientUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == contract.ClientUserId);
-            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == contract.ServiceProviderUserId);
+            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
 
             if (clientUser == null)
                 throw new InvalidOperationException($"Client user not found: {contract.ClientUserId}");
             if (providerUser == null)
-                throw new InvalidOperationException($"Service provider user not found: {contract.ServiceProviderUserId}");
+                throw new InvalidOperationException($"Service provider not found with phone number: {contract.ServiceProviderPhoneNumber}");
 
             var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(contract.ClientUserId, contract.TotalAmount.Value);
             if (!hasSufficientBalance)
                 throw new InvalidOperationException($"Client has insufficient free balance. Required: {contract.TotalAmount}");
-
-            var calculatedTotal = contract.DailyRate.Value * contract.TotalDays.Value;
-            if (Math.Abs(contract.TotalAmount.Value - calculatedTotal) > 0.01m)
-                throw new InvalidOperationException($"Total amount mismatch. Expected: {calculatedTotal}, Provided: {contract.TotalAmount}");
-
-            // PenaltyAmount is a non-nullable decimal with default 0 in the model
-            // No need to set it here as it's already defaulted
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -85,12 +78,12 @@ namespace EgyptOnline.Application.Services.Contract
 
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("Created 2-party contract {ContractId} for client {ClientId} and provider {ProviderId}. Total: {TotalAmount}",
-                    contract.Id, contract.ClientUserId, contract.ServiceProviderUserId, contract.TotalAmount);
+                _logger.LogInformation("Created 2-party contract {ContractId} for client {ClientId} and provider phone {ProviderPhone}. Total: {TotalAmount}",
+                    contract.Id, contract.ClientUserId, contract.ServiceProviderPhoneNumber, contract.TotalAmount);
 
                 // Send notification to service provider
                 await _notificationService.SendNotificationToUser(
-                    contract.ServiceProviderUserId,
+                    providerUser.Id,
                     "عقد جديد",
                     $"تم إنشاء عقد جديد #{contract.Id} بقيمة {contract.TotalAmount} جنيه",
                     contract.ClientUserId
@@ -114,6 +107,11 @@ namespace EgyptOnline.Application.Services.Contract
             if (contract == null)
                 throw new InvalidOperationException($"Contract not found: {contractId}");
 
+            // Verify the caller is the service provider by phone number
+            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == providerUserId);
+            if (providerUser == null || providerUser.PhoneNumber != contract.ServiceProviderPhoneNumber)
+                throw new UnauthorizedAccessException("You are not authorized to reject this contract");
+
             if (contract.Status != "pending")
                 throw new InvalidOperationException($"Contract is not in Pending status. Current status: {contract.Status}");
 
@@ -121,11 +119,10 @@ namespace EgyptOnline.Application.Services.Contract
             try
             {
                 await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, contract.TotalAmount.Value);
-                await _walletService.SubtractFromFrozenBalanceAsync(contract.ServiceProviderUserId, contract.TotalAmount.Value);
 
                 contract.Status = "cancelled";
                 contract.CancelledAt = DateTime.UtcNow;
-                contract.CancelledBy = contract.ServiceProviderUserId;
+                contract.CancelledBy = contract.ServiceProviderPhoneNumber;
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -148,6 +145,11 @@ namespace EgyptOnline.Application.Services.Contract
             if (contract == null)
                 throw new InvalidOperationException($"Contract not found: {contractId}");
 
+            // Verify the caller is the service provider by phone number
+            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == providerUserId);
+            if (providerUser == null || providerUser.PhoneNumber != contract.ServiceProviderPhoneNumber)
+                throw new UnauthorizedAccessException("You are not authorized to accept this contract");
+
             if (contract.Status != "pending")
                 throw new InvalidOperationException($"Contract is not in Pending status. Current status: {contract.Status}");
 
@@ -162,7 +164,7 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.ClientUserId,
                 "تم قبول العقد",
                 $"تم قبول العقد #{contract.Id} من قبل مقدم الخدمة",
-                contract.ServiceProviderUserId
+                providerUserId
             );
 
             return contract;
@@ -176,6 +178,11 @@ namespace EgyptOnline.Application.Services.Contract
 
             if (contract == null)
                 throw new InvalidOperationException($"Contract not found: {contractId}");
+
+            // Verify the caller is the service provider by phone number
+            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == providerUserId);
+            if (providerUser == null || providerUser.PhoneNumber != contract.ServiceProviderPhoneNumber)
+                throw new UnauthorizedAccessException("You are not authorized to register arrival for this contract");
 
             if (contract.Status != "active")
                 throw new InvalidOperationException($"Contract is not in Active status. Current status: {contract.Status}");
@@ -200,7 +207,7 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.ClientUserId,
                 "وصول مقدم الخدمة",
                 $"وصل مقدم الخدمة لموقع العمل - يوم {dayNumber} من العقد #{contractId}",
-                contract.ServiceProviderUserId
+                providerUserId
             );
 
             return contractDay;
@@ -341,7 +348,7 @@ namespace EgyptOnline.Application.Services.Contract
             }
         }
 
-        public async Task<ContractModel> ProviderUnilateralTerminationAsync(int contractId, string reason)
+        public async Task<ContractModel> ProviderUnilateralTerminationAsync(int contractId, string providerUserId, string reason)
         {
             var contract = await _context.Contracts
                 .Include(c => c.ContractDays)
@@ -349,6 +356,11 @@ namespace EgyptOnline.Application.Services.Contract
 
             if (contract == null)
                 throw new InvalidOperationException($"Contract not found: {contractId}");
+
+            // Verify the caller is the service provider by phone number
+            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == providerUserId);
+            if (providerUser == null || providerUser.PhoneNumber != contract.ServiceProviderPhoneNumber)
+                throw new UnauthorizedAccessException("You are not authorized to terminate this contract");
 
             if (contract.Status != "active" && contract.Status != "suspended")
                 throw new InvalidOperationException($"Contract must be Active or Suspended for unilateral termination. Current status: {contract.Status}");
@@ -361,8 +373,8 @@ namespace EgyptOnline.Application.Services.Contract
 
                 contract.Status = "terminated";
                 contract.TerminatedAt = DateTime.UtcNow;
-                contract.TerminatedBy = contract.ServiceProviderUserId;
-                contract.CancelledBy = contract.ServiceProviderUserId;
+                contract.TerminatedBy = contract.ServiceProviderPhoneNumber;
+                contract.CancelledBy = contract.ServiceProviderPhoneNumber;
                 contract.CancelledAt = DateTime.UtcNow;
                 contract.TerminationReason = reason;
 
@@ -385,7 +397,6 @@ namespace EgyptOnline.Application.Services.Contract
         {
             return await _context.Contracts
                 .Include(c => c.ClientUser)
-                .Include(c => c.ServiceProviderUser)
                 .Include(c => c.ContractDays)
                 .FirstOrDefaultAsync(c => c.Id == contractId);
         }
@@ -395,9 +406,14 @@ namespace EgyptOnline.Application.Services.Contract
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
 
+            // Get the user's phone number to match against ServiceProviderPhoneNumber
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return new List<ContractModel>();
+
             var query = _context.Contracts
                 .Include(c => c.ContractDays)
-                .Where(c => c.ServiceProviderUserId == userId || c.ClientUserId == userId);
+                .Where(c => c.ServiceProviderPhoneNumber == user.PhoneNumber || c.ClientUserId == userId);
 
             if (!string.IsNullOrEmpty(status))
             {

@@ -34,14 +34,12 @@ namespace EgyptOnline.Application.Services.Complaint
                 ?? throw new KeyNotFoundException("العقد غير موجود");
 
             // Verify the reporter is a party to this contract
-            var reporterUsername = await _context.Users
-                .Where(u => u.Id == reporterUserId)
-                .Select(u => u.UserName)
-                .FirstOrDefaultAsync()
+            var reporterUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == reporterUserId)
                 ?? throw new InvalidOperationException("المستخدم غير موجود");
 
             bool isParty = contract.ClientUserId == reporterUserId
-                        || contract.ServiceProviderUserId == reporterUserId;
+                        || contract.ServiceProviderPhoneNumber == reporterUser.PhoneNumber;
 
             if (!isParty)
                 throw new UnauthorizedAccessException("أنت لست طرفاً في هذا العقد");
@@ -71,8 +69,23 @@ namespace EgyptOnline.Application.Services.Complaint
             await _context.SaveChangesAsync();
 
             // Notify the other party
-            var otherPartyId = contract.ClientUserId == reporterUserId ? contract.ServiceProviderUserId : contract.ClientUserId;
-            await SafeNotifyByUserId(otherPartyId, reporterUserId, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
+            string otherPartyId;
+            if (contract.ClientUserId == reporterUserId)
+            {
+                // Reporter is client, notify provider by phone number
+                var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+                otherPartyId = providerUser?.Id;
+            }
+            else
+            {
+                // Reporter is provider, notify client
+                otherPartyId = contract.ClientUserId;
+            }
+
+            if (!string.IsNullOrEmpty(otherPartyId))
+            {
+                await SafeNotifyByUserId(otherPartyId, reporterUserId, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
+            }
 
             return complaint;
         }

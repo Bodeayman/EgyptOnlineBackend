@@ -17,16 +17,12 @@ namespace EgyptOnline.Models
         public User? ClientUser { get; set; }
 
         // Service Provider identified by phone number
-        public string? ServiceProviderUserId { get; set; }
-
-        [ForeignKey(nameof(ServiceProviderUserId))]
-        public User? ServiceProviderUser { get; set; }
+        public string? ServiceProviderPhoneNumber { get; set; }
 
         // Mandatory Fields (User Input)
         public DateTime? StartDate { get; set; }
         public TimeSpan? ShiftStartTime { get; set; }
         public TimeSpan? ShiftEndTime { get; set; }
-        public decimal? DailyRate { get; set; }
         public int? TotalDays { get; set; }
         public decimal? TotalAmount { get; set; }
 

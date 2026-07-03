@@ -4,6 +4,8 @@ using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using EgyptOnline.Data;
 using System.ComponentModel.DataAnnotations;
 
 namespace EgyptOnline.Controllers
@@ -15,10 +17,12 @@ namespace EgyptOnline.Controllers
     public class ContractController : ControllerBase
     {
         private readonly ContractService _contractService;
+        private readonly ApplicationDbContext _context;
 
-        public ContractController(ContractService contractService)
+        public ContractController(ContractService contractService, ApplicationDbContext context)
         {
             _contractService = contractService;
+            _context = context;
         }
 
         private string? GetUserId() => User.FindFirst("uid")?.Value;
@@ -41,11 +45,10 @@ namespace EgyptOnline.Controllers
                 var contract = new Contract
                 {
                     ClientUserId = userId,
-                    ServiceProviderUserId = dto.ServiceProviderUserId,
+                    ServiceProviderPhoneNumber = dto.ServiceProviderPhoneNumber,
                     StartDate = dto.StartDate,
                     ShiftStartTime = dto.ShiftStartTime,
                     ShiftEndTime = dto.ShiftEndTime,
-                    DailyRate = dto.DailyRate,
                     TotalDays = dto.TotalDays,
                     TotalAmount = dto.TotalAmount,
                     PenaltyAmount = dto.PenaltyAmount,
@@ -295,7 +298,7 @@ namespace EgyptOnline.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
-                var contract = await _contractService.ProviderUnilateralTerminationAsync(id, dto.Reason);
+                var contract = await _contractService.ProviderUnilateralTerminationAsync(id, userId, dto.Reason);
                 return Ok(new { message = "تم إنهاء العقد من قبل مقدم الخدمة. الأرصدة مجمدة بانتظار مراجعة الأدمن", data = contract });
             }
             catch (KeyNotFoundException ex)
@@ -355,7 +358,10 @@ namespace EgyptOnline.Controllers
                 if (contract == null) return NotFound(new { message = "العقد غير موجود" });
 
                 // Only parties to the contract may view its details
-                if (contract.ClientUserId != userId && contract.ServiceProviderUserId != userId)
+                // Get current user's phone number to check against service provider phone
+                var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                bool isParty = contract.ClientUserId == userId || (currentUser != null && currentUser.PhoneNumber == contract.ServiceProviderPhoneNumber);
+                if (!isParty)
                     return StatusCode(403, new { message = "ليس لديك صلاحية لعرض هذا العقد" });
 
                 return Ok(new { data = contract });
@@ -371,7 +377,7 @@ namespace EgyptOnline.Controllers
     public class CreateContractDto
     {
         [Required]
-        public string ServiceProviderUserId { get; set; } = string.Empty;
+        public string ServiceProviderPhoneNumber { get; set; } = string.Empty;
 
         [Required]
         public DateTime StartDate { get; set; }
@@ -381,10 +387,6 @@ namespace EgyptOnline.Controllers
 
         [Required]
         public TimeSpan ShiftEndTime { get; set; }
-
-        [Required]
-        [Range(0.01, double.MaxValue)]
-        public decimal DailyRate { get; set; }
 
         [Required]
         [Range(1, int.MaxValue)]

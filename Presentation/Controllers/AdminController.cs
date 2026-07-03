@@ -668,7 +668,6 @@ namespace EgyptOnline.Controllers
             {
                 var contracts = await _context.Contracts
                     .Include(c => c.ClientUser)
-                    .Include(c => c.ServiceProviderUser)
                     .Include(c => c.ContractDays)
                     .Where(c => c.Status == "terminated")
                     .OrderByDescending(c => c.TerminatedAt)
@@ -689,14 +688,11 @@ namespace EgyptOnline.Controllers
                     },
                     serviceProvider = new
                     {
-                        userId = c.ServiceProviderUserId,
-                        phoneNumber = c.ServiceProviderUser?.PhoneNumber,
-                        userName = c.ServiceProviderUser?.UserName
+                        phoneNumber = c.ServiceProviderPhoneNumber
                     },
                     contractDetails = new
                     {
                         totalAmount = c.TotalAmount,
-                        dailyRate = c.DailyRate,
                         totalDays = c.TotalDays,
                         penaltyAmount = c.PenaltyAmount,
                         governorate = c.Governorate,
@@ -741,14 +737,16 @@ namespace EgyptOnline.Controllers
                 var contract = await _context.Contracts
                     .Include(c => c.ContractDays)
                     .Include(c => c.ClientUser)
-                    .Include(c => c.ServiceProviderUser)
                     .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (contract == null)
                     return NotFound(new { message = "Contract not found" });
 
+                // Get provider user by phone number
+                var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+
                 var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
-                var providerWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ServiceProviderUserId);
+                var providerWallet = providerUser != null ? await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == providerUser.Id) : null;
 
                 var processedDays = contract.ContractDays.Count(cd => cd.Status == ContractDayStatus.Completed && cd.IsProcessed);
                 var remainingDays = contract.TotalDays - processedDays;
@@ -767,9 +765,7 @@ namespace EgyptOnline.Controllers
                     },
                     serviceProvider = new
                     {
-                        userId = contract.ServiceProviderUserId,
-                        phoneNumber = contract.ServiceProviderUser?.PhoneNumber,
-                        userName = contract.ServiceProviderUser?.UserName,
+                        phoneNumber = contract.ServiceProviderPhoneNumber,
                         freeBalance = providerWallet?.FreeBalance ?? 0,
                         frozenBalance = providerWallet?.FrozenBalance ?? 0
                     },
@@ -778,7 +774,6 @@ namespace EgyptOnline.Controllers
                         startDate = contract.StartDate,
                         shiftStartTime = contract.ShiftStartTime,
                         shiftEndTime = contract.ShiftEndTime,
-                        dailyRate = contract.DailyRate,
                         totalDays = contract.TotalDays,
                         totalAmount = contract.TotalAmount,
                         penaltyAmount = contract.PenaltyAmount,

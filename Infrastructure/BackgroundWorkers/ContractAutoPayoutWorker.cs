@@ -101,10 +101,18 @@ namespace EgyptOnline.Infrastructure.BackgroundWorkers
                 contractDay.IsProcessed = true;
                 contractDay.ProcessedAt = currentTime;
 
-                await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, contract.DailyRate.Value);
+                // Calculate daily amount from total amount
+                var dailyAmount = contract.TotalAmount.Value / contract.TotalDays.Value;
 
-                await _walletService.SubtractFromFrozenBalanceAsync(contract.ServiceProviderUserId, contract.DailyRate.Value);
-                await _walletService.AddToFreeBalanceAsync(contract.ServiceProviderUserId, contract.DailyRate.Value);
+                await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, dailyAmount);
+
+                // Get provider user by phone number
+                var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+                if (providerUser != null)
+                {
+                    await _walletService.SubtractFromFrozenBalanceAsync(providerUser.Id, dailyAmount);
+                    await _walletService.AddToFreeBalanceAsync(providerUser.Id, dailyAmount);
+                }
 
                 var allDaysProcessed = contract.ContractDays.All(cd => cd.IsProcessed);
                 if (allDaysProcessed)
@@ -120,7 +128,7 @@ namespace EgyptOnline.Infrastructure.BackgroundWorkers
 
                 _logger.LogInformation(
                     "Auto-payout processed for Contract {ContractId}, Day {DayNumber}. Amount: {Amount}. Grace period expired at: {GracePeriodEnd}",
-                    contract.Id, contractDay.DayNumber, contract.DailyRate.Value, contractDay.Date.Add(contract.ShiftEndTime.Value).Add(_gracePeriod));
+                    contract.Id, contractDay.DayNumber, dailyAmount, contractDay.Date.Add(contract.ShiftEndTime.Value).Add(_gracePeriod));
             }
             catch (Exception ex)
             {
