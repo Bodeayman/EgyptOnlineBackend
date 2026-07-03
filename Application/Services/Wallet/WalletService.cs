@@ -34,8 +34,8 @@ namespace EgyptOnline.Application.Services.Wallet
                     UserId = userId,
                     FreeBalance = 0,
                     FrozenBalance = 0,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = EgyptTimeHelper.NowInEgypt(),
+                    UpdatedAt = EgyptTimeHelper.NowInEgypt()
                 };
                 _context.UserWallets.Add(wallet);
                 await _context.SaveChangesAsync();
@@ -61,7 +61,7 @@ namespace EgyptOnline.Application.Services.Wallet
             {
                 var wallet = await GetWalletAsync(userId);
                 wallet.FreeBalance += amount;
-                wallet.UpdatedAt = DateTime.UtcNow;
+                wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                 _context.WalletTransactions.Add(new WalletTransaction
                 {
@@ -100,7 +100,7 @@ namespace EgyptOnline.Application.Services.Wallet
                     throw new InvalidOperationException("الرصيد غير كافي");
 
                 wallet.FreeBalance -= amount;
-                wallet.UpdatedAt = DateTime.UtcNow;
+                wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                 _context.WalletTransactions.Add(new WalletTransaction
                 {
@@ -149,9 +149,9 @@ namespace EgyptOnline.Application.Services.Wallet
                     throw new InvalidOperationException("الرصيد غير كافي");
 
                 fromWallet.FreeBalance -= amount;
-                fromWallet.UpdatedAt = DateTime.UtcNow;
+                fromWallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
                 toWallet.FreeBalance += amount;
-                toWallet.UpdatedAt = DateTime.UtcNow;
+                toWallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                 _context.WalletTransactions.AddRange(
                     new WalletTransaction
@@ -270,13 +270,13 @@ namespace EgyptOnline.Application.Services.Wallet
             {
                 request.Status = status;
                 request.ReviewedByAdminId = adminUserId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = EgyptTimeHelper.NowInEgypt();
 
                 if (status == "approved")
                 {
                     var wallet = await GetWalletAsync(request.UserId);
                     wallet.FreeBalance += request.Amount;
-                    wallet.UpdatedAt = DateTime.UtcNow;
+                    wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                     _context.WalletTransactions.Add(new WalletTransaction
                     {
@@ -330,7 +330,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
                 // Lock/deduct the funds immediately upon request to prevent double-spending
                 wallet.FreeBalance -= amount;
-                wallet.UpdatedAt = DateTime.UtcNow;
+                wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                 // Get user's phone number as source wallet number
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -388,7 +388,7 @@ namespace EgyptOnline.Application.Services.Wallet
             {
                 request.Status = status;
                 request.ReviewedByAdminId = adminUserId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = EgyptTimeHelper.NowInEgypt();
 
                 if (status == "approved")
                 {
@@ -411,7 +411,7 @@ namespace EgyptOnline.Application.Services.Wallet
                     // Refund the locked money back to user's wallet
                     var wallet = await GetWalletAsync(request.UserId);
                     wallet.FreeBalance += request.Amount;
-                    wallet.UpdatedAt = DateTime.UtcNow;
+                    wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                     // Send reject notification using Firebase
                     await SafeNotify(request.UserId, "رفض طلب السحب", $"تم رفض معاملة السحب اللي بـ {request.Amount} جنيه. السبب: {rejectionReason ?? "غير محدد"}");
@@ -485,7 +485,7 @@ namespace EgyptOnline.Application.Services.Wallet
                 UserId = userId,
                 FreeBalance = 0,
                 FrozenBalance = 0,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = EgyptTimeHelper.NowInEgypt()
             };
 
             _context.UserWallets.Add(wallet);
@@ -518,7 +518,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             wallet.FreeBalance -= amount;
             wallet.FrozenBalance += amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Transferred {Amount} from free to frozen for user {UserId}", amount, userId);
@@ -535,7 +535,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             wallet.FrozenBalance -= amount;
             wallet.FreeBalance += amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Transferred {Amount} from frozen to free for user {UserId}", amount, userId);
@@ -555,10 +555,10 @@ namespace EgyptOnline.Application.Services.Wallet
             try
             {
                 fromWallet.FreeBalance -= amount;
-                fromWallet.UpdatedAt = DateTime.UtcNow;
+                fromWallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                 toWallet.FreeBalance += amount;
-                toWallet.UpdatedAt = DateTime.UtcNow;
+                toWallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -586,10 +586,10 @@ namespace EgyptOnline.Application.Services.Wallet
             try
             {
                 fromWallet.FrozenBalance -= amount;
-                fromWallet.UpdatedAt = DateTime.UtcNow;
+                fromWallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                 toWallet.FrozenBalance += amount;
-                toWallet.UpdatedAt = DateTime.UtcNow;
+                toWallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -607,7 +607,7 @@ namespace EgyptOnline.Application.Services.Wallet
         {
             var wallet = await GetWalletByUserIdAsync(userId);
             wallet.FreeBalance += amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
             await _context.SaveChangesAsync();
             _logger.LogInformation("Added {Amount} to free balance for user {UserId}", amount, userId);
         }
@@ -622,7 +622,7 @@ namespace EgyptOnline.Application.Services.Wallet
             }
 
             wallet.FreeBalance -= amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
             await _context.SaveChangesAsync();
             _logger.LogInformation("Subtracted {Amount} from free balance for user {UserId}", amount, userId);
         }
@@ -631,7 +631,7 @@ namespace EgyptOnline.Application.Services.Wallet
         {
             var wallet = await GetWalletByUserIdAsync(userId);
             wallet.FrozenBalance += amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
             await _context.SaveChangesAsync();
             _logger.LogInformation("Added {Amount} to frozen balance for user {UserId}", amount, userId);
         }
@@ -646,7 +646,7 @@ namespace EgyptOnline.Application.Services.Wallet
             }
 
             wallet.FrozenBalance -= amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
             await _context.SaveChangesAsync();
             _logger.LogInformation("Subtracted {Amount} from frozen balance for user {UserId}", amount, userId);
         }
@@ -660,7 +660,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             wallet.FreeBalance = newFreeBalance;
             wallet.FrozenBalance = newFrozenBalance;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
             await _context.SaveChangesAsync();
             _logger.LogWarning("Admin override for user {UserId}. Free: {OldFree} -> {NewFree}, Frozen: {OldFrozen} -> {NewFrozen}. Reason: {Reason}",
@@ -672,7 +672,7 @@ namespace EgyptOnline.Application.Services.Wallet
             var wallet = await GetWalletByPhoneNumberAsync(phoneNumber);
 
             wallet.FreeBalance += amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Admin deposit of {Amount} to phone {PhoneNumber}. Reference: {Reference}", amount, phoneNumber, reference);
@@ -694,7 +694,7 @@ namespace EgyptOnline.Application.Services.Wallet
             }
 
             wallet.FreeBalance -= amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Admin completed withdrawal of {Amount} for user {UserId}. Reference: {Reference}", amount, userId, reference);
@@ -721,7 +721,7 @@ namespace EgyptOnline.Application.Services.Wallet
                 wallet.FrozenBalance = newValue;
             }
 
-            wallet.UpdatedAt = DateTime.UtcNow;
+            wallet.UpdatedAt = EgyptTimeHelper.NowInEgypt();
 
             await _context.SaveChangesAsync();
             _logger.LogWarning("Admin {AdminId} override for user {UserId}. {BalanceType}: {OldValue} -> {NewValue} ({Operation} {Amount}). Reason: {Reason}",

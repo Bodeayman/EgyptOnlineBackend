@@ -15,7 +15,7 @@ namespace EgyptOnline.Domain.Models
         public bool IsRead { get; set; } = false;
         
         [BsonRepresentation(BsonType.DateTime)]
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; set; } = EgyptTimeHelper.NowInEgypt();
 
         // Optional fields for sender information
         public string? SenderId { get; set; }

@@ -264,9 +264,9 @@ namespace EgyptOnline.Controllers
                         {
                             UserId = user.Id,
                             User = user,
-                            StartDate = dto.SubscriptionStartDate ?? DateTime.UtcNow,
-                            EndDate = dto.SubscriptionEndDate ?? DateTime.UtcNow.AddMonths(1),
-                            UpdatedAt = DateTime.UtcNow
+                            StartDate = dto.SubscriptionStartDate ?? EgyptTimeHelper.NowInEgypt(),
+                            EndDate = dto.SubscriptionEndDate ?? EgyptTimeHelper.NowInEgypt().AddMonths(1),
+                            UpdatedAt = EgyptTimeHelper.NowInEgypt()
                         };
                         user.Subscription = newSub; // Link it directly to the user object
                         _context.Subscriptions.Add(newSub);
@@ -279,7 +279,7 @@ namespace EgyptOnline.Controllers
                         if (dto.SubscriptionEndDate.HasValue)
                             user.Subscription.EndDate = dto.SubscriptionEndDate.Value;
 
-                        user.Subscription.UpdatedAt = DateTime.UtcNow;
+                        user.Subscription.UpdatedAt = EgyptTimeHelper.NowInEgypt();
                     }
                 }
 
@@ -355,7 +355,7 @@ namespace EgyptOnline.Controllers
                 return NotFound(new { message = "Refresh token not found" });
 
             storedToken.IsRevoked = true;
-            storedToken.Revoked = DateTime.UtcNow;
+            storedToken.Revoked = EgyptTimeHelper.NowInEgypt();
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Logout successful, refresh token revoked" });

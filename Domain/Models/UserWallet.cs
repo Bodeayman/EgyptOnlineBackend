@@ -25,9 +25,9 @@ namespace EgyptOnline.Models
         public decimal FrozenBalance { get; set; } = 0;
 
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
 
         [Column(TypeName = "timestamptz")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
     }
 }

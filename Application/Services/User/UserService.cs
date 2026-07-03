@@ -45,8 +45,8 @@ namespace EgyptOnline.Services
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
                 var expiry = TokenType == TokensTypes.RefreshToken
-                    ? DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
-                    : DateTime.UtcNow.AddMinutes(TokenPeriod.ACCESS_TOKEN_MINS);
+                    ? EgyptTimeHelper.NowInEgypt().AddDays(TokenPeriod.REFRESH_TOKEN_DAYS)
+                    : EgyptTimeHelper.NowInEgypt().AddMinutes(TokenPeriod.ACCESS_TOKEN_MINS);
 
                 var claims = new List<Claim>
         {

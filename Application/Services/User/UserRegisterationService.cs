@@ -128,8 +128,8 @@ namespace EgyptOnline.Services
                     UserId = user.Id,
                     FreeBalance = 0,
                     FrozenBalance = 0,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = EgyptTimeHelper.NowInEgypt(),
+                    UpdatedAt = EgyptTimeHelper.NowInEgypt()
                 };
                 _context.UserWallets.Add(wallet);
                 await _context.SaveChangesAsync();

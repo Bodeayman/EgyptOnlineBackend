@@ -223,7 +223,7 @@ namespace EgyptOnline.Controllers
                             {
                                 payment.Status = PaymentStatus.Failed;
                                 payment.ErrorMessage = "User not found";
-                                payment.ProcessedAt = DateTime.UtcNow;
+                                payment.ProcessedAt = EgyptTimeHelper.NowInEgypt();
                                 await _context.SaveChangesAsync();
                                 await transaction.RollbackAsync();
                                 return BadRequest(new { message = "User not found for this payment" });
@@ -232,7 +232,7 @@ namespace EgyptOnline.Controllers
                             await _userSubscriptionService.RenewSubscription(UserFound);
 
                             payment.Status = PaymentStatus.Success;
-                            payment.ProcessedAt = DateTime.UtcNow;
+                            payment.ProcessedAt = EgyptTimeHelper.NowInEgypt();
                             await _context.SaveChangesAsync();
 
                             await transaction.CommitAsync();
@@ -260,7 +260,7 @@ namespace EgyptOnline.Controllers
                     {
                         payment.Status = PaymentStatus.Failed;
                         payment.ErrorMessage = message;
-                        payment.ProcessedAt = DateTime.UtcNow;
+                        payment.ProcessedAt = EgyptTimeHelper.NowInEgypt();
                         await _context.SaveChangesAsync();
                     }
                     return BadRequest(new { message = "Payment failed: " + message, paymentId });

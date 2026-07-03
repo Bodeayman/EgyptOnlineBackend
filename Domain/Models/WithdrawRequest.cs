@@ -45,7 +45,7 @@ namespace EgyptOnline.Models
         public string? RejectionReason { get; set; }
 
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
 
         [Column(TypeName = "timestamptz")]
         public DateTime? ReviewedAt { get; set; }

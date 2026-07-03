@@ -36,7 +36,7 @@ namespace EgyptOnline.Models
         public string? ReviewedByAdminId { get; set; }
 
         [Column(TypeName = "timestamptz")]
-        public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+        public DateTime SubmittedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
 
         [Column(TypeName = "timestamptz")]
         public DateTime? ReviewedAt { get; set; }

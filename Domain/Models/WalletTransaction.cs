@@ -39,6 +39,6 @@ namespace EgyptOnline.Models
         public Contract? Contract { get; set; }
 
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
     }
 }

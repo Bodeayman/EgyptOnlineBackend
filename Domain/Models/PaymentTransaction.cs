@@ -22,9 +22,9 @@ namespace EgyptOnline.Models
         public string? ErrorMessage { get; set; }
         
         // Timestamps
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
         public DateTime? ProcessedAt { get; set; }
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
         
         // For idempotency
         public string? IdempotencyKey { get; set; }

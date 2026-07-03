@@ -56,7 +56,7 @@ namespace EgyptOnline.Models
         public string Status { get; set; } = "pending";
 
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
 
         [Column(TypeName = "timestamptz")]
         public DateTime? CancelledAt { get; set; }

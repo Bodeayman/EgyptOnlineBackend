@@ -19,7 +19,7 @@ public class AutoPayoutBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Log.Information("AutoPayoutBackgroundService started at: {Time}", DateTimeOffset.UtcNow);
+        Log.Information("AutoPayoutBackgroundService started at: {Time}", EgyptTimeHelper.NowInEgypt());
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -36,7 +36,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             await Task.Delay(_checkInterval, stoppingToken);
         }
 
-        Log.Information("AutoPayoutBackgroundService stopped at: {Time}", DateTimeOffset.UtcNow);
+        Log.Information("AutoPayoutBackgroundService stopped at: {Time}", EgyptTimeHelper.NowInEgypt());
     }
 
     // ── SCENARIO: Daily payout ────────────────────────────────────────────────
@@ -47,8 +47,8 @@ public class AutoPayoutBackgroundService : BackgroundService
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var walletService = scope.ServiceProvider.GetRequiredService<WalletService>();
 
-        // Current Egypt local time (UTC+3)
-        var currentEgyptTime = DateTime.UtcNow.AddHours(3);
+        // Current Egypt local time
+        var currentEgyptTime = EgyptTimeHelper.NowInEgypt();
 
         var activeContracts = await context.Contracts
             .Include(c => c.ContractDays)
@@ -111,7 +111,7 @@ public class AutoPayoutBackgroundService : BackgroundService
         {
             contractDay.Status = ContractDayStatus.Completed;
             contractDay.IsProcessed = true;
-            contractDay.ProcessedAt = DateTime.UtcNow;
+            contractDay.ProcessedAt = EgyptTimeHelper.NowInEgypt();
 
             // Transfer daily salary: client frozen → worker free
             await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, contract.DailySalary);
@@ -125,7 +125,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             if (allDaysProcessed)
             {
                 contract.Status = "completed";
-                contract.CompletedAt = DateTime.UtcNow;
+                contract.CompletedAt = EgyptTimeHelper.NowInEgypt();
 
                 // Release both penalty deposits back to free balance
                 if (contract.PenaltyAmount > 0)
@@ -162,7 +162,7 @@ public class AutoPayoutBackgroundService : BackgroundService
         var walletService = scope.ServiceProvider.GetRequiredService<WalletService>();
 
         // Egypt local date today
-        var egyptDate = DateTime.UtcNow.AddHours(3).Date;
+        var egyptDate = EgyptTimeHelper.NowInEgypt().Date;
 
         // Any pending contract whose start date is now in the past
         var staleContracts = await context.Contracts
@@ -189,7 +189,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, totalFrozen);
 
             contract.Status = "cancelled";
-            contract.CancelledAt = DateTime.UtcNow;
+            contract.CancelledAt = EgyptTimeHelper.NowInEgypt();
             contract.CancelledBy = "System (auto-expired)";
             contract.TerminationReason = "انتهت صلاحية العقد - لم يتم قبوله قبل تاريخ البداية";
 

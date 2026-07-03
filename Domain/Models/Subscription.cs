@@ -15,10 +15,10 @@ namespace EgyptOnline.Models
         public DateTime EndDate { get; set; }
 
         [Column(TypeName = "timestamptz")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
 
         // Note: IsActive now uses DateTime (UTC)
-        public bool IsActive => EndDate > DateTime.UtcNow;
+        public bool IsActive => EndDate > EgyptTimeHelper.NowInEgypt();
 
 
     }
