@@ -153,17 +153,6 @@ namespace EgyptOnline.Controllers
                 var provider = strategy.CreateProvider(model, UserRegisterationResult.User);
                 _context.Add(provider);
 
-                // Ensure user has a digital wallet (without a number)
-                var existingWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == UserRegisterationResult.User.Id);
-                if (existingWallet == null)
-                {
-                    _context.UserWallets.Add(new UserWallet
-                    {
-                        UserId = UserRegisterationResult.User.Id,
-                        FreeBalance = 0
-                    });
-                }
-
                 await _context.SaveChangesAsync();
                 string? imageUrl = null;
 

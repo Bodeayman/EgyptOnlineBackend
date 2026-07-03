@@ -44,14 +44,15 @@ namespace EgyptOnline.Application.Services.Contract
             if (providerUser == null)
                 throw new InvalidOperationException($"Service provider not found with phone number: {contract.ServiceProviderPhoneNumber}");
 
-            var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(contract.ClientUserId, contract.TotalAmount);
+            var totalRequired = contract.TotalAmount + contract.PenaltyAmount;
+            var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(contract.ClientUserId, totalRequired);
             if (!hasSufficientBalance)
-                throw new InvalidOperationException($"Client has insufficient free balance. Required: {contract.TotalAmount}");
+                throw new InvalidOperationException($"Client has insufficient free balance. Required: {totalRequired}");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _walletService.TransferFreeToFrozenAsync(contract.ClientUserId, contract.TotalAmount);
+                await _walletService.TransferFreeToFrozenAsync(contract.ClientUserId, totalRequired);
 
                 contract.Status = "pending";
                 contract.CreatedAt = DateTime.UtcNow;
@@ -119,7 +120,8 @@ namespace EgyptOnline.Application.Services.Contract
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, contract.TotalAmount);
+                var totalRequired = contract.TotalAmount + contract.PenaltyAmount;
+                await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, totalRequired);
 
                 contract.Status = "cancelled";
                 contract.CancelledAt = DateTime.UtcNow;
@@ -154,21 +156,36 @@ namespace EgyptOnline.Application.Services.Contract
             if (contract.Status != "pending")
                 throw new InvalidOperationException($"Contract is not in Pending status. Current status: {contract.Status}");
 
-            contract.Status = "active";
+            var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(providerUserId, contract.PenaltyAmount);
+            if (!hasSufficientBalance)
+                throw new InvalidOperationException($"الرصيد المتاح غير كافي للشرط الجزائي. المبلغ المطلوب: {contract.PenaltyAmount}");
 
-            await _context.SaveChangesAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await _walletService.TransferFreeToFrozenAsync(providerUserId, contract.PenaltyAmount);
 
-            _logger.LogInformation("Provider accepted contract {ContractId}. Status changed to Active", contractId);
+                contract.Status = "active";
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
-            // Send notification to client
-            await _notificationService.SendNotificationToUser(
-                contract.ClientUserId,
-                "تم قبول العقد",
-                $"تم قبول العقد #{contract.Id} من قبل مقدم الخدمة",
-                providerUserId
-            );
+                _logger.LogInformation("Provider accepted contract {ContractId}. Status changed to Active, Worker Penalty frozen", contractId);
 
-            return contract;
+                // Send notification to client
+                await _notificationService.SendNotificationToUser(
+                    contract.ClientUserId,
+                    "تم قبول العقد",
+                    $"تم قبول العقد #{contract.Id} من قبل مقدم الخدمة",
+                    providerUserId
+                );
+
+                return contract;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<ContractDayModel> RegisterArrivalAsync(int contractId, int dayNumber, string providerUserId)
@@ -204,33 +221,22 @@ namespace EgyptOnline.Application.Services.Contract
 
             var contractDayDate = DateTime.SpecifyKind(contractDay.Date, DateTimeKind.Utc);
 
-            // Validate shift start time is valid
+            // Validate shift start/end times are valid
             if (contract.ShiftStartTime < TimeSpan.Zero || contract.ShiftStartTime >= TimeSpan.FromDays(1))
                 throw new InvalidOperationException($"Invalid shift start time: {contract.ShiftStartTime}");
 
+            if (contract.ShiftEndTime < TimeSpan.Zero || contract.ShiftEndTime >= TimeSpan.FromDays(1))
+                throw new InvalidOperationException($"Invalid shift end time: {contract.ShiftEndTime}");
+
             var shiftStart = contractDayDate.Add(contract.ShiftStartTime);
+            var shiftEnd = contractDayDate.Add(contract.ShiftEndTime);
             var gracePeriod = TimeSpan.FromMinutes(30);
 
-            // If ShiftEndTime is provided, validate it as well
-            if (contract.ShiftEndTime.HasValue)
-            {
-                if (contract.ShiftEndTime.Value < TimeSpan.Zero || contract.ShiftEndTime.Value >= TimeSpan.FromDays(1))
-                    throw new InvalidOperationException($"Invalid shift end time: {contract.ShiftEndTime.Value}");
+            if (currentTime < shiftStart.Subtract(gracePeriod))
+                throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
 
-                var shiftEnd = contractDayDate.Add(contract.ShiftEndTime.Value);
-
-                if (currentTime < shiftStart.Subtract(gracePeriod))
-                    throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
-
-                if (currentTime > shiftEnd.Add(gracePeriod))
-                    throw new InvalidOperationException($"Cannot arrive after shift end. Shift ended at {shiftEnd:HH:mm} (with 30-minute grace period)");
-            }
-            else
-            {
-                // No shift end time, only validate against shift start
-                if (currentTime < shiftStart.Subtract(gracePeriod))
-                    throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
-            }
+            if (currentTime > shiftEnd.Add(gracePeriod))
+                throw new InvalidOperationException($"Cannot arrive after shift end. Shift ended at {shiftEnd:HH:mm} (with 30-minute grace period)");
 
             contractDay.ProviderArrived = true;
             contractDay.ArrivalTime = DateTime.UtcNow;
@@ -251,6 +257,40 @@ namespace EgyptOnline.Application.Services.Contract
             return contractDay;
         }
 
+        public async Task<ContractDayModel> ClientConfirmAttendanceAsync(int contractId, int dayNumber, string clientUserId)
+        {
+            var contract = await _context.Contracts
+                .Include(c => c.ContractDays)
+                .FirstOrDefaultAsync(c => c.Id == contractId)
+                ?? throw new KeyNotFoundException("العقد غير موجود");
+
+            if (contract.ClientUserId != clientUserId)
+                throw new UnauthorizedAccessException("أنت لست طرفاً مصرحاً له بتأكيد الحضور لهذا العقد");
+
+            if (contract.Status != "active")
+                throw new InvalidOperationException($"العقد ليس نشطاً. الحالة الحالية: {contract.Status}");
+
+            var contractDay = contract.ContractDays.FirstOrDefault(cd => cd.DayNumber == dayNumber)
+                ?? throw new KeyNotFoundException($"يوم العقد رقم {dayNumber} غير موجود");
+
+            if (!contractDay.ProviderArrived)
+                throw new InvalidOperationException("لا يمكن تأكيد الحضور قبل أن يسجل مقدم الخدمة وصوله أولاً");
+
+            if (contractDay.ClientConfirmed)
+                throw new InvalidOperationException("لقد قمت بالفعل بتأكيد الحضور لهذا اليوم");
+
+            if (contractDay.Status == ContractDayStatus.AbsentDisputed)
+                throw new InvalidOperationException("هذا اليوم معلق بنزاع أو إبلاغ غياب");
+
+            contractDay.ClientConfirmed = true;
+            contractDay.ClientConfirmedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Client confirmed attendance for contract {ContractId}, day {DayNumber}", contractId, dayNumber);
+            return contractDay;
+        }
+
         public async Task<ContractModel> ReportDisputeAsync(int contractId, int dayNumber, string reason)
         {
             var contract = await _context.Contracts
@@ -267,7 +307,7 @@ namespace EgyptOnline.Application.Services.Contract
             if (contractDay == null)
                 throw new InvalidOperationException($"Contract day {dayNumber} not found");
 
-            var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
+            var shiftEndTime = contract.ShiftEndTime;
             var gracePeriodEnd = contractDay.Date.Add(shiftEndTime).AddHours(3);
             var currentTime = DateTime.UtcNow;
 
@@ -290,7 +330,8 @@ namespace EgyptOnline.Application.Services.Contract
                     contract.ClientUserId,
                     contractId,
                     "غياب مقدم الخدمة",
-                    $"تم الإبلاغ عن غياب مقدم الخدمة في يوم {dayNumber}. السبب: {reason}"
+                    $"تم الإبلاغ عن غياب مقدم الخدمة في يوم {dayNumber}. السبب: {reason}",
+                    "daily_absence"
                 );
 
                 await transaction.CommitAsync();
@@ -338,7 +379,8 @@ namespace EgyptOnline.Application.Services.Contract
                     contract.ClientUserId,
                     contractId,
                     "contract_termination",
-                    $"تم إنهاء العقد بالاتفاق المتبادل. السبب: {reason}"
+                    $"تم إنهاء العقد بالاتفاق المتبادل. السبب: {reason}",
+                    "mutual_termination_request"
                 );
 
                 await transaction.CommitAsync();
@@ -387,7 +429,8 @@ namespace EgyptOnline.Application.Services.Contract
                     contract.ClientUserId,
                     contractId,
                     "contract_termination",
-                    $"تم إنهاء العقد من قبل العميل. السبب: {reason}"
+                    $"تم إنهاء العقد من قبل العميل. السبب: {reason}",
+                    "unilateral_termination_request"
                 );
 
                 await transaction.CommitAsync();
@@ -441,7 +484,8 @@ namespace EgyptOnline.Application.Services.Contract
                     providerUserId,
                     contractId,
                     "contract_termination",
-                    $"تم إنهاء العقد من قبل مقدم الخدمة. السبب: {reason}"
+                    $"تم إنهاء العقد من قبل مقدم الخدمة. السبب: {reason}",
+                    "unilateral_termination_request"
                 );
 
                 await transaction.CommitAsync();
@@ -498,6 +542,255 @@ namespace EgyptOnline.Application.Services.Contract
                 .Include(c => c.ContractDays)
                 .Where(c => c.Status == "active")
                 .ToListAsync();
+        }
+
+        public async Task<ContractModel> AdminCancelAndRefundAsync(
+            int contractId,
+            decimal clientRefundWages,
+            decimal clientRefundPenalty,
+            decimal workerRefundPenalty,
+            decimal clientPenaltyPayoutToWorker,
+            decimal workerPenaltyPayoutToClient,
+            decimal workerWagesPayout,
+            string adminUserId,
+            string comment)
+        {
+            var contract = await _context.Contracts
+                .Include(c => c.ContractDays)
+                .FirstOrDefaultAsync(c => c.Id == contractId)
+                ?? throw new KeyNotFoundException("العقد غير موجود");
+
+            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber)
+                ?? throw new InvalidOperationException("مقدم الخدمة غير موجود");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. Client refunds: clientRefundWages + clientRefundPenalty
+                var clientTotalRefund = clientRefundWages + clientRefundPenalty;
+                if (clientTotalRefund > 0)
+                {
+                    await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, clientTotalRefund);
+                }
+
+                // 2. Worker refunds: workerRefundPenalty
+                if (workerRefundPenalty > 0)
+                {
+                    await _walletService.TransferFrozenToFreeAsync(providerUser.Id, workerRefundPenalty);
+                }
+
+                // 3. Client penalty payouts to worker: clientPenaltyPayoutToWorker
+                if (clientPenaltyPayoutToWorker > 0)
+                {
+                    await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, clientPenaltyPayoutToWorker);
+                    await _walletService.AddToFreeBalanceAsync(providerUser.Id, clientPenaltyPayoutToWorker);
+                }
+
+                // 4. Worker penalty payouts to client: workerPenaltyPayoutToClient
+                if (workerPenaltyPayoutToClient > 0)
+                {
+                    await _walletService.SubtractFromFrozenBalanceAsync(providerUser.Id, workerPenaltyPayoutToClient);
+                    await _walletService.AddToFreeBalanceAsync(contract.ClientUserId, workerPenaltyPayoutToClient);
+                }
+
+                // 5. Worker wages payout: workerWagesPayout
+                if (workerWagesPayout > 0)
+                {
+                    await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, workerWagesPayout);
+                    await _walletService.AddToFreeBalanceAsync(providerUser.Id, workerWagesPayout);
+                }
+
+                // Update contract status
+                contract.Status = "terminated";
+                contract.TerminatedAt = DateTime.UtcNow;
+                contract.TerminatedBy = "Admin";
+                contract.TerminationReason = comment;
+
+                foreach (var day in contract.ContractDays.Where(d => !d.IsProcessed))
+                {
+                    day.IsProcessed = true;
+                    day.ProcessedAt = DateTime.UtcNow;
+                    day.Status = ContractDayStatus.Completed;
+                }
+
+                // Resolve related open complaints
+                var complaints = await _context.Complaints
+                    .Where(c => c.ContractId == contractId && c.Status == "open")
+                    .ToListAsync();
+                foreach (var comp in complaints)
+                {
+                    comp.Status = "resolved";
+                    comp.ResolvedByAdminId = adminUserId;
+                    comp.AdminNote = comment;
+                    comp.ResolvedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Admin {AdminId} resolved contract {ContractId} via Cancel & Refund", adminUserId, contractId);
+                return contract;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to execute AdminCancelAndRefund for contract {ContractId}", contractId);
+                throw;
+            }
+        }
+
+        public async Task<ContractModel> AdminAdjustAndResumeAsync(
+            int contractId,
+            decimal adjustmentAmount,
+            string direction, // "client_to_free" or "client_to_worker"
+            string adminUserId,
+            string comment)
+        {
+            var contract = await _context.Contracts
+                .Include(c => c.ContractDays)
+                .FirstOrDefaultAsync(c => c.Id == contractId)
+                ?? throw new KeyNotFoundException("العقد غير موجود");
+
+            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber)
+                ?? throw new InvalidOperationException("مقدم الخدمة غير موجود");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (adjustmentAmount > 0)
+                {
+                    if (direction == "client_to_free")
+                    {
+                        await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, adjustmentAmount);
+                    }
+                    else if (direction == "client_to_worker")
+                    {
+                        await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, adjustmentAmount);
+                        await _walletService.AddToFreeBalanceAsync(providerUser.Id, adjustmentAmount);
+                    }
+                }
+
+                // Resume the contract
+                contract.Status = "active";
+
+                // Resolve related open complaints
+                var complaints = await _context.Complaints
+                    .Where(c => c.ContractId == contractId && c.Status == "open")
+                    .ToListAsync();
+                foreach (var comp in complaints)
+                {
+                    comp.Status = "resolved";
+                    comp.ResolvedByAdminId = adminUserId;
+                    comp.AdminNote = comment;
+                    comp.ResolvedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Admin {AdminId} resolved contract {ContractId} via Adjust & Resume", adminUserId, contractId);
+                return contract;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to execute AdminAdjustAndResume for contract {ContractId}", contractId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Admin closes a disputed mid-contract as "incomplete".
+        /// Settles wages for days already worked, refunds remaining frozen wages to the client,
+        /// and releases both penalty deposits. The contract is preserved in statistics.
+        /// </summary>
+        public async Task<ContractModel> AdminMarkIncompleteAsync(
+            int contractId,
+            int daysWorked,
+            string adminUserId,
+            string comment)
+        {
+            var contract = await _context.Contracts
+                .Include(c => c.ContractDays)
+                .FirstOrDefaultAsync(c => c.Id == contractId)
+                ?? throw new KeyNotFoundException("العقد غير موجود");
+
+            if (contract.Status == "completed" || contract.Status == "cancelled")
+                throw new InvalidOperationException($"لا يمكن تعديل عقد منتهٍ أو ملغى. الحالة الحالية: {contract.Status}");
+
+            if (daysWorked < 0 || daysWorked > contract.TotalDays)
+                throw new ArgumentException($"عدد الأيام العمل يجب أن يكون بين 0 و {contract.TotalDays}");
+
+            var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber)
+                ?? throw new InvalidOperationException("مقدم الخدمة غير موجود");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var workerWages = contract.DailySalary * daysWorked;
+                var clientRefundWages = contract.TotalAmount - workerWages;
+
+                // Pay worker for days actually worked
+                if (workerWages > 0)
+                {
+                    await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, workerWages);
+                    await _walletService.AddToFreeBalanceAsync(providerUser.Id, workerWages);
+                }
+
+                // Refund remaining wage balance to client
+                if (clientRefundWages > 0)
+                {
+                    await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, clientRefundWages);
+                }
+
+                // Release both penalty deposits back to free balance
+                if (contract.PenaltyAmount > 0)
+                {
+                    await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, contract.PenaltyAmount);
+                    await _walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
+                }
+
+                // Mark all unprocessed days
+                foreach (var day in contract.ContractDays.Where(d => !d.IsProcessed))
+                {
+                    day.IsProcessed = true;
+                    day.ProcessedAt = DateTime.UtcNow;
+                    day.Status = ContractDayStatus.Completed;
+                }
+
+                // Set contract status to "incomplete" (preserved for statistics)
+                contract.Status = "incomplete";
+                contract.TerminatedAt = DateTime.UtcNow;
+                contract.TerminatedBy = "Admin";
+                contract.TerminationReason = comment;
+
+                // Resolve open complaints
+                var openComplaints = await _context.Complaints
+                    .Where(c => c.ContractId == contractId && c.Status == "open")
+                    .ToListAsync();
+                foreach (var comp in openComplaints)
+                {
+                    comp.Status = "resolved";
+                    comp.ResolvedByAdminId = adminUserId;
+                    comp.AdminNote = comment;
+                    comp.ResolvedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation(
+                    "Admin {AdminId} marked contract {ContractId} as incomplete. DaysWorked: {DaysWorked}/{TotalDays}",
+                    adminUserId, contractId, daysWorked, contract.TotalDays);
+
+                return contract;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to mark contract {ContractId} as incomplete", contractId);
+                throw;
+            }
         }
 
         #endregion

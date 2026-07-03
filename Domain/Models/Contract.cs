@@ -26,9 +26,13 @@ namespace EgyptOnline.Models
         public DateTime StartDate { get; set; }
         [Required]
         public TimeSpan ShiftStartTime { get; set; }
-        public TimeSpan? ShiftEndTime { get; set; }
+        [Required]
+        public TimeSpan ShiftEndTime { get; set; }
         [Required]
         public int TotalDays { get; set; }
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DailySalary { get; set; }
         [Required]
         public decimal TotalAmount { get; set; }
 

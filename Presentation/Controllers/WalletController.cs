@@ -33,7 +33,16 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 var wallet = await _walletService.GetBalanceAsync(userId);
-                return Ok(new { data = new { userId, balance = wallet.FreeBalance } });
+                return Ok(new
+                {
+                    data = new
+                    {
+                        userId,
+                        freeBalance = wallet.FreeBalance,
+                        frozenBalance = wallet.FrozenBalance,
+                        totalBalance = wallet.FreeBalance + wallet.FrozenBalance
+                    }
+                });
             }
             catch (Exception ex)
             {

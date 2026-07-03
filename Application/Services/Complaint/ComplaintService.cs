@@ -28,7 +28,8 @@ namespace EgyptOnline.Application.Services.Complaint
             string reporterUserId,
             int contractId,
             string reason,
-            string description)
+            string description,
+            string reportType = "dispute")
         {
             var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == contractId)
                 ?? throw new KeyNotFoundException("العقد غير موجود");
@@ -62,6 +63,7 @@ namespace EgyptOnline.Application.Services.Complaint
                 ContractId = contractId,
                 Reason = reason,
                 Description = description,
+                ReportType = reportType,
                 Status = "open"
             };
 

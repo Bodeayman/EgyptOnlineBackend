@@ -39,6 +39,10 @@ namespace EgyptOnline.Models
         [MaxLength(100)]
         public string Reason { get; set; } = string.Empty;
 
+        [Required]
+        [MaxLength(100)]
+        public string ReportType { get; set; } = "dispute";
+
         /// <summary>Free-text description provided by the reporter.</summary>
         [Required]
         [MaxLength(2000)]

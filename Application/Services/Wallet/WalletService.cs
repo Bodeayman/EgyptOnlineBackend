@@ -22,12 +22,24 @@ namespace EgyptOnline.Application.Services.Wallet
         }
 
         /// <summary>
-        /// Get wallet for the user. Wallet should exist from registration/login.
+        /// Get wallet for the user. Self-heals by creating a digital wallet if missing.
         /// </summary>
         public async Task<UserWallet> GetWalletAsync(string userId)
         {
-            var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId)
-                ?? throw new InvalidOperationException("المحفظة غير موجودة");
+            var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId);
+            if (wallet == null)
+            {
+                wallet = new UserWallet
+                {
+                    UserId = userId,
+                    FreeBalance = 0,
+                    FrozenBalance = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.UserWallets.Add(wallet);
+                await _context.SaveChangesAsync();
+            }
             return wallet;
         }
 

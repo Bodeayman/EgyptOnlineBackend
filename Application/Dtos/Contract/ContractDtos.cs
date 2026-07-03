@@ -78,23 +78,43 @@ namespace EgyptOnline.Dtos.Contract
 
     public class CreateSimpleContractDto
     {
-        [Required(ErrorMessage = "WorkerUserId is required")]
-        public string WorkerUserId { get; set; } = string.Empty;
+        [Required(ErrorMessage = "رقم موبايل مقدم الخدمة مطلوب")]
+        public string ServiceProviderPhoneNumber { get; set; } = string.Empty;
 
-        [Range(1, int.MaxValue, ErrorMessage = "DurationDays must be at least 1")]
-        public int DurationDays { get; set; }
+        [Required(ErrorMessage = "تاريخ بدء العمل مطلوب")]
+        public DateTime StartDate { get; set; }
 
-        [Range(0.01, double.MaxValue, ErrorMessage = "DailySalary must be positive")]
+        [Required(ErrorMessage = "ساعة الحضور مطلوبة")]
+        public TimeSpan ShiftStartTime { get; set; }
+
+        [Required(ErrorMessage = "ساعة الانصراف مطلوبة")]
+        public TimeSpan ShiftEndTime { get; set; }
+
+        [Required(ErrorMessage = "عدد الأيام مطلوب")]
+        [Range(1, int.MaxValue, ErrorMessage = "عدد الأيام يجب أن يكون 1 على الأقل")]
+        public int TotalDays { get; set; }
+
+        [Required(ErrorMessage = "الأجر اليومي مطلوب")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "الأجر اليومي يجب أن يكون أكبر من صفر")]
         public decimal DailySalary { get; set; }
 
-        [Required(ErrorMessage = "WorkplaceAddress is required")]
-        [MaxLength(500)]
-        public string WorkplaceAddress { get; set; } = string.Empty;
+        [Required(ErrorMessage = "مبلغ الشرط الجزائي مطلوب")]
+        [Range(0.0, double.MaxValue, ErrorMessage = "الشرط الجزائي يجب أن يكون 0 أو أكبر")]
+        public decimal PenaltyAmount { get; set; }
 
+        [Required(ErrorMessage = "المحافظة مطلوبة")]
+        public string Governorate { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "المدينة مطلوبة")]
+        public string City { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "الحي مطلوب")]
+        public string District { get; set; } = string.Empty;
+
+        // Optional Fields
+        public string? DetailedAddress { get; set; }
         public string? Notes { get; set; }
-
-        [Range(0, double.MaxValue, ErrorMessage = "PenaltyClauseAmount must be non-negative")]
-        public decimal PenaltyClauseAmount { get; set; }
+        public string? RestrictedTerms { get; set; }
     }
 
     public class RespondSimpleContractDto

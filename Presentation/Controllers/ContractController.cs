@@ -51,7 +51,8 @@ namespace EgyptOnline.Controllers
                     ShiftStartTime = dto.ShiftStartTime,
                     ShiftEndTime = dto.ShiftEndTime,
                     TotalDays = dto.TotalDays,
-                    TotalAmount = dto.TotalAmount,
+                    DailySalary = dto.DailySalary,
+                    TotalAmount = dto.DailySalary * dto.TotalDays,
                     PenaltyAmount = dto.PenaltyAmount,
                     Governorate = dto.Governorate,
                     City = dto.City,
@@ -157,6 +158,42 @@ namespace EgyptOnline.Controllers
 
                 var contract = await _contractService.RegisterArrivalAsync(dto.ContractId, dto.DayNumber, userId);
                 return Ok(new { message = "تم تسجيل الوصول وإشعار العميل", data = contract });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Client confirms provider's attendance/arrival for a specific day.
+        /// POST /api/v1/contracts/confirm-attendance
+        /// </summary>
+        [HttpPost("confirm-attendance")]
+        public async Task<IActionResult> ConfirmAttendance([FromBody] ConfirmAttendanceDto dto)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+                if (!ModelState.IsValid)
+                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+
+                var contractDay = await _contractService.ClientConfirmAttendanceAsync(dto.ContractId, dto.DayNumber, userId);
+                return Ok(new { message = "تم تأكيد الحضور لليوم بنجاح وسيتم الصرف عند نهاية الشيفت اليومي", data = contractDay });
             }
             catch (KeyNotFoundException ex)
             {
@@ -334,36 +371,37 @@ namespace EgyptOnline.Controllers
     // DTOs
     public class CreateContractDto
     {
-        [Required]
+        [Required(ErrorMessage = "رقم موبايل مقدم الخدمة مطلوب")]
         public string ServiceProviderPhoneNumber { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "تاريخ أول يوم شغل مطلوب")]
         public DateTime StartDate { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "ساعة الحضور مطلوبة")]
         public TimeSpan ShiftStartTime { get; set; }
 
+        [Required(ErrorMessage = "ساعة الانصراف مطلوبة")]
         public TimeSpan ShiftEndTime { get; set; }
 
-        [Required]
-        [Range(1, int.MaxValue)]
+        [Required(ErrorMessage = "عدد الأيام مطلوب")]
+        [Range(1, int.MaxValue, ErrorMessage = "عدد الأيام يجب أن يكون 1 على الأقل")]
         public int TotalDays { get; set; }
 
-        [Required]
-        [Range(0.01, double.MaxValue)]
-        public decimal TotalAmount { get; set; }
+        [Required(ErrorMessage = "الأجر اليومي مطلوب")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "الأجر اليومي يجب أن يكون أكبر من صفر")]
+        public decimal DailySalary { get; set; }
 
-        [Required]
-        [Range(0, double.MaxValue)]
+        [Required(ErrorMessage = "مبلغ الشرط الجزائي مطلوب")]
+        [Range(0.0, double.MaxValue, ErrorMessage = "الشرط الجزائي يجب أن يكون 0 أو أكبر")]
         public decimal PenaltyAmount { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "المحافظة مطلوبة")]
         public string Governorate { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "المدينة مطلوبة")]
         public string City { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "الحي مطلوب")]
         public string District { get; set; } = string.Empty;
 
         public string? DetailedAddress { get; set; }
@@ -400,5 +438,15 @@ namespace EgyptOnline.Controllers
         [Required]
         [StringLength(500, MinimumLength = 5, ErrorMessage = "السبب يجب أن يكون بين 5 و 500 حرف")]
         public string Reason { get; set; } = string.Empty;
+    }
+
+    public class ConfirmAttendanceDto
+    {
+        [Required]
+        public int ContractId { get; set; }
+
+        [Required]
+        [Range(1, int.MaxValue)]
+        public int DayNumber { get; set; }
     }
 }

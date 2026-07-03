@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "EgyptOnline Contract System - Updated Endpoints",
+    "name": "EgyptOnline Contract System - Full API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Postman collection for updated contract system endpoints including termination, disputes, and admin balance control"
+    "description": "Complete Postman collection for EgyptOnline contract system. Covers the full 2-party contract lifecycle, dual-scenario daily payout, admin dispute resolution, wallet management, and complaints."
   },
   "variable": [
     {
@@ -14,146 +14,44 @@
       "key": "adminToken",
       "value": "",
       "type": "string",
-      "description": "Admin JWT token from login"
+      "description": "Admin JWT token — obtain from POST /Auth/login"
     },
     {
       "key": "clientToken",
       "value": "",
       "type": "string",
-      "description": "Client JWT token from login"
+      "description": "Client JWT token — obtain from POST /Auth/login"
     },
     {
       "key": "providerToken",
       "value": "",
       "type": "string",
-      "description": "Provider JWT token from login"
+      "description": "Provider (worker) JWT token — obtain from POST /Auth/login"
     }
   ],
   "item": [
     {
-      "name": "Admin - Contract Management",
-      "item": [
-        {
-          "name": "Get Terminated Contracts",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/Admin/contracts/terminated?pageNumber=1&pageSize=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["Admin", "contracts", "terminated"],
-              "query": [
-                {
-                  "key": "pageNumber",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "20"
-                }
-              ]
-            },
-            "description": "List all terminated contracts for manual dispute resolution. Shows termination reason, parties, and frozen balances."
-          }
-        },
-        {
-          "name": "Get Contract Details",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/Admin/contracts/:id/details",
-              "host": ["{{baseUrl}}"],
-              "path": ["Admin", "contracts", ":id", "details"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1",
-                  "description": "Contract ID"
-                }
-              ]
-            },
-            "description": "Get detailed contract information including parties, balances, contract details, days status, and termination info."
-          }
-        },
-        {
-          "name": "Override User Balance",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"balanceType\": \"free\",\n  \"amount\": 500,\n  \"operation\": \"add\",\n  \"reason\": \"Dispute resolution - Contract #123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Admin/users/:userId/balance/override",
-              "host": ["{{baseUrl}}"],
-              "path": ["Admin", "users", ":userId", "balance", "override"],
-              "variable": [
-                {
-                  "key": "userId",
-                  "value": "",
-                  "description": "User ID to override balance for"
-                }
-              ]
-            },
-            "description": "Override user balance for dispute resolution. Can add/deduct from free or frozen balance."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Contract Controller - 2-Party System",
+      "name": "📋 Contract Lifecycle",
+      "description": "Full 2-party contract flow: create → accept/reject → arrive → confirm/report → auto-payout",
       "item": [
         {
           "name": "Create Contract",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clientToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"serviceProviderPhoneNumber\": \"\",\n  \"startDate\": \"2024-01-15\",\n  \"shiftStartTime\": \"08:00:00\",\n  \"shiftEndTime\": \"17:00:00\",\n  \"totalDays\": 10,\n  \"totalAmount\": 4000,\n  \"penaltyAmount\": 300,\n  \"governorate\": \"Cairo\",\n  \"city\": \"Nasr City\",\n  \"district\": \"Abbassia\",\n  \"detailedAddress\": \"Street 123, Building 45\",\n  \"notes\": \"Optional notes\",\n  \"restrictedTerms\": \"Optional restricted terms\"\n}"
+              "raw": "{\n  \"serviceProviderPhoneNumber\": \"01000000000\",\n  \"startDate\": \"2026-07-10\",\n  \"shiftStartTime\": \"08:00:00\",\n  \"shiftEndTime\": \"17:00:00\",\n  \"totalDays\": 5,\n  \"dailySalary\": 200,\n  \"penaltyAmount\": 300,\n  \"governorate\": \"القاهرة\",\n  \"city\": \"مدينة نصر\",\n  \"district\": \"الحي العاشر\",\n  \"detailedAddress\": \"شارع 123، مبنى 45\",\n  \"notes\": \"ملاحظات اختيارية\",\n  \"restrictedTerms\": \"شروط خاصة اختيارية\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/contracts",
               "host": ["{{baseUrl}}"],
               "path": ["contracts"]
             },
-            "description": "Create a new 2-party contract. Client creates contract for a provider. Includes mandatory PenaltyAmount field."
+            "description": "Client creates a contract.\n\n💰 MONEY FLOW:\n- `dailySalary × totalDays` = TotalAmount auto-calculated\n- Freezes `TotalAmount + penaltyAmount` from client FreeBalance → FrozenBalance immediately.\n\n⚠️ If contract is not accepted before startDate, funds are auto-unfrozen by the background service."
           }
         },
         {
@@ -161,24 +59,15 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{providerToken}}",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{providerToken}}", "type": "text" }
             ],
             "url": {
               "raw": "{{baseUrl}}/contracts/:id/accept",
               "host": ["{{baseUrl}}"],
               "path": ["contracts", ":id", "accept"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
             },
-            "description": "Provider accepts the contract. Sends notification to client on acceptance."
+            "description": "Provider accepts the contract.\n\n💰 MONEY FLOW:\n- Checks provider has ≥ penaltyAmount in FreeBalance\n- Freezes penaltyAmount from provider FreeBalance → FrozenBalance\n- Contract status → active"
           }
         },
         {
@@ -186,41 +75,24 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{providerToken}}",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{providerToken}}", "type": "text" }
             ],
             "url": {
               "raw": "{{baseUrl}}/contracts/:id/reject",
               "host": ["{{baseUrl}}"],
               "path": ["contracts", ":id", "reject"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
             },
-            "description": "Provider rejects the contract. Unfreezes client balance on rejection."
+            "description": "Provider rejects the contract.\n\n💰 MONEY FLOW:\n- Returns TotalAmount + penaltyAmount from client FrozenBalance → client FreeBalance immediately.\n- Contract status → cancelled"
           }
         },
         {
-          "name": "Register Arrival",
+          "name": "Register Arrival (Worker)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{providerToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{providerToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
@@ -231,69 +103,68 @@
               "host": ["{{baseUrl}}"],
               "path": ["contracts", "arrival"]
             },
-            "description": "Provider registers arrival for a specific day. Sends notification to client on arrival."
+            "description": "Worker presses Arrive for the day.\n\nValidation: can only arrive within 30 min before shiftStart or before shiftEnd + 30 min.\n\nAfter this, the client can either:\n  ✅ Confirm attendance → wages released at shiftEnd\n  🚫 Report absence → contract suspended, complaint filed\n  ⏳ Do nothing → wages auto-released 3 hours after shiftEnd"
           }
         },
         {
-          "name": "Report Dispute",
+          "name": "Confirm Attendance (Client) ⭐",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clientToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contractId\": 1,\n  \"dayNumber\": 1,\n  \"reason\": \"Provider did not arrive\"\n}"
+              "raw": "{\n  \"contractId\": 1,\n  \"dayNumber\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contracts/confirm-attendance",
+              "host": ["{{baseUrl}}"],
+              "path": ["contracts", "confirm-attendance"]
+            },
+            "description": "Client confirms the worker arrived and is present.\n\n💰 PAYOUT SCENARIO 1 (Direct Confirmation):\n- Sets clientConfirmed = true\n- Background service will release dailySalary exactly at shiftEndTime (no 3-hour wait)\n\nRequirements:\n- Worker must have already pressed Arrive\n- Cannot confirm if day is under dispute"
+          }
+        },
+        {
+          "name": "Report Dispute / Absence (Client) 🚨",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractId\": 1,\n  \"dayNumber\": 1,\n  \"reason\": \"العامل لم يحضر لموقع العمل\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/contracts/dispute",
               "host": ["{{baseUrl}}"],
               "path": ["contracts", "dispute"]
             },
-            "description": "Client reports dispute (provider absence). Links to ComplaintService automatically."
+            "description": "Client reports that the worker was absent or there is an issue.\n\n⚡ EFFECTS:\n- Contract status → suspended (freezes all daily movements)\n- Contract day status → AbsentDisputed\n- Auto-creates a Complaint (reportType: daily_absence)\n- Admin must resolve before the contract can continue"
           }
         },
         {
-          "name": "Terminate Contract",
+          "name": "Terminate Contract (Client or Worker)",
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clientToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Termination reason\"\n}"
+              "raw": "{\n  \"reason\": \"سبب إنهاء العقد\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/contracts/:id/terminate",
               "host": ["{{baseUrl}}"],
               "path": ["contracts", ":id", "terminate"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
             },
-            "description": "Single termination endpoint for both client and provider. Automatically detects if caller is client or provider and handles accordingly. Keeps funds frozen for admin resolution. Requires mandatory reason."
+            "description": "Single endpoint for either party to terminate the contract.\n\n⚡ EFFECTS:\n- Detects if caller is client or provider automatically\n- Funds remain frozen for admin manual resolution\n- Auto-creates a Complaint (reportType: unilateral_termination_request)\n- Admin must use one of the resolve endpoints to distribute funds"
           }
         },
         {
@@ -301,28 +172,18 @@
           "request": {
             "method": "GET",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clientToken}}",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" }
             ],
             "url": {
               "raw": "{{baseUrl}}/contracts/my?pageNumber=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["contracts", "my"],
               "query": [
-                {
-                  "key": "pageNumber",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "20"
-                }
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" }
               ]
             },
-            "description": "Get contracts for the logged-in user (as client or provider)."
+            "description": "Returns all contracts for the logged-in user (as client or as provider)."
           }
         },
         {
@@ -330,55 +191,207 @@
           "request": {
             "method": "GET",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clientToken}}",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" }
             ],
             "url": {
               "raw": "{{baseUrl}}/contracts/:id",
               "host": ["{{baseUrl}}"],
               "path": ["contracts", ":id"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
             },
-            "description": "Get contract details by ID. Only parties to the contract may view its details."
+            "description": "Get full contract details. Only accessible by the client or provider parties."
           }
         }
       ]
     },
     {
-      "name": "Existing Admin Endpoints",
+      "name": "🔧 Admin — Dispute Resolution",
+      "description": "Admin endpoints for resolving suspended/terminated contracts and distributing frozen funds.",
+      "item": [
+        {
+          "name": "Get Terminated Contracts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Admin/contracts/terminated?pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["Admin", "contracts", "terminated"],
+              "query": [
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Lists all terminated/suspended contracts awaiting admin resolution."
+          }
+        },
+        {
+          "name": "Get Contract Details (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Admin/contracts/:id/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["Admin", "contracts", ":id", "details"],
+              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
+            },
+            "description": "Full details including both parties' wallet balances (free and frozen), contract days status, and termination info."
+          }
+        },
+        {
+          "name": "Resolve — Cancel & Refund 💸",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientRefundWages\": 600,\n  \"clientRefundPenalty\": 300,\n  \"workerRefundPenalty\": 300,\n  \"clientPenaltyPayoutToWorker\": 0,\n  \"workerPenaltyPayoutToClient\": 0,\n  \"workerWagesPayout\": 400,\n  \"comment\": \"تم الفصل لصالح العامل جزئياً — 2 أيام عمل مؤكدة\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/Admin/contracts/:id/resolve/cancel-refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["Admin", "contracts", ":id", "resolve", "cancel-refund"],
+              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
+            },
+            "description": "Admin fully cancels the contract and manually specifies how frozen funds are distributed.\n\nFields (all decimal ≥ 0):\n- clientRefundWages: portion of wages returned to client FreeBalance\n- clientRefundPenalty: client's penalty deposit returned to client FreeBalance\n- workerRefundPenalty: worker's penalty deposit returned to worker FreeBalance\n- clientPenaltyPayoutToWorker: client's penalty paid OUT to worker FreeBalance\n- workerPenaltyPayoutToClient: worker's penalty paid OUT to client FreeBalance\n- workerWagesPayout: wages paid to worker from client's frozen balance\n\n⚡ Also resolves all open complaints on this contract."
+          }
+        },
+        {
+          "name": "Resolve — Adjust & Resume ▶️",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adjustmentAmount\": 200,\n  \"direction\": \"client_to_worker\",\n  \"comment\": \"تعويض العامل عن اليوم المتنازع عليه واستئناف العقد\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/Admin/contracts/:id/resolve/adjust-resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["Admin", "contracts", ":id", "resolve", "adjust-resume"],
+              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
+            },
+            "description": "Admin makes a partial balance adjustment then resumes the contract.\n\nFields:\n- adjustmentAmount: amount to move (decimal ≥ 0)\n- direction:\n    'client_to_free' → returns amount from client frozen → client free\n    'client_to_worker' → pays amount from client frozen → worker free\n\n⚡ Contract status → active. All open complaints resolved."
+          }
+        },
+        {
+          "name": "Resolve — Mark Incomplete 📊",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"daysWorked\": 3,\n  \"comment\": \"العامل أتم 3 أيام من أصل 5. تم الإغلاق باتفاق الأطراف.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/Admin/contracts/:id/resolve/mark-incomplete",
+              "host": ["{{baseUrl}}"],
+              "path": ["Admin", "contracts", ":id", "resolve", "mark-incomplete"],
+              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
+            },
+            "description": "Admin closes a mid-dispute contract as 'incomplete'. The contract is preserved in statistics/profiles.\n\nFields:\n- daysWorked: number of days the worker actually completed (0 to totalDays)\n\n💰 MONEY FLOW:\n1. Worker paid: dailySalary × daysWorked → worker FreeBalance\n2. Client refunded: TotalAmount − (dailySalary × daysWorked) → client FreeBalance\n3. Both penalty deposits released → each party's FreeBalance\n4. Contract status → 'incomplete' (stays in DB for statistics)\n5. All open complaints resolved"
+          }
+        },
+        {
+          "name": "Override User Balance",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"balanceType\": \"free\",\n  \"amount\": 500,\n  \"operation\": \"add\",\n  \"reason\": \"Dispute resolution - Contract #123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/Admin/users/:userId/balance/override",
+              "host": ["{{baseUrl}}"],
+              "path": ["Admin", "users", ":userId", "balance", "override"],
+              "variable": [{ "key": "userId", "value": "", "description": "User ID" }]
+            },
+            "description": "Direct wallet override for edge cases.\n- balanceType: 'free' or 'frozen'\n- operation: 'add' or 'deduct'"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔧 Admin — Complaints",
+      "item": [
+        {
+          "name": "Get All Complaints",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Admin/complaints?status=open&pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["Admin", "complaints"],
+              "query": [
+                { "key": "status", "value": "open", "description": "open | under_review | resolved | rejected" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Filter by status. ReportType field now available: dispute | daily_absence | mutual_termination_request | unilateral_termination_request"
+          }
+        },
+        {
+          "name": "Review Complaint",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"under_review\",\n  \"adminNote\": \"Reviewing the case\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/Admin/complaints/:id/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["Admin", "complaints", ":id", "review"],
+              "variable": [{ "key": "id", "value": "1", "description": "Complaint ID" }]
+            },
+            "description": "Update complaint status. Values: under_review | resolved | rejected"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔧 Admin — Deposits & Withdrawals",
       "item": [
         {
           "name": "Get Pending Deposits",
           "request": {
             "method": "GET",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
             ],
             "url": {
               "raw": "{{baseUrl}}/Admin/deposits/pending?pageNumber=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["Admin", "deposits", "pending"],
               "query": [
-                {
-                  "key": "pageNumber",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "20"
-                }
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" }
               ]
             }
           }
@@ -388,16 +401,8 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
@@ -407,13 +412,9 @@
               "raw": "{{baseUrl}}/Admin/deposits/:id/review",
               "host": ["{{baseUrl}}"],
               "path": ["Admin", "deposits", ":id", "review"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
-            }
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Approve or reject a user deposit. status: approved | rejected"
           }
         },
         {
@@ -421,25 +422,15 @@
           "request": {
             "method": "GET",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
             ],
             "url": {
               "raw": "{{baseUrl}}/Admin/withdrawals/pending?pageNumber=1&pageSize=20",
               "host": ["{{baseUrl}}"],
               "path": ["Admin", "withdrawals", "pending"],
               "query": [
-                {
-                  "key": "pageNumber",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "20"
-                }
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" }
               ]
             }
           }
@@ -449,16 +440,8 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
@@ -468,76 +451,90 @@
               "raw": "{{baseUrl}}/Admin/withdrawals/:id/review",
               "host": ["{{baseUrl}}"],
               "path": ["Admin", "withdrawals", ":id", "review"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
-            }
+              "variable": [{ "key": "id", "value": "1" }]
+            },
+            "description": "Approve or reject a user withdrawal. status: approved | rejected"
           }
-        },
+        }
+      ]
+    },
+    {
+      "name": "💰 Wallet",
+      "item": [
         {
-          "name": "Get Complaints",
+          "name": "Get Balance",
           "request": {
             "method": "GET",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/Admin/complaints?status=open&pageNumber=1&pageSize=20",
+              "raw": "{{baseUrl}}/Wallet/balance",
               "host": ["{{baseUrl}}"],
-              "path": ["Admin", "complaints"],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "open"
-                },
-                {
-                  "key": "pageNumber",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "20"
-                }
-              ]
-            }
+              "path": ["Wallet", "balance"]
+            },
+            "description": "Returns freeBalance, frozenBalance, and totalBalance.\n\nWorkers will see their committed (frozen) wages here — e.g. frozenBalance: 2000 EGP means 2000 is secured and waiting for them."
           }
         },
         {
-          "name": "Review Complaint",
+          "name": "Submit Deposit Request",
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "amount", "value": "500", "type": "text" },
+                { "key": "sourceWalletNumber", "value": "01000000000", "type": "text" },
+                { "key": "walletOwnerName", "value": "Ahmed Mohamed", "type": "text" },
+                { "key": "recipientWalletNumber", "value": "01111111111", "type": "text" },
+                { "key": "receiptImage", "src": "", "type": "file", "description": "Image of the payment receipt" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/Wallet/deposit",
+              "host": ["{{baseUrl}}"],
+              "path": ["Wallet", "deposit"]
+            },
+            "description": "Submit a manual deposit request with receipt image (multipart/form-data). Admin must approve before balance is credited."
+          }
+        },
+        {
+          "name": "Submit Withdrawal Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"resolved\",\n  \"adminNote\": \"Resolved by admin\"\n}"
+              "raw": "{\n  \"amount\": 300,\n  \"walletNumber\": \"01000000000\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/Admin/complaints/:id/review",
+              "raw": "{{baseUrl}}/Wallet/withdraw",
               "host": ["{{baseUrl}}"],
-              "path": ["Admin", "complaints", ":id", "review"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
+              "path": ["Wallet", "withdraw"]
+            },
+            "description": "Request a withdrawal from free balance. Admin must approve."
+          }
+        },
+        {
+          "name": "Get My Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Wallet/transactions?pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["Wallet", "transactions"],
+              "query": [
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" }
               ]
             }
           }

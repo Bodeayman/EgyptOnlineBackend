@@ -122,6 +122,18 @@ namespace EgyptOnline.Services
                 }
                 await _userManager.AddToRoleAsync(user, Roles.User);
 
+                // Ensure user has a digital wallet (without a number)
+                var wallet = new UserWallet
+                {
+                    UserId = user.Id,
+                    FreeBalance = 0,
+                    FrozenBalance = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.UserWallets.Add(wallet);
+                await _context.SaveChangesAsync();
+
                 // Everything is good
                 return new UserRegisterationResult
                 {

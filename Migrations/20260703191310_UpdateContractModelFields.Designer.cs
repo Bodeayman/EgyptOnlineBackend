@@ -3,6 +3,7 @@ using System;
 using EgyptOnline.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EgyptOnline.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260703191310_UpdateContractModelFields")]
+    partial class UpdateContractModelFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,12 +34,6 @@ namespace EgyptOnline.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("ArrivalTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("ClientConfirmed")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("ClientConfirmedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("ContractId")
@@ -139,11 +136,6 @@ namespace EgyptOnline.Migrations
                         .HasColumnType("character varying(2000)");
 
                     b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("ReportType")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");

@@ -27,6 +27,10 @@ namespace EgyptOnline.Domain.Models
 
         public bool ProviderArrived { get; set; }
 
+        public bool ClientConfirmed { get; set; }
+
+        public DateTime? ClientConfirmedAt { get; set; }
+
         [Required]
         public ContractDayStatus Status { get; set; } = ContractDayStatus.Pending;
 

@@ -6,6 +6,7 @@ namespace EgyptOnline.Domain.Models.Enums
         Active,
         Suspended,
         Completed,
-        Terminated
+        Terminated,
+        Incomplete
     }
 }
