@@ -95,7 +95,10 @@ namespace EgyptOnline.Data
             {
                 entity.ToTable("UserWallets");
                 entity.HasIndex(e => e.UserId).IsUnique();
-                entity.HasOne(w => w.User).WithMany().HasForeignKey(w => w.UserId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(w => w.User)
+                      .WithOne(u => u.Wallet)
+                      .HasForeignKey<UserWallet>(w => w.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<WalletTransaction>(entity =>

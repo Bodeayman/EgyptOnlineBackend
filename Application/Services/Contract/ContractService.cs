@@ -649,13 +649,7 @@ namespace EgyptOnline.Application.Services.Contract
             if (worker == null)
                 throw new InvalidOperationException("العامل المحدد غير موجود");
 
-            var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == clientUserId);
-            if (clientWallet == null)
-            {
-                clientWallet = new UserWallet { UserId = clientUserId };
-                _context.UserWallets.Add(clientWallet);
-                await _context.SaveChangesAsync();
-            }
+            var clientWallet = await GetOrCreateWalletAsync(clientUserId);
 
             var totalWages = dto.DailySalary * dto.DurationDays;
             var requiredEscrow = totalWages + dto.PenaltyClauseAmount;
@@ -745,13 +739,7 @@ namespace EgyptOnline.Application.Services.Contract
             {
                 if (accept)
                 {
-                    var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == workerUserId);
-                    if (workerWallet == null)
-                    {
-                        workerWallet = new UserWallet { UserId = workerUserId };
-                        _context.UserWallets.Add(workerWallet);
-                        await _context.SaveChangesAsync();
-                    }
+                    var workerWallet = await GetOrCreateWalletAsync(workerUserId);
 
                     if (workerWallet.Balance < contract.PenaltyClauseAmount)
                         throw new InvalidOperationException($"الرصيد غير كافٍ. تحتاج إلى {contract.PenaltyClauseAmount} جنيه لتأمين الشرط الجزائي للموافقة على العقد.");

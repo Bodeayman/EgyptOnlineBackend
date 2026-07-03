@@ -154,12 +154,15 @@ namespace EgyptOnline.Controllers
                 _context.Add(provider);
 
                 // Ensure user has a digital wallet (without a number)
-                var userWallet = new UserWallet
+                var existingWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == UserRegisterationResult.User.Id);
+                if (existingWallet == null)
                 {
-                    UserId = UserRegisterationResult.User.Id,
-                    Balance = 0
-                };
-                _context.UserWallets.Add(userWallet);
+                    _context.UserWallets.Add(new UserWallet
+                    {
+                        UserId = UserRegisterationResult.User.Id,
+                        Balance = 0
+                    });
+                }
 
                 await _context.SaveChangesAsync();
                 string? imageUrl = null;
@@ -286,12 +289,11 @@ namespace EgyptOnline.Controllers
                 var userWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == user.Id);
                 if (userWallet == null)
                 {
-                    userWallet = new UserWallet
+                    _context.UserWallets.Add(new UserWallet
                     {
                         UserId = user.Id,
                         Balance = 0
-                    };
-                    _context.UserWallets.Add(userWallet);
+                    });
                 }
 
                 await _context.SaveChangesAsync();
