@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using ContractModel = EgyptOnline.Models.Contract;
 using ContractDayModel = EgyptOnline.Domain.Models.ContractDay;
+using EgyptOnline.Application.Services.Complaint;
 
 namespace EgyptOnline.Application.Services.Contract
 {
@@ -43,14 +44,14 @@ namespace EgyptOnline.Application.Services.Contract
             if (providerUser == null)
                 throw new InvalidOperationException($"Service provider not found with phone number: {contract.ServiceProviderPhoneNumber}");
 
-            var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(contract.ClientUserId, contract.TotalAmount.Value);
+            var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(contract.ClientUserId, contract.TotalAmount);
             if (!hasSufficientBalance)
                 throw new InvalidOperationException($"Client has insufficient free balance. Required: {contract.TotalAmount}");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _walletService.TransferFreeToFrozenAsync(contract.ClientUserId, contract.TotalAmount.Value);
+                await _walletService.TransferFreeToFrozenAsync(contract.ClientUserId, contract.TotalAmount);
 
                 contract.Status = "pending";
                 contract.CreatedAt = DateTime.UtcNow;
@@ -59,13 +60,13 @@ namespace EgyptOnline.Application.Services.Contract
                 await _context.SaveChangesAsync();
 
                 var contractDays = new List<ContractDayModel>();
-                for (int day = 1; day <= contract.TotalDays.Value; day++)
+                for (int day = 1; day <= contract.TotalDays; day++)
                 {
                     var contractDay = new ContractDayModel
                     {
                         ContractId = contract.Id,
                         DayNumber = day,
-                        Date = DateTime.SpecifyKind(contract.StartDate.Value.AddDays(day - 1), DateTimeKind.Utc),
+                        Date = DateTime.SpecifyKind(contract.StartDate.AddDays(day - 1), DateTimeKind.Utc),
                         ProviderArrived = false,
                         Status = ContractDayStatus.Pending,
                         IsProcessed = false
@@ -118,7 +119,7 @@ namespace EgyptOnline.Application.Services.Contract
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, contract.TotalAmount.Value);
+                await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, contract.TotalAmount);
 
                 contract.Status = "cancelled";
                 contract.CancelledAt = DateTime.UtcNow;
@@ -194,6 +195,18 @@ namespace EgyptOnline.Application.Services.Contract
             if (contractDay.ProviderArrived)
                 throw new InvalidOperationException($"Provider has already arrived for day {dayNumber}");
 
+            // Validate arrival is within the shift time span (with 30-minute grace period)
+            var currentTime = DateTime.UtcNow;
+            var shiftStart = contractDay.Date.Add(contract.ShiftStartTime);
+            var shiftEnd = contractDay.Date.Add(contract.ShiftEndTime);
+            var gracePeriod = TimeSpan.FromMinutes(30);
+
+            if (currentTime < shiftStart.Subtract(gracePeriod))
+                throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+
+            if (currentTime > shiftEnd.Add(gracePeriod))
+                throw new InvalidOperationException($"Cannot arrive after shift end. Shift ended at {shiftEnd:HH:mm} (with 30-minute grace period)");
+
             contractDay.ProviderArrived = true;
             contractDay.ArrivalTime = DateTime.UtcNow;
             contractDay.Status = ContractDayStatus.Pending;
@@ -229,7 +242,7 @@ namespace EgyptOnline.Application.Services.Contract
             if (contractDay == null)
                 throw new InvalidOperationException($"Contract day {dayNumber} not found");
 
-            var shiftEndTime = contract.ShiftEndTime.Value;
+            var shiftEndTime = contract.ShiftEndTime;
             var gracePeriodEnd = contractDay.Date.Add(shiftEndTime).AddHours(3);
             var currentTime = DateTime.UtcNow;
 
@@ -294,6 +307,15 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
+
+                // Auto-create complaint for terminated contract (filed by client)
+                await _complaintService.FileComplaintAsync(
+                    contract.ClientUserId,
+                    contractId,
+                    "contract_termination",
+                    $"تم إنهاء العقد بالاتفاق المتبادل. السبب: {reason}"
+                );
+
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("Mutual termination for contract {ContractId}. Reason: {Reason}. Funds remain frozen for admin resolution",
@@ -334,6 +356,15 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
+
+                // Auto-create complaint for terminated contract
+                await _complaintService.FileComplaintAsync(
+                    contract.ClientUserId,
+                    contractId,
+                    "contract_termination",
+                    $"تم إنهاء العقد من قبل العميل. السبب: {reason}"
+                );
+
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("Client unilateral termination for contract {ContractId}. Reason: {Reason}. Funds remain frozen for admin resolution",
@@ -379,6 +410,15 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
+
+                // Auto-create complaint for terminated contract
+                await _complaintService.FileComplaintAsync(
+                    providerUserId,
+                    contractId,
+                    "contract_termination",
+                    $"تم إنهاء العقد من قبل مقدم الخدمة. السبب: {reason}"
+                );
+
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("Provider unilateral termination for contract {ContractId}. Reason: {Reason}. Funds remain frozen for admin resolution",

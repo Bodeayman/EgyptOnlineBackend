@@ -22,11 +22,16 @@ namespace EgyptOnline.Models
         public string? ServiceProviderPhoneNumber { get; set; }
 
         // Mandatory Fields (User Input)
-        public DateTime? StartDate { get; set; }
-        public TimeSpan? ShiftStartTime { get; set; }
-        public TimeSpan? ShiftEndTime { get; set; }
-        public int? TotalDays { get; set; }
-        public decimal? TotalAmount { get; set; }
+        [Required]
+        public DateTime StartDate { get; set; }
+        [Required]
+        public TimeSpan ShiftStartTime { get; set; }
+        [Required]
+        public TimeSpan ShiftEndTime { get; set; }
+        [Required]
+        public int TotalDays { get; set; }
+        [Required]
+        public decimal TotalAmount { get; set; }
 
         // Mandatory Penalty Field (defaults to 0 if not set)
         [Column(TypeName = "decimal(18,2)")]
