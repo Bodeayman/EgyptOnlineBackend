@@ -65,7 +65,7 @@ namespace EgyptOnline.Application.Services.Contract
                     {
                         ContractId = contract.Id,
                         DayNumber = day,
-                        Date = contract.StartDate.Value.AddDays(day - 1),
+                        Date = DateTime.SpecifyKind(contract.StartDate.Value.AddDays(day - 1), DateTimeKind.Utc),
                         ProviderArrived = false,
                         Status = ContractDayStatus.Pending,
                         IsProcessed = false

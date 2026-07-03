@@ -46,7 +46,7 @@ namespace EgyptOnline.Controllers
                 {
                     ClientUserId = userId,
                     ServiceProviderPhoneNumber = dto.ServiceProviderPhoneNumber,
-                    StartDate = dto.StartDate,
+                    StartDate = DateTime.SpecifyKind(dto.StartDate, DateTimeKind.Utc),
                     ShiftStartTime = dto.ShiftStartTime,
                     ShiftEndTime = dto.ShiftEndTime,
                     TotalDays = dto.TotalDays,
