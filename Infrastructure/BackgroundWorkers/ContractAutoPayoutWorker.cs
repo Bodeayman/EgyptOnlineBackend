@@ -82,7 +82,7 @@ namespace EgyptOnline.Infrastructure.BackgroundWorkers
                 if (contractDay.Status == ContractDayStatus.AbsentDisputed)
                     continue;
 
-                var shiftEndTime = contract.ShiftEndTime;
+                var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
                 var gracePeriodEnd = contractDay.Date.Add(shiftEndTime).Add(_gracePeriod);
 
                 if (currentTime <= gracePeriodEnd)
@@ -128,7 +128,7 @@ namespace EgyptOnline.Infrastructure.BackgroundWorkers
 
                 _logger.LogInformation(
                     "Auto-payout processed for Contract {ContractId}, Day {DayNumber}. Amount: {Amount}. Grace period expired at: {GracePeriodEnd}",
-                    contract.Id, contractDay.DayNumber, dailyAmount, contractDay.Date.Add(contract.ShiftEndTime).Add(_gracePeriod));
+                    contract.Id, contractDay.DayNumber, dailyAmount, contractDay.Date.Add(contract.ShiftEndTime ?? contract.ShiftStartTime).Add(_gracePeriod));
             }
             catch (Exception ex)
             {

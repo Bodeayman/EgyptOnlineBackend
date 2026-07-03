@@ -343,7 +343,6 @@ namespace EgyptOnline.Controllers
         [Required]
         public TimeSpan ShiftStartTime { get; set; }
 
-        [Required]
         public TimeSpan ShiftEndTime { get; set; }
 
         [Required]

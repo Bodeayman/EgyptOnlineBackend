@@ -204,22 +204,33 @@ namespace EgyptOnline.Application.Services.Contract
 
             var contractDayDate = DateTime.SpecifyKind(contractDay.Date, DateTimeKind.Utc);
 
-            // Validate shift times are valid
+            // Validate shift start time is valid
             if (contract.ShiftStartTime < TimeSpan.Zero || contract.ShiftStartTime >= TimeSpan.FromDays(1))
                 throw new InvalidOperationException($"Invalid shift start time: {contract.ShiftStartTime}");
 
-            if (contract.ShiftEndTime < TimeSpan.Zero || contract.ShiftEndTime >= TimeSpan.FromDays(1))
-                throw new InvalidOperationException($"Invalid shift end time: {contract.ShiftEndTime}");
-
             var shiftStart = contractDayDate.Add(contract.ShiftStartTime);
-            var shiftEnd = contractDayDate.Add(contract.ShiftEndTime);
             var gracePeriod = TimeSpan.FromMinutes(30);
 
-            if (currentTime < shiftStart.Subtract(gracePeriod))
-                throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+            // If ShiftEndTime is provided, validate it as well
+            if (contract.ShiftEndTime.HasValue)
+            {
+                if (contract.ShiftEndTime.Value < TimeSpan.Zero || contract.ShiftEndTime.Value >= TimeSpan.FromDays(1))
+                    throw new InvalidOperationException($"Invalid shift end time: {contract.ShiftEndTime.Value}");
 
-            if (currentTime > shiftEnd.Add(gracePeriod))
-                throw new InvalidOperationException($"Cannot arrive after shift end. Shift ended at {shiftEnd:HH:mm} (with 30-minute grace period)");
+                var shiftEnd = contractDayDate.Add(contract.ShiftEndTime.Value);
+
+                if (currentTime < shiftStart.Subtract(gracePeriod))
+                    throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+
+                if (currentTime > shiftEnd.Add(gracePeriod))
+                    throw new InvalidOperationException($"Cannot arrive after shift end. Shift ended at {shiftEnd:HH:mm} (with 30-minute grace period)");
+            }
+            else
+            {
+                // No shift end time, only validate against shift start
+                if (currentTime < shiftStart.Subtract(gracePeriod))
+                    throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+            }
 
             contractDay.ProviderArrived = true;
             contractDay.ArrivalTime = DateTime.UtcNow;
@@ -256,7 +267,7 @@ namespace EgyptOnline.Application.Services.Contract
             if (contractDay == null)
                 throw new InvalidOperationException($"Contract day {dayNumber} not found");
 
-            var shiftEndTime = contract.ShiftEndTime;
+            var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
             var gracePeriodEnd = contractDay.Date.Add(shiftEndTime).AddHours(3);
             var currentTime = DateTime.UtcNow;
 

@@ -26,8 +26,7 @@ namespace EgyptOnline.Models
         public DateTime StartDate { get; set; }
         [Required]
         public TimeSpan ShiftStartTime { get; set; }
-        [Required]
-        public TimeSpan ShiftEndTime { get; set; }
+        public TimeSpan? ShiftEndTime { get; set; }
         [Required]
         public int TotalDays { get; set; }
         [Required]
