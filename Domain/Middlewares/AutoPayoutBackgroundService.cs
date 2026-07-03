@@ -162,7 +162,7 @@ public class AutoPayoutBackgroundService : BackgroundService
         var walletService = scope.ServiceProvider.GetRequiredService<WalletService>();
 
         // Egypt local date today
-        var egyptDate = EgyptTimeHelper.NowInEgypt().Date;
+        var egyptDate = DateTime.SpecifyKind(EgyptTimeHelper.NowInEgypt().Date, DateTimeKind.Utc);
 
         // Any pending contract whose start date is now in the past
         var staleContracts = await context.Contracts
