@@ -197,8 +197,22 @@ namespace EgyptOnline.Application.Services.Contract
 
             // Validate arrival is within the shift time span (with 30-minute grace period)
             var currentTime = DateTime.UtcNow;
-            var shiftStart = contractDay.Date.Add(contract.ShiftStartTime);
-            var shiftEnd = contractDay.Date.Add(contract.ShiftEndTime);
+
+            // Ensure contract day date is valid and has correct DateTimeKind
+            if (contractDay.Date == DateTime.MinValue)
+                throw new InvalidOperationException($"Invalid contract day date for day {dayNumber}");
+
+            var contractDayDate = DateTime.SpecifyKind(contractDay.Date, DateTimeKind.Utc);
+
+            // Validate shift times are valid
+            if (contract.ShiftStartTime < TimeSpan.Zero || contract.ShiftStartTime >= TimeSpan.FromDays(1))
+                throw new InvalidOperationException($"Invalid shift start time: {contract.ShiftStartTime}");
+
+            if (contract.ShiftEndTime < TimeSpan.Zero || contract.ShiftEndTime >= TimeSpan.FromDays(1))
+                throw new InvalidOperationException($"Invalid shift end time: {contract.ShiftEndTime}");
+
+            var shiftStart = contractDayDate.Add(contract.ShiftStartTime);
+            var shiftEnd = contractDayDate.Add(contract.ShiftEndTime);
             var gracePeriod = TimeSpan.FromMinutes(30);
 
             if (currentTime < shiftStart.Subtract(gracePeriod))
