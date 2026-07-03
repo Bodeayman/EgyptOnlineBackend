@@ -54,17 +54,6 @@ namespace EgyptOnline.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure User unique constraints
-            modelBuilder.Entity<User>(entity =>
-            {
-                // Email and UserName are already unique by Identity configuration
-                // PhoneNumber unique only when not null (filtered index)
-                // This allows multiple NULL values but prevents duplicate non-null phone numbers
-                entity.HasIndex(e => e.PhoneNumber)
-                    .HasFilter("\"PhoneNumber\" IS NOT NULL")
-                    .IsUnique();
-            });
-
             // modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
             modelBuilder.Entity<PaymentTransaction>()
                 .HasIndex(p => p.IdempotencyKey)

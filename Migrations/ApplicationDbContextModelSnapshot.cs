@@ -740,10 +740,6 @@ namespace EgyptOnline.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
-                    b.HasIndex("PhoneNumber")
-                        .IsUnique()
-                        .HasFilter("\"PhoneNumber\" IS NOT NULL");
-
                     b.ToTable("AspNetUsers", (string)null);
                 });
 

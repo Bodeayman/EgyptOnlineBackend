@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EgyptOnline.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260703170726_UpdateContract")]
-    partial class UpdateContract
+    [Migration("20260703173106_AddPhoneNumberUniqueConstraint")]
+    partial class AddPhoneNumberUniqueConstraint
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -707,7 +707,6 @@ namespace EgyptOnline.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("PhoneNumberConfirmed")
@@ -1207,15 +1206,7 @@ namespace EgyptOnline.Migrations
                         .HasForeignKey("ClientUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("EgyptOnline.Models.User", "ServiceProviderUser")
-                        .WithMany()
-                        .HasForeignKey("ServiceProviderPhoneNumber")
-                        .HasPrincipalKey("PhoneNumber")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("ClientUser");
-
-                    b.Navigation("ServiceProviderUser");
                 });
 
             modelBuilder.Entity("EgyptOnline.Models.DepositRequest", b =>
