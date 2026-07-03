@@ -18,6 +18,8 @@ namespace EgyptOnline.Services
         private readonly string _publicBucket;
         private readonly string _privateBucket;
         private readonly string _publicBaseUrl;
+        private readonly string _publicEndpoint;
+        private readonly string _internalEndpoint;
         private readonly ILogger<MinioStorageService> _logger;
 
         // ── Allowed image magic-byte signatures ───────────────────────────────────
@@ -46,6 +48,8 @@ namespace EgyptOnline.Services
             _publicBucket  = config["Minio:PublicBucketName"]  ?? "egypt-online-public";
             _privateBucket = config["Minio:PrivateBucketName"] ?? "egypt-online-private";
             _publicBaseUrl = (config["Minio:PublicBaseUrl"] ?? $"http://{endpoint}/{_publicBucket}").TrimEnd('/');
+            _publicEndpoint = config["Minio:PublicEndpoint"] ?? endpoint;
+            _internalEndpoint = endpoint;
 
             _minio = new MinioClient()
                 .WithEndpoint(endpoint)
@@ -117,6 +121,19 @@ namespace EgyptOnline.Services
                     .WithExpiry(expirySeconds);
 
                 var url = await _minio.PresignedGetObjectAsync(args);
+
+                // Replace internal endpoint with public endpoint for external access
+                if (!string.IsNullOrEmpty(_publicEndpoint) && _publicEndpoint != _internalEndpoint)
+                {
+                    var uri = new Uri(url);
+                    var publicUri = new UriBuilder(uri)
+                    {
+                        Host = _publicEndpoint.Split(':')[0],
+                        Port = _publicEndpoint.Contains(':') ? int.Parse(_publicEndpoint.Split(':')[1]) : (uri.Scheme == "https" ? 443 : 80)
+                    };
+                    url = publicUri.ToString();
+                }
+
                 _logger.LogInformation("Presigned URL generated for {ObjectKey}, expires in {Expiry}s", objectKey, expirySeconds);
                 return url;
             }
