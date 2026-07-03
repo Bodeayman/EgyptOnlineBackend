@@ -628,5 +628,758 @@ namespace EgyptOnline.Application.Services.Contract
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
             return user?.Id ?? throw new InvalidOperationException($"User '{username}' not found");
         }
+
+        // ─── 2-PARTY CONTRACT METHODS ────────────────────────────────────────
+
+        private async Task SafeNotifyDirect(string userId, string title, string body)
+        {
+            try
+            {
+                await _notificationService.SendNotificationToUser(userId, title, body);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to send direct notification to User {UserId}: {Title}", userId, title);
+            }
+        }
+
+        public async Task<Models.Contract> CreateSimpleContractAsync(CreateSimpleContractDto dto, string clientUserId)
+        {
+            var worker = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.WorkerUserId);
+            if (worker == null)
+                throw new InvalidOperationException("العامل المحدد غير موجود");
+
+            var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == clientUserId);
+            if (clientWallet == null)
+            {
+                clientWallet = new UserWallet { UserId = clientUserId };
+                _context.UserWallets.Add(clientWallet);
+                await _context.SaveChangesAsync();
+            }
+
+            var totalWages = dto.DailySalary * dto.DurationDays;
+            var requiredEscrow = totalWages + dto.PenaltyClauseAmount;
+
+            if (clientWallet.Balance < requiredEscrow)
+                throw new InvalidOperationException($"الرصيد غير كافٍ. تحتاج إلى {requiredEscrow} جنيه لشحن العقد والشرط الجزائي.");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                clientWallet.Balance -= requiredEscrow;
+                clientWallet.UpdatedAt = DateTime.UtcNow;
+
+                var contract = new Models.Contract
+                {
+                    ClientUserId = clientUserId,
+                    WorkerUserId = dto.WorkerUserId,
+                    WorkerUsername = worker.UserName ?? string.Empty,
+                    ContractorUsername = string.Empty,
+                    EngineerUsername = string.Empty,
+                    IsSimpleContract = true,
+                    DurationDays = dto.DurationDays,
+                    DailySalary = dto.DailySalary,
+                    DailyAmount = dto.DailySalary,
+                    AgreedTotalAmount = totalWages,
+                    SplitDays = dto.DurationDays,
+                    WorkplaceAddress = dto.WorkplaceAddress,
+                    WorkLocation = dto.WorkplaceAddress,
+                    Notes = dto.Notes,
+                    PenaltyClauseAmount = dto.PenaltyClauseAmount,
+                    ClientPenaltyPaid = true,
+                    WorkerPenaltyPaid = false,
+                    EscrowAmount = requiredEscrow,
+                    Status = "pending_signatures",
+                    HistoryJson = JsonSerializer.Serialize(new[]
+                    {
+                        new { id = Guid.NewGuid().ToString(), type = "system", message = "تم إنشاء عقد بسيط وبانتظار موافقة العامل وتأمين الشرط الجزائي", createdAt = DateTime.UtcNow }
+                    })
+                };
+
+                _context.Contracts.Add(contract);
+
+                _context.WalletTransactions.Add(new WalletTransaction
+                {
+                    UserId = clientUserId,
+                    Type = "escrow_lock",
+                    Amount = requiredEscrow,
+                    Description = $"حجز مبلغ العقد والشرط الجزائي للعقد #{contract.Id}",
+                    ContractId = contract.Id
+                });
+
+                _context.FundMovementLogs.Add(new FundMovementLog
+                {
+                    ContractId = contract.Id,
+                    InstallmentIndex = -1,
+                    Action = "lock",
+                    Amount = requiredEscrow,
+                    TriggeredBy = clientUserId,
+                    Reason = "إنشاء العقد وتأمين الضمان"
+                });
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await SafeNotifyDirect(dto.WorkerUserId, "عقد عمل جديد", $"تم إرسال عقد عمل جديد لك بقيمة يومية {dto.DailySalary} جنيه وبانتظار موافقتك.");
+
+                return contract;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<Models.Contract> WorkerRespondAsync(int contractId, string workerUserId, bool accept)
+        {
+            var contract = await _context.Contracts
+                .FirstOrDefaultAsync(c => c.Id == contractId && c.WorkerUserId == workerUserId && c.IsSimpleContract)
+                ?? throw new KeyNotFoundException("العقد المحدد غير موجود أو لست مخولاً للموافقة عليه");
+
+            if (contract.Status != "pending_signatures")
+                throw new InvalidOperationException("هذا العقد غير معلق للتوقيع أو تمت معالجته بالفعل");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (accept)
+                {
+                    var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == workerUserId);
+                    if (workerWallet == null)
+                    {
+                        workerWallet = new UserWallet { UserId = workerUserId };
+                        _context.UserWallets.Add(workerWallet);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    if (workerWallet.Balance < contract.PenaltyClauseAmount)
+                        throw new InvalidOperationException($"الرصيد غير كافٍ. تحتاج إلى {contract.PenaltyClauseAmount} جنيه لتأمين الشرط الجزائي للموافقة على العقد.");
+
+                    workerWallet.Balance -= contract.PenaltyClauseAmount;
+                    workerWallet.UpdatedAt = DateTime.UtcNow;
+
+                    contract.WorkerPenaltyPaid = true;
+                    contract.EscrowAmount += contract.PenaltyClauseAmount;
+                    contract.Status = "active";
+
+                    _context.WalletTransactions.Add(new WalletTransaction
+                    {
+                        UserId = workerUserId,
+                        Type = "escrow_lock",
+                        Amount = contract.PenaltyClauseAmount,
+                        Description = $"حجز الشرط الجزائي للعقد #{contract.Id}",
+                        ContractId = contract.Id
+                    });
+
+                    _context.FundMovementLogs.Add(new FundMovementLog
+                    {
+                        ContractId = contract.Id,
+                        InstallmentIndex = -1,
+                        Action = "lock",
+                        Amount = contract.PenaltyClauseAmount,
+                        TriggeredBy = workerUserId,
+                        Reason = "تأمين الشرط الجزائي من العامل وتفعيل العقد"
+                    });
+
+                    var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+                    history.Add(new { id = Guid.NewGuid().ToString(), type = "activation", message = "تم تفعيل العقد وبدء سريانه بعد موافقة وتأمين الشرط الجزائي من العامل", createdAt = DateTime.UtcNow });
+                    contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    await SafeNotifyDirect(contract.ClientUserId!, "تم قبول العقد", $"وافق العامل على عقد العمل #{contract.Id} وبدأ سريانه.");
+                }
+                else
+                {
+                    var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
+                    if (clientWallet != null)
+                    {
+                        clientWallet.Balance += contract.EscrowAmount;
+                        clientWallet.UpdatedAt = DateTime.UtcNow;
+
+                        _context.WalletTransactions.Add(new WalletTransaction
+                        {
+                            UserId = contract.ClientUserId!,
+                            Type = "escrow_refund",
+                            Amount = contract.EscrowAmount,
+                            Description = $"استرداد قيمة العقد #{contract.Id} لرفض العامل",
+                            ContractId = contract.Id
+                        });
+                    }
+
+                    contract.EscrowAmount = 0;
+                    contract.Status = "cancelled";
+
+                    var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+                    history.Add(new { id = Guid.NewGuid().ToString(), type = "rejection", message = "تم رفض العقد من قبل العامل وتم إرجاع الرصيد للمقاول/العميل", createdAt = DateTime.UtcNow });
+                    contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    await SafeNotifyDirect(contract.ClientUserId!, "رفض العقد", $"رفض العامل عقد العمل #{contract.Id} وتم إعادة الرصيد لمحفظتك.");
+                }
+
+                return contract;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<Models.Contract> WorkerCheckInAsync(int contractId, string workerUserId)
+        {
+            var contract = await _context.Contracts
+                .FirstOrDefaultAsync(c => c.Id == contractId && c.WorkerUserId == workerUserId && c.IsSimpleContract)
+                ?? throw new KeyNotFoundException("العقد غير موجود أو لست مسجلاً كعامل به");
+
+            if (contract.Status != "active")
+                throw new InvalidOperationException("العقد غير نشط حالياً");
+
+            var todayEgypt = DateTime.UtcNow.AddHours(3).Date;
+            if (contract.CheckInDate == todayEgypt)
+                throw new InvalidOperationException("لقد قمت بتسجيل الحضور اليوم بالفعل");
+
+            contract.CheckInDate = todayEgypt;
+            contract.CheckInTime = DateTime.UtcNow;
+            contract.CheckInStatus = "pending";
+
+            var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+            history.Add(new { id = Guid.NewGuid().ToString(), type = "checkin", message = $"سجل العامل وصوله لبدء الوردية", createdAt = DateTime.UtcNow });
+            contract.HistoryJson = JsonSerializer.Serialize(history);
+
+            await _context.SaveChangesAsync();
+
+            await SafeNotifyDirect(contract.ClientUserId!, "حضور العامل", $"سجل العامل وصوله للعمل اليوم. يرجى تأكيد الحضور - العقد #{contract.Id}.");
+
+            return contract;
+        }
+
+        public async Task<Models.Contract> ClientApproveCheckInAsync(int contractId, string clientUserId)
+        {
+            var contract = await _context.Contracts
+                .FirstOrDefaultAsync(c => c.Id == contractId && c.ClientUserId == clientUserId && c.IsSimpleContract)
+                ?? throw new KeyNotFoundException("العقد غير موجود أو لست مسجلاً كعميل به");
+
+            if (contract.Status != "active")
+                throw new InvalidOperationException("العقد غير نشط");
+
+            if (contract.CheckInStatus != "pending")
+                throw new InvalidOperationException("لا يوجد طلب حضور معلق بانتظار التأكيد حالياً");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.WorkerUserId);
+                if (workerWallet == null)
+                    throw new InvalidOperationException("محفظة العامل غير موجودة");
+
+                var amount = contract.DailySalary;
+                contract.EscrowAmount -= amount;
+                contract.DaysWorked += 1;
+                contract.CheckInStatus = "approved";
+
+                workerWallet.Balance += amount;
+                workerWallet.UpdatedAt = DateTime.UtcNow;
+
+                _context.WalletTransactions.Add(new WalletTransaction
+                {
+                    UserId = contract.WorkerUserId!,
+                    Type = "installment_release",
+                    Amount = amount,
+                    Description = $"صرف قسط - تأكيد المقاول - العقد #{contract.Id}",
+                    ContractId = contract.Id
+                });
+
+                _context.FundMovementLogs.Add(new FundMovementLog
+                {
+                    ContractId = contract.Id,
+                    InstallmentIndex = contract.DaysWorked - 1,
+                    Action = "release",
+                    Amount = amount,
+                    TriggeredBy = clientUserId,
+                    Reason = "تأكيد المقاول لحضور العامل"
+                });
+
+                _context.AttendanceRecords.Add(new AttendanceRecord
+                {
+                    ContractId = contract.Id,
+                    Date = contract.CheckInDate!.Value,
+                    Status = "attended",
+                    MarkedBy = clientUserId,
+                    CheckInTime = contract.CheckInTime
+                });
+
+                var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+                history.Add(new { id = Guid.NewGuid().ToString(), type = "attendance_approved", message = "تم تأكيد حضور العامل من قبل العميل وتم صرف اليومية", createdAt = DateTime.UtcNow });
+
+                if (contract.DaysWorked == contract.DurationDays)
+                {
+                    contract.Status = "completed";
+
+                    var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == clientUserId);
+                    if (clientWallet != null)
+                    {
+                        clientWallet.Balance += contract.PenaltyClauseAmount;
+                        clientWallet.UpdatedAt = DateTime.UtcNow;
+                        _context.WalletTransactions.Add(new WalletTransaction
+                        {
+                            UserId = clientUserId,
+                            Type = "penalty_refund",
+                            Amount = contract.PenaltyClauseAmount,
+                            Description = $"استرداد الشرط الجزائي لاكتمال العقد #{contract.Id}",
+                            ContractId = contract.Id
+                        });
+                    }
+
+                    workerWallet.Balance += contract.PenaltyClauseAmount;
+                    _context.WalletTransactions.Add(new WalletTransaction
+                    {
+                        UserId = contract.WorkerUserId!,
+                        Type = "penalty_refund",
+                        Amount = contract.PenaltyClauseAmount,
+                        Description = $"استرداد الشرط الجزائي لاكتمال العقد #{contract.Id}",
+                        ContractId = contract.Id
+                    });
+
+                    contract.EscrowAmount -= (2 * contract.PenaltyClauseAmount);
+
+                    history.Add(new { id = Guid.NewGuid().ToString(), type = "completion", message = "تم اكتمال مدة العقد بنجاح والإفراج عن الضمانات للطرفين", createdAt = DateTime.UtcNow });
+
+                    await SafeNotifyDirect(contract.ClientUserId!, "اكتمال العقد", $"اكتمل العقد #{contract.Id} بنجاح وتم إعادة الشرط الجزائي لمحفظتك.");
+                    await SafeNotifyDirect(contract.WorkerUserId!, "اكتمال العقد", $"اكتمل العقد #{contract.Id} بنجاح وتم إعادة الشرط الجزائي لمحفظتك.");
+                }
+                else
+                {
+                    await SafeNotifyDirect(contract.WorkerUserId!, "تأكيد حضور", $"تم تأكيد حضورك اليوم وصرف {amount} جنيه للعقد #{contract.Id}.");
+                }
+
+                contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return contract;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<Models.Contract> ClientReportNoShowAsync(int contractId, string clientUserId)
+        {
+            var contract = await _context.Contracts
+                .FirstOrDefaultAsync(c => c.Id == contractId && c.ClientUserId == clientUserId && c.IsSimpleContract)
+                ?? throw new KeyNotFoundException("العقد غير موجود أو لست مسجلاً كعميل به");
+
+            if (contract.Status != "active")
+                throw new InvalidOperationException("العقد غير نشط");
+
+            if (contract.CheckInStatus != "pending")
+                throw new InvalidOperationException("لا يوجد طلب حضور معلق للإبلاغ عنه");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                contract.CheckInStatus = "reported";
+                contract.Status = "paused";
+
+                _context.AttendanceRecords.Add(new AttendanceRecord
+                {
+                    ContractId = contract.Id,
+                    Date = contract.CheckInDate!.Value,
+                    Status = "absent",
+                    MarkedBy = clientUserId,
+                    CheckInTime = contract.CheckInTime
+                });
+
+                var complaint = new EgyptOnline.Models.Complaint
+                {
+                    ReporterUserId = clientUserId,
+                    ContractId = contract.Id,
+                    Reason = "no_show",
+                    Description = $"بلاغ غياب: أبلغ العميل أن العامل لم يلتزم بالعمل وحضر بالتسجيل فقط اليوم {contract.CheckInDate!.Value:dd/MM/yyyy}.",
+                    Status = "open",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Complaints.Add(complaint);
+
+                var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+                history.Add(new { id = Guid.NewGuid().ToString(), type = "no_show_reported", message = "تم تسجيل غياب العامل وإحالة الخلاف إلى قسم المنازعات وتجميد العقد", createdAt = DateTime.UtcNow });
+                contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await SafeNotifyDirect(contract.WorkerUserId!, "تم الإبلاغ عن غيابك", $"أبلغ العميل عن غيابك اليوم للعقد #{contract.Id} وتم تجميد العقد للمراجعة.");
+                return contract;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<Models.Contract> TerminateMutualAsync(int contractId, string actorUserId, bool accept)
+        {
+            var contract = await _context.Contracts
+                .FirstOrDefaultAsync(c => c.Id == contractId && c.IsSimpleContract)
+                ?? throw new KeyNotFoundException("العقد غير موجود");
+
+            if (contract.ClientUserId != actorUserId && contract.WorkerUserId != actorUserId)
+                throw new UnauthorizedAccessException("غير مصرح لك بإنهاء هذا العقد");
+
+            if (contract.Status != "active" && contract.Status != "paused")
+                throw new InvalidOperationException("يجب أن يكون العقد نشطاً أو مجمداً لإنشائه ودياً");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (contract.ClientUserId == actorUserId)
+                {
+                    contract.ClientTerminationRequested = accept;
+                }
+                else if (contract.WorkerUserId == actorUserId)
+                {
+                    contract.WorkerTerminationRequested = accept;
+                }
+
+                var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+
+                if (contract.ClientTerminationRequested && contract.WorkerTerminationRequested)
+                {
+                    var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
+                    var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.WorkerUserId);
+
+                    if (clientWallet == null || workerWallet == null)
+                        throw new InvalidOperationException("محافظ أطراف العقد غير موجودة");
+
+                    var wagesRemaining = (contract.DurationDays - contract.DaysWorked) * contract.DailySalary;
+                    var clientRefund = wagesRemaining + contract.PenaltyClauseAmount;
+                    var workerRefund = contract.PenaltyClauseAmount;
+
+                    clientWallet.Balance += clientRefund;
+                    clientWallet.UpdatedAt = DateTime.UtcNow;
+
+                    workerWallet.Balance += workerRefund;
+                    workerWallet.UpdatedAt = DateTime.UtcNow;
+
+                    contract.EscrowAmount = 0;
+                    contract.Status = "cancelled";
+                    contract.CancelledAt = DateTime.UtcNow;
+                    contract.CancelledBy = "Mutual";
+
+                    _context.WalletTransactions.Add(new WalletTransaction
+                    {
+                        UserId = contract.ClientUserId!,
+                        Type = "escrow_refund",
+                        Amount = clientRefund,
+                        Description = $"استرداد رصيد الأجر المتبقي والضمان لإنهاء ودي للعقد #{contract.Id}",
+                        ContractId = contract.Id
+                    });
+
+                    _context.WalletTransactions.Add(new WalletTransaction
+                    {
+                        UserId = contract.WorkerUserId!,
+                        Type = "penalty_refund",
+                        Amount = workerRefund,
+                        Description = $"استرداد الضمان لإنهاء ودي للعقد #{contract.Id}",
+                        ContractId = contract.Id
+                    });
+
+                    _context.FundMovementLogs.Add(new FundMovementLog
+                    {
+                        ContractId = contract.Id,
+                        InstallmentIndex = -1,
+                        Action = "release",
+                        Amount = wagesRemaining + (2 * contract.PenaltyClauseAmount),
+                        TriggeredBy = "Mutual",
+                        Reason = "إنهاء ودي بالتراضي بين الطرفين"
+                    });
+
+                    history.Add(new { id = Guid.NewGuid().ToString(), type = "mutual_termination", message = "تم إنهاء العقد بالتراضي واسترداد الضمانات للطرفين", createdAt = DateTime.UtcNow });
+                    contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    await SafeNotifyDirect(contract.ClientUserId!, "إنهاء العقد بالتراضي", $"تم إنهاء العقد #{contract.Id} ودياً وتم تسوية الحسابات وإرجاع الضمان لمحفظتك.");
+                    await SafeNotifyDirect(contract.WorkerUserId!, "إنهاء العقد بالتراضي", $"تم إنهاء العقد #{contract.Id} ودياً وتم إرجاع الضمان لمحفظتك.");
+                }
+                else
+                {
+                    var requestMsg = contract.ClientUserId == actorUserId 
+                        ? "المقاول/العميل يطلب إنهاء العقد بالتراضي" 
+                        : "العامل يطلب إنهاء العقد بالتراضي";
+
+                    history.Add(new { id = Guid.NewGuid().ToString(), type = "termination_requested", message = requestMsg, createdAt = DateTime.UtcNow });
+                    contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    var otherUserId = contract.ClientUserId == actorUserId ? contract.WorkerUserId! : contract.ClientUserId!;
+                    await SafeNotifyDirect(otherUserId, "طلب إنهاء عقد ودي", $"طلب الطرف الآخر إنهاء العقد #{contract.Id} ودياً بالتراضي. يرجى تأكيد القبول.");
+                }
+
+                return contract;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<Models.Contract> TerminateByClientAsync(int contractId, string clientUserId)
+        {
+            var contract = await _context.Contracts
+                .FirstOrDefaultAsync(c => c.Id == contractId && c.ClientUserId == clientUserId && c.IsSimpleContract)
+                ?? throw new KeyNotFoundException("العقد غير موجود أو لست مسجلاً كعميل به");
+
+            if (contract.Status != "active" && contract.Status != "paused")
+                throw new InvalidOperationException("لا يمكن إلغاء العقد في حالته الحالية");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == clientUserId);
+                if (clientWallet == null)
+                    throw new InvalidOperationException("محفظتك غير موجودة");
+
+                var wagesRemaining = (contract.DurationDays - contract.DaysWorked) * contract.DailySalary;
+                var totalRefund = wagesRemaining + (2 * contract.PenaltyClauseAmount);
+
+                clientWallet.Balance += totalRefund;
+                clientWallet.UpdatedAt = DateTime.UtcNow;
+
+                contract.EscrowAmount = 0;
+                contract.Status = "cancelled";
+                contract.CancelledAt = DateTime.UtcNow;
+                contract.CancelledBy = clientUserId;
+
+                _context.WalletTransactions.Add(new WalletTransaction
+                {
+                    UserId = clientUserId,
+                    Type = "escrow_refund",
+                    Amount = totalRefund,
+                    Description = $"استرداد المتبقي ومصادرة الشرط الجزائي للعقد #{contract.Id}",
+                    ContractId = contract.Id
+                });
+
+                _context.FundMovementLogs.Add(new FundMovementLog
+                {
+                    ContractId = contract.Id,
+                    InstallmentIndex = -1,
+                    Action = "release",
+                    Amount = totalRefund,
+                    TriggeredBy = clientUserId,
+                    Reason = "إلغاء أحادي من قبل العميل ومصادرة الشرط الجزائي"
+                });
+
+                var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+                history.Add(new { id = Guid.NewGuid().ToString(), type = "client_termination", message = "قام العميل بإنهاء العقد من طرف واحد وتمت مصادرة الشرط الجزائي لصالحه", createdAt = DateTime.UtcNow });
+                contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await SafeNotifyDirect(contract.ClientUserId!, "إنهاء العقد من طرفك", $"قمت بإنهاء العقد #{contract.Id} من طرف واحد واسترداد أجر الأيام غير المنجزة ومصادرة الشرط الجزائي.");
+                await SafeNotifyDirect(contract.WorkerUserId!, "إنهاء العقد من قبل العميل", $"قام العميل بإنهاء العقد #{contract.Id} أحادياً وتم خصم ومصادرة الشرط الجزائي منك لصالح العميل.");
+
+                return contract;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<Models.Contract> TerminateByWorkerAsync(int contractId, string workerUserId)
+        {
+            var contract = await _context.Contracts
+                .FirstOrDefaultAsync(c => c.Id == contractId && c.WorkerUserId == workerUserId && c.IsSimpleContract)
+                ?? throw new KeyNotFoundException("العقد غير موجود أو لست مسجلاً كعامل به");
+
+            if (contract.Status != "active" && contract.Status != "paused")
+                throw new InvalidOperationException("لا يمكن إلغاء العقد في حالته الحالية");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
+                if (clientWallet == null)
+                    throw new InvalidOperationException("محفظة العميل غير موجودة");
+
+                var wagesRemaining = (contract.DurationDays - contract.DaysWorked) * contract.DailySalary;
+                var totalRefund = wagesRemaining + (2 * contract.PenaltyClauseAmount);
+
+                clientWallet.Balance += totalRefund;
+                clientWallet.UpdatedAt = DateTime.UtcNow;
+
+                contract.EscrowAmount = 0;
+                contract.Status = "cancelled";
+                contract.CancelledAt = DateTime.UtcNow;
+                contract.CancelledBy = workerUserId;
+
+                _context.WalletTransactions.Add(new WalletTransaction
+                {
+                    UserId = contract.ClientUserId!,
+                    Type = "escrow_refund",
+                    Amount = totalRefund,
+                    Description = $"استرداد ومصادرة الشرط الجزائي لانسحاب العامل - العقد #{contract.Id}",
+                    ContractId = contract.Id
+                });
+
+                _context.FundMovementLogs.Add(new FundMovementLog
+                {
+                    ContractId = contract.Id,
+                    InstallmentIndex = -1,
+                    Action = "release",
+                    Amount = totalRefund,
+                    TriggeredBy = workerUserId,
+                    Reason = "انسحاب العامل أحادياً ومصادرة الشرط الجزائي لصالح العميل"
+                });
+
+                var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+                history.Add(new { id = Guid.NewGuid().ToString(), type = "worker_termination", message = "قام العامل بالانسحاب وإنهاء العقد أحادياً ومصادرة الشرط الجزائي لصالح العميل", createdAt = DateTime.UtcNow });
+                contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await SafeNotifyDirect(contract.ClientUserId!, "انسحاب العامل وإنهاء العقد", $"انسحب العامل من العقد #{contract.Id} أحادياً، وتم تسوية أجر الأيام المتبقية والشرط الجزائي لصالح محفظتك.");
+                await SafeNotifyDirect(contract.WorkerUserId!, "إنهاء العقد من طرفك", $"قمت بإنهاء العقد #{contract.Id} أحادياً وتم مصادرة الشرط الجزائي منك لصالح العميل.");
+
+                return contract;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task ProcessAutoPayoutsAsync(DateTime egyptTime)
+        {
+            var todayEgypt = egyptTime.Date;
+            var isPast5Pm = egyptTime.TimeOfDay >= new TimeSpan(17, 0, 0);
+
+            var contractsToPayout = await _context.Contracts
+                .Where(c => c.IsSimpleContract && c.Status == "active" && c.CheckInStatus == "pending" && c.CheckInDate.HasValue)
+                .ToListAsync();
+
+            foreach (var contract in contractsToPayout)
+            {
+                if (contract.CheckInDate.Value < todayEgypt || (contract.CheckInDate.Value == todayEgypt && isPast5Pm))
+                {
+                    using var transaction = await _context.Database.BeginTransactionAsync();
+                    try
+                    {
+                        var workerWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contract.WorkerUserId);
+                        if (workerWallet == null) continue;
+
+                        var amount = contract.DailySalary;
+                        contract.EscrowAmount -= amount;
+                        contract.DaysWorked += 1;
+                        contract.CheckInStatus = "approved";
+
+                        workerWallet.Balance += amount;
+                        workerWallet.UpdatedAt = DateTime.UtcNow;
+
+                        _context.WalletTransactions.Add(new WalletTransaction
+                        {
+                            UserId = contract.WorkerUserId!,
+                            Type = "installment_release",
+                            Amount = amount,
+                            Description = $"صرف تلقائي بعد فترة السماح - العقد #{contract.Id}",
+                            ContractId = contract.Id
+                        });
+
+                        _context.FundMovementLogs.Add(new FundMovementLog
+                        {
+                            ContractId = contract.Id,
+                            InstallmentIndex = contract.DaysWorked - 1,
+                            Action = "release",
+                            Amount = amount,
+                            TriggeredBy = "System_AutoPayout",
+                            Reason = "صرف تلقائي بعد مرور 3 ساعات سماح"
+                        });
+
+                        _context.AttendanceRecords.Add(new AttendanceRecord
+                        {
+                            ContractId = contract.Id,
+                            Date = contract.CheckInDate.Value,
+                            Status = "attended",
+                            MarkedBy = "System_AutoPayout",
+                            CheckInTime = contract.CheckInTime
+                        });
+
+                        var history = JsonSerializer.Deserialize<List<object>>(contract.HistoryJson) ?? new();
+                        history.Add(new { id = Guid.NewGuid().ToString(), type = "auto_payout", message = "تم الصرف التلقائي لليومية بعد انتهاء المهلة", createdAt = DateTime.UtcNow });
+
+                        if (contract.DaysWorked == contract.DurationDays)
+                        {
+                            contract.Status = "completed";
+
+                            var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(uw => uw.UserId == contract.ClientUserId);
+                            if (clientWallet != null)
+                            {
+                                clientWallet.Balance += contract.PenaltyClauseAmount;
+                                clientWallet.UpdatedAt = DateTime.UtcNow;
+                                _context.WalletTransactions.Add(new WalletTransaction
+                                {
+                                    UserId = contract.ClientUserId!,
+                                    Type = "penalty_refund",
+                                    Amount = contract.PenaltyClauseAmount,
+                                    Description = $"استرداد الشرط الجزائي لاكتمال العقد #{contract.Id}",
+                                    ContractId = contract.Id
+                                });
+                            }
+
+                            workerWallet.Balance += contract.PenaltyClauseAmount;
+                            _context.WalletTransactions.Add(new WalletTransaction
+                            {
+                                UserId = contract.WorkerUserId!,
+                                Type = "penalty_refund",
+                                Amount = contract.PenaltyClauseAmount,
+                                Description = $"استرداد الشرط الجزائي لاكتمال العقد #{contract.Id}",
+                                ContractId = contract.Id
+                            });
+
+                            contract.EscrowAmount -= (2 * contract.PenaltyClauseAmount);
+
+                            history.Add(new { id = Guid.NewGuid().ToString(), type = "completion", message = "تم اكتمال مدة العقد بنجاح تلقائياً والإفراج عن الضمانات للطرفين", createdAt = DateTime.UtcNow });
+
+                            await SafeNotifyDirect(contract.ClientUserId!, "اكتمال العقد", $"اكتمل العقد #{contract.Id} بنجاح وتم إعادة الشرط الجزائي لمحفظتك.");
+                            await SafeNotifyDirect(contract.WorkerUserId!, "اكتمال العقد", $"اكتمل العقد #{contract.Id} بنجاح وتم إعادة الشرط الجزائي لمحفظتك.");
+                        }
+                        else
+                        {
+                            await SafeNotifyDirect(contract.ClientUserId!, "صرف قسط تلقائي", $"تم صرف اليومية للعامل تلقائياً لعدم اتخاذ إجراء قبل الساعة 5 مساءً - العقد #{contract.Id}");
+                            await SafeNotifyDirect(contract.WorkerUserId!, "صرف قسط تلقائي", $"تم صرف اليومية لك تلقائياً للعقد #{contract.Id}");
+                        }
+
+                        contract.HistoryJson = JsonSerializer.Serialize(history);
+
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        Log.Error(ex, "Failed to auto payout contract {ContractId}", contract.Id);
+                    }
+                }
+            }
+        }
     }
 }

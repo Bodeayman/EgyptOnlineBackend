@@ -75,4 +75,31 @@ namespace EgyptOnline.Dtos.Contract
         [Range(0, int.MaxValue, ErrorMessage = "InstallmentIndex must be non-negative")]
         public int InstallmentIndex { get; set; }
     }
+
+    public class CreateSimpleContractDto
+    {
+        [Required(ErrorMessage = "WorkerUserId is required")]
+        public string WorkerUserId { get; set; } = string.Empty;
+
+        [Range(1, int.MaxValue, ErrorMessage = "DurationDays must be at least 1")]
+        public int DurationDays { get; set; }
+
+        [Range(0.01, double.MaxValue, ErrorMessage = "DailySalary must be positive")]
+        public decimal DailySalary { get; set; }
+
+        [Required(ErrorMessage = "WorkplaceAddress is required")]
+        [MaxLength(500)]
+        public string WorkplaceAddress { get; set; } = string.Empty;
+
+        public string? Notes { get; set; }
+
+        [Range(0, double.MaxValue, ErrorMessage = "PenaltyClauseAmount must be non-negative")]
+        public decimal PenaltyClauseAmount { get; set; }
+    }
+
+    public class RespondSimpleContractDto
+    {
+        [Required]
+        public bool Accept { get; set; }
+    }
 }

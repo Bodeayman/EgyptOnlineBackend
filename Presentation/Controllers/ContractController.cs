@@ -20,6 +20,7 @@ namespace EgyptOnline.Controllers
         }
 
         private string? GetUsername() => User.Identity?.Name;
+        private string? GetUserId() => User.FindFirst("uid")?.Value;
 
         /// <summary>
         /// Returns true when the logged-in username is one of the three contract parties.
@@ -306,6 +307,133 @@ namespace EgyptOnline.Controllers
             {
                 return StatusCode(500, new { message = "Internal server error", error = ex.Message });
             }
+        }
+
+        // ─── 2-PARTY SIMPLE CONTRACT ENDPOINTS ──────────────────────────────
+
+        [HttpPost("simple")]
+        public async Task<IActionResult> CreateSimple([FromBody] CreateSimpleContractDto dto)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (!ModelState.IsValid) return BadRequest(new { message = "Validation failed", errors = ModelState });
+                var contract = await _contractService.CreateSimpleContractAsync(dto, userId);
+                return Ok(new { message = "تم إنشاء العقد بنجاح وبانتظار موافقة العامل", data = contract });
+            }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        [HttpPut("{id}/respond")]
+        public async Task<IActionResult> WorkerRespond(int id, [FromBody] RespondSimpleContractDto dto)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var contract = await _contractService.WorkerRespondAsync(id, userId, dto.Accept);
+                var msg = dto.Accept ? "تم قبول العقد وتفعيله" : "تم رفض العقد";
+                return Ok(new { message = msg, data = contract });
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        [HttpPost("{id}/checkin")]
+        public async Task<IActionResult> WorkerCheckIn(int id)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var contract = await _contractService.WorkerCheckInAsync(id, userId);
+                return Ok(new { message = "تم تسجيل الحضور بنجاح وإشعار العميل", data = contract });
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        [HttpPost("{id}/approve-checkin")]
+        public async Task<IActionResult> ApproveCheckIn(int id)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var contract = await _contractService.ClientApproveCheckInAsync(id, userId);
+                return Ok(new { message = "تم تأكيد حضور العامل وصرف اليومية", data = contract });
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        [HttpPost("{id}/report-noshow")]
+        public async Task<IActionResult> ReportNoShow(int id)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var contract = await _contractService.ClientReportNoShowAsync(id, userId);
+                return Ok(new { message = "تم الإبلاغ عن غياب العامل وتجميد العقد وإحالته للمنازعات", data = contract });
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        [HttpPost("{id}/terminate/mutual")]
+        public async Task<IActionResult> TerminateMutual(int id)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var contract = await _contractService.TerminateMutualAsync(id, userId, true);
+                return Ok(new { message = "تم تسجيل طلب الإنهاء الودي", data = contract });
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        [HttpPost("{id}/terminate/by-client")]
+        public async Task<IActionResult> TerminateByClient(int id)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var contract = await _contractService.TerminateByClientAsync(id, userId);
+                return Ok(new { message = "تم إنهاء العقد من قبل العميل", data = contract });
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        [HttpPost("{id}/terminate/by-worker")]
+        public async Task<IActionResult> TerminateByWorker(int id)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                var contract = await _contractService.TerminateByWorkerAsync(id, userId);
+                return Ok(new { message = "تم إنهاء العقد من قبل العامل", data = contract });
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
     }
 }

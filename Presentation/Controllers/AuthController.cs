@@ -153,6 +153,13 @@ namespace EgyptOnline.Controllers
                 var provider = strategy.CreateProvider(model, UserRegisterationResult.User);
                 _context.Add(provider);
 
+                // Ensure user has a digital wallet (without a number)
+                var userWallet = new UserWallet
+                {
+                    UserId = UserRegisterationResult.User.Id,
+                    Balance = 0
+                };
+                _context.UserWallets.Add(userWallet);
 
                 await _context.SaveChangesAsync();
                 string? imageUrl = null;
@@ -274,6 +281,18 @@ namespace EgyptOnline.Controllers
                     IsRevoked = false
                 };
                 _context.RefreshTokens.Add(refreshToken);
+
+                // Ensure user has a digital wallet (without a number)
+                var userWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == user.Id);
+                if (userWallet == null)
+                {
+                    userWallet = new UserWallet
+                    {
+                        UserId = user.Id,
+                        Balance = 0
+                    };
+                    _context.UserWallets.Add(userWallet);
+                }
 
                 await _context.SaveChangesAsync();
 

@@ -28,6 +28,9 @@ namespace EgyptOnline.Models
         public string MarkedBy { get; set; } = string.Empty;
 
         [Column(TypeName = "timestamptz")]
+        public DateTime? CheckInTime { get; set; }
+
+        [Column(TypeName = "timestamptz")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

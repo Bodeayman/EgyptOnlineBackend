@@ -30,6 +30,9 @@ namespace EgyptOnline.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("CheckInTime")
+                        .HasColumnType("timestamptz");
+
                     b.Property<int>("ContractId")
                         .HasColumnType("integer");
 
@@ -134,6 +137,26 @@ namespace EgyptOnline.Migrations
                     b.Property<string>("CancelledBy")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("CheckInDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("CheckInStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("CheckInTime")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<bool>("ClientPenaltyPaid")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("ClientTerminationRequested")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ClientUserId")
+                        .HasColumnType("text");
+
                     b.Property<string>("ContractorUsername")
                         .IsRequired()
                         .HasColumnType("text");
@@ -143,6 +166,15 @@ namespace EgyptOnline.Migrations
 
                     b.Property<decimal>("DailyAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("DailySalary")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("DaysWorked")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DurationDays")
+                        .HasColumnType("integer");
 
                     b.Property<string>("EngineerUsername")
                         .IsRequired()
@@ -162,8 +194,14 @@ namespace EgyptOnline.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<bool>("IsSimpleContract")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("NoShowProcessed")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("PenaltyClauseAmount")
                         .HasColumnType("decimal(18,2)");
@@ -198,17 +236,35 @@ namespace EgyptOnline.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<bool>("WorkerPenaltyPaid")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("WorkerTerminationRequested")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("WorkerUserId")
+                        .HasColumnType("text");
+
                     b.Property<string>("WorkerUsername")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("WorkplaceAddress")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ClientUserId");
 
                     b.HasIndex("ContractorUsername");
 
                     b.HasIndex("EngineerUsername");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("WorkerUserId");
 
                     b.HasIndex("WorkerUsername");
 
@@ -726,11 +782,6 @@ namespace EgyptOnline.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("WalletNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("UserId")
@@ -1147,6 +1198,23 @@ namespace EgyptOnline.Migrations
                     b.Navigation("Contract");
 
                     b.Navigation("Reporter");
+                });
+
+            modelBuilder.Entity("EgyptOnline.Models.Contract", b =>
+                {
+                    b.HasOne("EgyptOnline.Models.User", "ClientUser")
+                        .WithMany()
+                        .HasForeignKey("ClientUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("EgyptOnline.Models.User", "WorkerUser")
+                        .WithMany()
+                        .HasForeignKey("WorkerUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ClientUser");
+
+                    b.Navigation("WorkerUser");
                 });
 
             modelBuilder.Entity("EgyptOnline.Models.DepositRequest", b =>

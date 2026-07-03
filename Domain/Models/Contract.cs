@@ -82,5 +82,47 @@ namespace EgyptOnline.Models
         public DateTime? CancelledAt { get; set; }
 
         public string? CancelledBy { get; set; }
+
+        // ─── 2-Party Simple Contract Properties ───────────────────────────
+        public string? ClientUserId { get; set; }
+        
+        [ForeignKey(nameof(ClientUserId))]
+        public User? ClientUser { get; set; }
+
+        public string? WorkerUserId { get; set; }
+
+        [ForeignKey(nameof(WorkerUserId))]
+        public User? WorkerUser { get; set; }
+
+        public bool IsSimpleContract { get; set; }
+        public int DurationDays { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DailySalary { get; set; }
+
+        [MaxLength(500)]
+        public string WorkplaceAddress { get; set; } = string.Empty;
+
+        public string? Notes { get; set; }
+
+        public bool ClientPenaltyPaid { get; set; }
+        public bool WorkerPenaltyPaid { get; set; }
+
+        [Column(TypeName = "timestamptz")]
+        public DateTime? CheckInTime { get; set; }
+
+        /// <summary>
+        /// none, pending, approved, reported
+        /// </summary>
+        [MaxLength(50)]
+        public string CheckInStatus { get; set; } = "none";
+
+        [Column(TypeName = "date")]
+        public DateTime? CheckInDate { get; set; }
+
+        public int DaysWorked { get; set; }
+
+        public bool ClientTerminationRequested { get; set; }
+        public bool WorkerTerminationRequested { get; set; }
     }
 }

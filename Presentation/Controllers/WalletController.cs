@@ -33,7 +33,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 var wallet = await _walletService.GetBalanceAsync(userId);
-                return Ok(new { data = new { userId, balance = wallet.Balance, walletNumber = wallet.WalletNumber } });
+                return Ok(new { data = new { userId, balance = wallet.Balance } });
             }
             catch (Exception ex)
             {
@@ -63,11 +63,11 @@ namespace EgyptOnline.Controllers
                     return BadRequest(new { message = "فشل رفع صورة الإيصال" });
 
                 var request = await _walletService.SubmitDepositRequestAsync(
-                    userId, 
-                    dto.Amount, 
-                    dto.SourceWalletNumber, 
-                    dto.WalletOwnerName, 
-                    dto.RecipientPhoneNumber, 
+                    userId,
+                    dto.Amount,
+                    dto.SourceWalletNumber,
+                    dto.WalletOwnerName,
+                    dto.RecipientPhoneNumber,
                     receiptPath);
 
                 return Ok(new
@@ -110,7 +110,12 @@ namespace EgyptOnline.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
-                var request = await _walletService.SubmitWithdrawRequestAsync(userId, dto.Amount, dto.DestinationWalletNumber, dto.WalletOwnerName);
+                var request = await _walletService.SubmitWithdrawRequestAsync(
+                    userId,
+                    dto.Amount,
+                    dto.DestinationWalletNumber,
+                    dto.WalletOwnerName,
+                    dto.SourceWalletNumber);
 
                 return Ok(new
                 {
@@ -211,23 +216,6 @@ namespace EgyptOnline.Controllers
         /// Update user's wallet number.
         /// PUT /api/v1/Wallet/number
         /// </summary>
-        [HttpPut("number")]
-        public async Task<IActionResult> UpdateWalletNumber([FromBody] UpdateWalletNumberDto dto)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            try
-            {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
-                var wallet = await _walletService.UpdateWalletNumberAsync(userId, dto.WalletNumber);
-                return Ok(new { message = "تم تحديث رقم المحفظة بنجاح", data = new { userId, walletNumber = wallet.WalletNumber } });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
     }
 }

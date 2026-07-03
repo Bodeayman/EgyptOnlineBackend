@@ -77,6 +77,18 @@ namespace EgyptOnline.Data
                 entity.HasIndex(e => e.EngineerUsername);
                 entity.HasIndex(e => e.WorkerUsername);
                 entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.ClientUserId);
+                entity.HasIndex(e => e.WorkerUserId);
+
+                entity.HasOne(c => c.ClientUser)
+                    .WithMany()
+                    .HasForeignKey(c => c.ClientUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(c => c.WorkerUser)
+                    .WithMany()
+                    .HasForeignKey(c => c.WorkerUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<UserWallet>(entity =>

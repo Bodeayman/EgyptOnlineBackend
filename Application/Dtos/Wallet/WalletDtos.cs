@@ -59,6 +59,10 @@ namespace EgyptOnline.Dtos.Wallet
         [Required(ErrorMessage = "اسم صاحب المحفظة مطلوب")]
         [MaxLength(200)]
         public string WalletOwnerName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "رقم المحفظة المحول منها مطلوب")]
+        [MaxLength(100)]
+        public string SourceWalletNumber { get; set; } = string.Empty;
     }
 
     public class UpdateWalletNumberDto

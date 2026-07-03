@@ -26,10 +26,9 @@ namespace EgyptOnline.Application.Services.Wallet
             if (wallet == null)
             {
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                wallet = new UserWallet 
-                { 
+                wallet = new UserWallet
+                {
                     UserId = userId,
-                    WalletNumber = user?.PhoneNumber ?? string.Empty
                 };
                 _context.UserWallets.Add(wallet);
                 await _context.SaveChangesAsync();
@@ -306,7 +305,8 @@ namespace EgyptOnline.Application.Services.Wallet
             string userId,
             decimal amount,
             string destinationWalletNumber,
-            string walletOwnerName)
+            string walletOwnerName,
+            string sourceWalletNumber)
         {
             if (amount <= 0)
                 throw new InvalidOperationException("المبلغ يجب ان يكون اكبر من صفر");
@@ -330,7 +330,7 @@ namespace EgyptOnline.Application.Services.Wallet
                     Amount = amount,
                     DestinationWalletNumber = destinationWalletNumber,
                     WalletOwnerName = walletOwnerName,
-                    SourceWalletNumber = wallet.WalletNumber,
+                    SourceWalletNumber = sourceWalletNumber,
                     Status = "pending"
                 };
 
@@ -430,13 +430,6 @@ namespace EgyptOnline.Application.Services.Wallet
             }
         }
 
-        public async Task<UserWallet> UpdateWalletNumberAsync(string userId, string walletNumber)
-        {
-            var wallet = await GetOrCreateWalletAsync(userId);
-            wallet.WalletNumber = walletNumber;
-            wallet.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-            return wallet;
-        }
+
     }
 }
