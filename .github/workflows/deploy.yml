@@ -2,7 +2,7 @@ name: EgyptOnline CI/CD
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master" ,"feature/contracts"]
 
 jobs:
   build-and-deploy:

@@ -38,6 +38,7 @@ namespace EgyptOnline.Data
         // ─── Contract / Wallet / KYC Module ─────────────────────────
         public DbSet<Contract> Contracts { get; set; }
         public DbSet<UserWallet> UserWallets { get; set; }
+        public DbSet<ContractDay> ContractDays { get; set; }
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
         public DbSet<AttendanceRecord> AttendanceRecords { get; set; }
         public DbSet<FundMovementLog> FundMovementLogs { get; set; }
@@ -79,6 +80,7 @@ namespace EgyptOnline.Data
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.ClientUserId);
                 entity.HasIndex(e => e.WorkerUserId);
+                entity.HasIndex(e => e.ServiceProviderUserId);
 
                 entity.HasOne(c => c.ClientUser)
                     .WithMany()
@@ -89,6 +91,11 @@ namespace EgyptOnline.Data
                     .WithMany()
                     .HasForeignKey(c => c.WorkerUserId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(c => c.ServiceProviderUser)
+                    .WithMany()
+                    .HasForeignKey(c => c.ServiceProviderUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<UserWallet>(entity =>
@@ -98,6 +105,18 @@ namespace EgyptOnline.Data
                 entity.HasOne(w => w.User)
                       .WithOne(u => u.Wallet)
                       .HasForeignKey<UserWallet>(w => w.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ContractDay>(entity =>
+            {
+                entity.ToTable("ContractDays");
+                entity.HasIndex(e => new { e.ContractId, e.DayNumber }).IsUnique();
+                entity.HasIndex(e => new { e.ContractId, e.Date });
+                entity.HasIndex(e => e.IsProcessed);
+                entity.HasOne(cd => cd.Contract)
+                      .WithMany(c => c.ContractDays)
+                      .HasForeignKey(cd => cd.ContractId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 

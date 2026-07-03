@@ -1,7 +1,9 @@
 using EgyptOnline.Data;
+using EgyptOnline.Domain.Models;
 using EgyptOnline.Models;
 using EgyptOnline.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace EgyptOnline.Application.Services.Wallet
@@ -10,11 +12,13 @@ namespace EgyptOnline.Application.Services.Wallet
     {
         private readonly ApplicationDbContext _context;
         private readonly INotificationService _notificationService;
+        private readonly ILogger<WalletService> _logger;
 
-        public WalletService(ApplicationDbContext context, INotificationService notificationService)
+        public WalletService(ApplicationDbContext context, INotificationService notificationService, ILogger<WalletService> logger)
         {
             _context = context;
             _notificationService = notificationService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -426,6 +430,294 @@ namespace EgyptOnline.Application.Services.Wallet
             }
         }
 
+        #region Free/Frozen Balance Methods (New 2-Party System)
 
+        public async Task<UserWallet> GetWalletByUserIdAsync(string userId)
+        {
+            var wallet = await _context.UserWallets
+                .Include(w => w.User)
+                .FirstOrDefaultAsync(w => w.UserId == userId);
+
+            if (wallet == null)
+            {
+                throw new InvalidOperationException($"Wallet not found for user ID: {userId}");
+            }
+
+            return wallet;
+        }
+
+        public async Task<UserWallet> GetWalletByPhoneNumberAsync(string phoneNumber)
+        {
+            var wallet = await _context.UserWallets
+                .Include(w => w.User)
+                .FirstOrDefaultAsync(w => w.User.PhoneNumber == phoneNumber);
+
+            if (wallet == null)
+            {
+                throw new InvalidOperationException($"Wallet not found for phone number: {phoneNumber}");
+            }
+
+            return wallet;
+        }
+
+        public async Task<UserWallet> CreateWalletAsync(string userId)
+        {
+            var existingWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId);
+            if (existingWallet != null)
+            {
+                throw new InvalidOperationException($"Wallet already exists for user ID: {userId}");
+            }
+
+            var wallet = new UserWallet
+            {
+                UserId = userId,
+                FreeBalance = 0,
+                FrozenBalance = 0,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.UserWallets.Add(wallet);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Created wallet for user {UserId}", userId);
+            return wallet;
+        }
+
+        public async Task<bool> HasSufficientFreeBalanceAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+            return wallet.FreeBalance >= amount;
+        }
+
+        public async Task<bool> HasSufficientFrozenBalanceAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+            return wallet.FrozenBalance >= amount;
+        }
+
+        public async Task TransferFreeToFrozenAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+
+            if (wallet.FreeBalance < amount)
+            {
+                throw new InvalidOperationException($"Insufficient free balance. Required: {amount}, Available: {wallet.FreeBalance}");
+            }
+
+            wallet.FreeBalance -= amount;
+            wallet.FrozenBalance += amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Transferred {Amount} from free to frozen for user {UserId}", amount, userId);
+        }
+
+        public async Task TransferFrozenToFreeAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+
+            if (wallet.FrozenBalance < amount)
+            {
+                throw new InvalidOperationException($"Insufficient frozen balance. Required: {amount}, Available: {wallet.FrozenBalance}");
+            }
+
+            wallet.FrozenBalance -= amount;
+            wallet.FreeBalance += amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Transferred {Amount} from frozen to free for user {UserId}", amount, userId);
+        }
+
+        public async Task TransferFreeBetweenUsersAsync(string fromUserId, string toUserId, decimal amount)
+        {
+            var fromWallet = await GetWalletByUserIdAsync(fromUserId);
+            var toWallet = await GetWalletByUserIdAsync(toUserId);
+
+            if (fromWallet.FreeBalance < amount)
+            {
+                throw new InvalidOperationException($"Insufficient free balance for sender. Required: {amount}, Available: {fromWallet.FreeBalance}");
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                fromWallet.FreeBalance -= amount;
+                fromWallet.UpdatedAt = DateTime.UtcNow;
+
+                toWallet.FreeBalance += amount;
+                toWallet.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Transferred {Amount} free balance from {FromUserId} to {ToUserId}", amount, fromUserId, toUserId);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task TransferFrozenBetweenUsersAsync(string fromUserId, string toUserId, decimal amount)
+        {
+            var fromWallet = await GetWalletByUserIdAsync(fromUserId);
+            var toWallet = await GetWalletByUserIdAsync(toUserId);
+
+            if (fromWallet.FrozenBalance < amount)
+            {
+                throw new InvalidOperationException($"Insufficient frozen balance for sender. Required: {amount}, Available: {fromWallet.FrozenBalance}");
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                fromWallet.FrozenBalance -= amount;
+                fromWallet.UpdatedAt = DateTime.UtcNow;
+
+                toWallet.FrozenBalance += amount;
+                toWallet.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Transferred {Amount} frozen balance from {FromUserId} to {ToUserId}", amount, fromUserId, toUserId);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task AddToFreeBalanceAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+            wallet.FreeBalance += amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Added {Amount} to free balance for user {UserId}", amount, userId);
+        }
+
+        public async Task SubtractFromFreeBalanceAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+
+            if (wallet.FreeBalance < amount)
+            {
+                throw new InvalidOperationException($"Insufficient free balance. Required: {amount}, Available: {wallet.FreeBalance}");
+            }
+
+            wallet.FreeBalance -= amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Subtracted {Amount} from free balance for user {UserId}", amount, userId);
+        }
+
+        public async Task AddToFrozenBalanceAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+            wallet.FrozenBalance += amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Added {Amount} to frozen balance for user {UserId}", amount, userId);
+        }
+
+        public async Task SubtractFromFrozenBalanceAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+
+            if (wallet.FrozenBalance < amount)
+            {
+                throw new InvalidOperationException($"Insufficient frozen balance. Required: {amount}, Available: {wallet.FrozenBalance}");
+            }
+
+            wallet.FrozenBalance -= amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Subtracted {Amount} from frozen balance for user {UserId}", amount, userId);
+        }
+
+        public async Task AdminOverrideBalanceAsync(string userId, decimal newFreeBalance, decimal newFrozenBalance, string reason)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+
+            var oldFree = wallet.FreeBalance;
+            var oldFrozen = wallet.FrozenBalance;
+
+            wallet.FreeBalance = newFreeBalance;
+            wallet.FrozenBalance = newFrozenBalance;
+            wallet.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogWarning("Admin override for user {UserId}. Free: {OldFree} -> {NewFree}, Frozen: {OldFrozen} -> {NewFrozen}. Reason: {Reason}",
+                userId, oldFree, newFreeBalance, oldFrozen, newFrozenBalance, reason);
+        }
+
+        public async Task AdminDepositAsync(string phoneNumber, decimal amount, string reference)
+        {
+            var wallet = await GetWalletByPhoneNumberAsync(phoneNumber);
+
+            wallet.FreeBalance += amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Admin deposit of {Amount} to phone {PhoneNumber}. Reference: {Reference}", amount, phoneNumber, reference);
+        }
+
+        public async Task<bool> CanInitiateWithdrawalAsync(string userId, decimal amount)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+            return wallet.FreeBalance >= amount;
+        }
+
+        public async Task AdminCompleteWithdrawalAsync(string userId, decimal amount, string reference)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+
+            if (wallet.FreeBalance < amount)
+            {
+                throw new InvalidOperationException($"Insufficient free balance for withdrawal. Required: {amount}, Available: {wallet.FreeBalance}");
+            }
+
+            wallet.FreeBalance -= amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Admin completed withdrawal of {Amount} for user {UserId}. Reference: {Reference}", amount, userId, reference);
+        }
+
+        public async Task<UserWallet> OverrideUserBalanceAsync(string userId, string balanceType, decimal amount, string operation, string reason, string adminId)
+        {
+            var wallet = await GetWalletByUserIdAsync(userId);
+
+            decimal oldValue = balanceType == "free" ? wallet.FreeBalance : wallet.FrozenBalance;
+            decimal newValue = operation == "add" ? oldValue + amount : oldValue - amount;
+
+            if (newValue < 0)
+            {
+                throw new InvalidOperationException($"Cannot deduct {amount} from {balanceType} balance. Current: {oldValue}");
+            }
+
+            if (balanceType == "free")
+            {
+                wallet.FreeBalance = newValue;
+            }
+            else
+            {
+                wallet.FrozenBalance = newValue;
+            }
+
+            wallet.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            _logger.LogWarning("Admin {AdminId} override for user {UserId}. {BalanceType}: {OldValue} -> {NewValue} ({Operation} {Amount}). Reason: {Reason}",
+                adminId, userId, balanceType, oldValue, newValue, operation, amount, reason);
+
+            return wallet;
+        }
+
+        #endregion
     }
 }

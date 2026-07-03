@@ -648,6 +648,197 @@ namespace EgyptOnline.Controllers
             catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Balance Control (Dispute Resolution)
+        // ═══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// List terminated contracts for manual resolution.
+        /// GET /api/v1/Admin/contracts/terminated?pageNumber=1&pageSize=20
+        /// </summary>
+        [HttpGet("contracts/terminated")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetTerminatedContracts(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var contracts = await _context.Contracts
+                    .Include(c => c.ClientUser)
+                    .Include(c => c.ServiceProviderUser)
+                    .Include(c => c.ContractDays)
+                    .Where(c => c.Status == "terminated")
+                    .OrderByDescending(c => c.TerminatedAt)
+                    .ToListAsync();
+
+                var totalCount = contracts.Count;
+                var pagedContracts = contracts.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+                var formatted = pagedContracts.Select(c => new
+                {
+                    contractId = c.Id,
+                    status = c.Status,
+                    client = new
+                    {
+                        userId = c.ClientUserId,
+                        phoneNumber = c.ClientUser?.PhoneNumber,
+                        userName = c.ClientUser?.UserName
+                    },
+                    serviceProvider = new
+                    {
+                        userId = c.ServiceProviderUserId,
+                        phoneNumber = c.ServiceProviderUser?.PhoneNumber,
+                        userName = c.ServiceProviderUser?.UserName
+                    },
+                    contractDetails = new
+                    {
+                        totalAmount = c.TotalAmount,
+                        dailyRate = c.DailyRate,
+                        totalDays = c.TotalDays,
+                        penaltyAmount = c.PenaltyAmount,
+                        governorate = c.Governorate,
+                        city = c.City,
+                        district = c.District
+                    },
+                    termination = new
+                    {
+                        terminatedAt = c.TerminatedAt,
+                        terminatedBy = c.TerminatedBy,
+                        reason = c.TerminationReason
+                    },
+                    processedDays = c.ContractDays.Count(cd => cd.Status == ContractDayStatus.Completed && cd.IsProcessed),
+                    remainingDays = c.TotalDays - c.ContractDays.Count(cd => cd.Status == ContractDayStatus.Completed && cd.IsProcessed)
+                });
+
+                return Ok(new
+                {
+                    data = formatted,
+                    pageNumber,
+                    pageSize,
+                    totalCount,
+                    totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get detailed contract information for dispute resolution.
+        /// GET /api/v1/Admin/contracts/{id}/details
+        /// </summary>
+        [HttpGet("contracts/{id:int}/details")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetContractDetails(int id)
+        {
+            try
+            {
+                var contract = await _context.Contracts
+                    .Include(c => c.ContractDays)
+                    .Include(c => c.ClientUser)
+                    .Include(c => c.ServiceProviderUser)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (contract == null)
+                    return NotFound(new { message = "Contract not found" });
+
+                var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
+                var providerWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ServiceProviderUserId);
+
+                var processedDays = contract.ContractDays.Count(cd => cd.Status == ContractDayStatus.Completed && cd.IsProcessed);
+                var remainingDays = contract.TotalDays - processedDays;
+
+                return Ok(new
+                {
+                    contractId = contract.Id,
+                    status = contract.Status,
+                    client = new
+                    {
+                        userId = contract.ClientUserId,
+                        phoneNumber = contract.ClientUser?.PhoneNumber,
+                        userName = contract.ClientUser?.UserName,
+                        freeBalance = clientWallet?.FreeBalance ?? 0,
+                        frozenBalance = clientWallet?.FrozenBalance ?? 0
+                    },
+                    serviceProvider = new
+                    {
+                        userId = contract.ServiceProviderUserId,
+                        phoneNumber = contract.ServiceProviderUser?.PhoneNumber,
+                        userName = contract.ServiceProviderUser?.UserName,
+                        freeBalance = providerWallet?.FreeBalance ?? 0,
+                        frozenBalance = providerWallet?.FrozenBalance ?? 0
+                    },
+                    contractDetails = new
+                    {
+                        startDate = contract.StartDate,
+                        shiftStartTime = contract.ShiftStartTime,
+                        shiftEndTime = contract.ShiftEndTime,
+                        dailyRate = contract.DailyRate,
+                        totalDays = contract.TotalDays,
+                        totalAmount = contract.TotalAmount,
+                        penaltyAmount = contract.PenaltyAmount,
+                        governorate = contract.Governorate,
+                        city = contract.City,
+                        district = contract.District,
+                        detailedAddress = contract.DetailedAddress,
+                        notes = contract.Notes,
+                        restrictedTerms = contract.RestrictedTerms
+                    },
+                    daysStatus = new
+                    {
+                        processedDays,
+                        remainingDays,
+                        totalDays = contract.TotalDays
+                    },
+                    createdAt = contract.CreatedAt,
+                    cancelledAt = contract.CancelledAt,
+                    cancelledBy = contract.CancelledBy,
+                    terminatedAt = contract.TerminatedAt,
+                    terminatedBy = contract.TerminatedBy,
+                    terminationReason = contract.TerminationReason
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Override user balance for dispute resolution.
+        /// PUT /api/v1/Admin/users/{userId}/balance/override
+        /// Body: { "balanceType": "free" | "frozen", "amount": decimal, "operation": "add" | "deduct", "reason": string }
+        /// </summary>
+        [HttpPut("users/{userId}/balance/override")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> OverrideUserBalance(string userId, [FromBody] OverrideBalanceDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
+                var result = await _walletService.OverrideUserBalanceAsync(userId, dto.BalanceType, dto.Amount, dto.Operation, dto.Reason, adminId);
+
+                return Ok(new
+                {
+                    message = "تم تعديل الرصيد بنجاح",
+                    data = new
+                    {
+                        userId = result.UserId,
+                        freeBalance = result.FreeBalance,
+                        frozenBalance = result.FrozenBalance
+                    }
+                });
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
     }
 
     public class SearchAdminDto
@@ -679,5 +870,24 @@ namespace EgyptOnline.Controllers
 
         [MaxLength(2000)]
         public string? AdminNote { get; set; }
+    }
+
+    public class OverrideBalanceDto
+    {
+        /// <summary>free | frozen</summary>
+        [Required]
+        public string BalanceType { get; set; } = string.Empty;
+
+        [Required]
+        [Range(0.01, double.MaxValue)]
+        public decimal Amount { get; set; }
+
+        /// <summary>add | deduct</summary>
+        [Required]
+        public string Operation { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(500)]
+        public string Reason { get; set; } = string.Empty;
     }
 }
