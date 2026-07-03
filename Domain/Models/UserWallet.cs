@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace EgyptOnline.Models
 {
@@ -12,6 +13,7 @@ namespace EgyptOnline.Models
         public string UserId { get; set; } = string.Empty;
 
         [ForeignKey(nameof(UserId))]
+        [JsonIgnore]
         public User? User { get; set; }
 
         // Free Balance: Can be used for cash-out withdrawals and creating new contracts

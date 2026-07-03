@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace EgyptOnline.Models
 {
@@ -17,6 +18,7 @@ namespace EgyptOnline.Models
         public string UserId { get; set; } = string.Empty;
 
         [ForeignKey(nameof(UserId))]
+        [JsonIgnore]
         public User? User { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]

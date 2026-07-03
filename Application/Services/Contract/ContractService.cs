@@ -84,8 +84,8 @@ namespace EgyptOnline.Application.Services.Contract
                 // Send notification to service provider
                 await _notificationService.SendNotificationToUser(
                     providerUser.Id,
-                    "عقد جديد",
-                    $"تم إنشاء عقد جديد #{contract.Id} بقيمة {contract.TotalAmount} جنيه",
+                    "عقد جديد بانتظار توقيعك",
+                    $"تم إنشاء عقد جديد #{contract.Id} بقيمة {contract.TotalAmount} جنيه. يرجى مراجعة التفاصيل والتوقيع",
                     contract.ClientUserId
                 );
 

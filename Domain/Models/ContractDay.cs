@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using EgyptOnline.Domain.Models.Enums;
 using EgyptOnline.Models;
 
@@ -15,6 +16,7 @@ namespace EgyptOnline.Domain.Models
         public int ContractId { get; set; }
 
         [ForeignKey(nameof(ContractId))]
+        [JsonIgnore]
         public Contract Contract { get; set; } = null!;
 
         [Required]

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using EgyptOnline.Domain.Models.Enums;
 using EgyptOnline.Domain.Models;
 
@@ -14,6 +15,7 @@ namespace EgyptOnline.Models
         public string? ClientUserId { get; set; }
 
         [ForeignKey(nameof(ClientUserId))]
+        [JsonIgnore]
         public User? ClientUser { get; set; }
 
         // Service Provider identified by phone number
@@ -60,6 +62,7 @@ namespace EgyptOnline.Models
         public string? TerminationReason { get; set; }
 
         // Navigation Property
+        [JsonIgnore]
         public ICollection<Domain.Models.ContractDay> ContractDays { get; set; } = new List<Domain.Models.ContractDay>();
     }
 }

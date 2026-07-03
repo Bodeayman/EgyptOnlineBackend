@@ -146,7 +146,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"serviceProviderUserId\": \"\",\n  \"startDate\": \"2024-01-15\",\n  \"shiftStartTime\": \"08:00:00\",\n  \"shiftEndTime\": \"17:00:00\",\n  \"dailyRate\": 400,\n  \"totalDays\": 10,\n  \"totalAmount\": 4000,\n  \"penaltyAmount\": 300,\n  \"governorate\": \"Cairo\",\n  \"city\": \"Nasr City\",\n  \"district\": \"Abbassia\",\n  \"detailedAddress\": \"Street 123, Building 45\",\n  \"notes\": \"Optional notes\",\n  \"restrictedTerms\": \"Optional restricted terms\"\n}"
+              "raw": "{\n  \"serviceProviderPhoneNumber\": \"\",\n  \"startDate\": \"2024-01-15\",\n  \"shiftStartTime\": \"08:00:00\",\n  \"shiftEndTime\": \"17:00:00\",\n  \"totalDays\": 10,\n  \"totalAmount\": 4000,\n  \"penaltyAmount\": 300,\n  \"governorate\": \"Cairo\",\n  \"city\": \"Nasr City\",\n  \"district\": \"Abbassia\",\n  \"detailedAddress\": \"Street 123, Building 45\",\n  \"notes\": \"Optional notes\",\n  \"restrictedTerms\": \"Optional restricted terms\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/contracts",
