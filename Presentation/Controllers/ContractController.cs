@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EgyptOnline.Data;
 using System.ComponentModel.DataAnnotations;
+using ContractModel = EgyptOnline.Models.Contract;
 
 namespace EgyptOnline.Controllers
 {
@@ -212,11 +213,12 @@ namespace EgyptOnline.Controllers
         }
 
         /// <summary>
-        /// Mutual termination (both parties agree).
-        /// PUT /api/v1/contracts/{id}/terminate/mutual
+        /// Terminate contract (single endpoint for both client and provider).
+        /// PUT /api/v1/contracts/{id}/terminate
+        /// Automatically detects if caller is client or provider and handles accordingly.
         /// </summary>
-        [HttpPut("{id}/terminate/mutual")]
-        public async Task<IActionResult> TerminateMutual(int id, [FromBody] TerminateContractDto dto)
+        [HttpPut("{id}/terminate")]
+        public async Task<IActionResult> Terminate(int id, [FromBody] TerminateContractDto dto)
         {
             try
             {
@@ -226,80 +228,36 @@ namespace EgyptOnline.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
-                var contract = await _contractService.MutualTerminationAsync(id, dto.Reason);
-                return Ok(new { message = "تم تسجيل طلب الإنهاء الودي. الأرصدة مجمدة بانتظار مراجعة الأدمن", data = contract });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return StatusCode(403, new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
+                // Load contract with client user data
+                var contract = await _context.Contracts
+                    .Include(c => c.ClientUser)
+                    .FirstOrDefaultAsync(c => c.Id == id);
 
-        /// <summary>
-        /// Client unilateral termination.
-        /// PUT /api/v1/contracts/{id}/terminate/client
-        /// </summary>
-        [HttpPut("{id}/terminate/client")]
-        public async Task<IActionResult> TerminateByClient(int id, [FromBody] TerminateContractDto dto)
-        {
-            try
-            {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (contract == null)
+                    return NotFound(new { message = "العقد غير موجود" });
 
-                if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                // Load provider user by phone number
+                var providerUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
 
-                var contract = await _contractService.ClientUnilateralTerminationAsync(id, dto.Reason);
-                return Ok(new { message = "تم إنهاء العقد من قبل العميل. الأرصدة مجمدة بانتظار مراجعة الأدمن", data = contract });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return StatusCode(403, new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
+                // Determine if caller is client or provider
+                bool isClient = contract.ClientUserId == userId;
+                bool isProvider = providerUser?.Id == userId;
 
-        /// <summary>
-        /// Provider unilateral termination.
-        /// PUT /api/v1/contracts/{id}/terminate/provider
-        /// </summary>
-        [HttpPut("{id}/terminate/provider")]
-        public async Task<IActionResult> TerminateByProvider(int id, [FromBody] TerminateContractDto dto)
-        {
-            try
-            {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (!isClient && !isProvider)
+                    return StatusCode(403, new { message = "ليس لديك صلاحية لإنهاء هذا العقد" });
 
-                if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
-
-                var contract = await _contractService.ProviderUnilateralTerminationAsync(id, userId, dto.Reason);
-                return Ok(new { message = "تم إنهاء العقد من قبل مقدم الخدمة. الأرصدة مجمدة بانتظار مراجعة الأدمن", data = contract });
+                ContractModel result;
+                if (isClient)
+                {
+                    result = await _contractService.ClientUnilateralTerminationAsync(id, dto.Reason);
+                    return Ok(new { message = "تم إنهاء العقد من قبل العميل. الأرصدة مجمدة بانتظار مراجعة الأدمن", data = result });
+                }
+                else
+                {
+                    result = await _contractService.ProviderUnilateralTerminationAsync(id, userId, dto.Reason);
+                    return Ok(new { message = "تم إنهاء العقد من قبل مقدم الخدمة. الأرصدة مجمدة بانتظار مراجعة الأدمن", data = result });
+                }
             }
             catch (KeyNotFoundException ex)
             {

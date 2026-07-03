@@ -3,6 +3,7 @@ using System;
 using EgyptOnline.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EgyptOnline.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260703170726_UpdateContract")]
+    partial class UpdateContract
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -704,6 +707,7 @@ namespace EgyptOnline.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("PhoneNumberConfirmed")
@@ -739,10 +743,6 @@ namespace EgyptOnline.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
-
-                    b.HasIndex("PhoneNumber")
-                        .IsUnique()
-                        .HasFilter("\"PhoneNumber\" IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -1207,7 +1207,15 @@ namespace EgyptOnline.Migrations
                         .HasForeignKey("ClientUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("EgyptOnline.Models.User", "ServiceProviderUser")
+                        .WithMany()
+                        .HasForeignKey("ServiceProviderPhoneNumber")
+                        .HasPrincipalKey("PhoneNumber")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("ClientUser");
+
+                    b.Navigation("ServiceProviderUser");
                 });
 
             modelBuilder.Entity("EgyptOnline.Models.DepositRequest", b =>

@@ -263,7 +263,7 @@
           }
         },
         {
-          "name": "Mutual Termination",
+          "name": "Terminate Contract",
           "request": {
             "method": "PUT",
             "header": [
@@ -280,12 +280,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Mutual agreement to terminate\"\n}"
+              "raw": "{\n  \"reason\": \"Termination reason\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/contracts/:id/terminate/mutual",
+              "raw": "{{baseUrl}}/contracts/:id/terminate",
               "host": ["{{baseUrl}}"],
-              "path": ["contracts", ":id", "terminate", "mutual"],
+              "path": ["contracts", ":id", "terminate"],
               "variable": [
                 {
                   "key": "id",
@@ -293,75 +293,7 @@
                 }
               ]
             },
-            "description": "Mutual termination. Keeps funds frozen for admin resolution. Requires mandatory reason."
-          }
-        },
-        {
-          "name": "Client Unilateral Termination",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clientToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Client wants to terminate\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/contracts/:id/terminate/client",
-              "host": ["{{baseUrl}}"],
-              "path": ["contracts", ":id", "terminate", "client"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
-            },
-            "description": "Client unilateral termination. Keeps funds frozen for admin resolution. Requires mandatory reason."
-          }
-        },
-        {
-          "name": "Provider Unilateral Termination",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{providerToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Provider wants to terminate\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/contracts/:id/terminate/provider",
-              "host": ["{{baseUrl}}"],
-              "path": ["contracts", ":id", "terminate", "provider"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
-            },
-            "description": "Provider unilateral termination. Keeps funds frozen for admin resolution. Requires mandatory reason."
+            "description": "Single termination endpoint for both client and provider. Automatically detects if caller is client or provider and handles accordingly. Keeps funds frozen for admin resolution. Requires mandatory reason."
           }
         },
         {
