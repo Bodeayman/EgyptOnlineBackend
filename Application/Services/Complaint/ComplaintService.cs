@@ -181,7 +181,7 @@ namespace EgyptOnline.Application.Services.Complaint
             complaint.AdminNote = adminNote;
 
             if (newStatus == "resolved" || newStatus == "rejected")
-                complaint.ResolvedAt = EgyptTimeHelper.NowInEgypt();
+                complaint.ResolvedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 

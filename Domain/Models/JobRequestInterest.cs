@@ -26,6 +26,6 @@ namespace EgyptOnline.Models
         public bool IsInterested { get; set; }
 
         [Column(TypeName = "timestamptz")]
-        public DateTime UpdatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

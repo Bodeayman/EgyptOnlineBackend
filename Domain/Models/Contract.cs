@@ -26,8 +26,7 @@ namespace EgyptOnline.Models
         public DateTime StartDate { get; set; }
         [Required]
         public TimeSpan ShiftStartTime { get; set; }
-        [Required]
-        public TimeSpan ShiftEndTime { get; set; }
+        public TimeSpan? ShiftEndTime { get; set; }
         [Required]
         public int TotalDays { get; set; }
         [Required]
@@ -56,7 +55,7 @@ namespace EgyptOnline.Models
         public string Status { get; set; } = "pending";
 
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Column(TypeName = "timestamptz")]
         public DateTime? CancelledAt { get; set; }

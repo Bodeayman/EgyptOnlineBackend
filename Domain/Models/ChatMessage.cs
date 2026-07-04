@@ -14,6 +14,6 @@ namespace EgyptOnline.Domain.Models
         public required string Content { get; set; } = string.Empty;
         
         [BsonRepresentation(BsonType.DateTime)]
-        public DateTime Timestamp { get; set; } = EgyptTimeHelper.NowInEgypt();
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     }
 }

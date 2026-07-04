@@ -44,7 +44,7 @@ namespace EgyptOnline.Application.Services.Kyc
                 FrontImagePath = frontImagePath,
                 BackImagePath = backImagePath,
                 SelfieImagePath = selfieImagePath,
-                SubmittedAt = EgyptTimeHelper.NowInEgypt()
+                SubmittedAt = DateTime.UtcNow
             };
 
             _context.KycSubmissions.Add(submission);
@@ -83,7 +83,7 @@ namespace EgyptOnline.Application.Services.Kyc
 
             submission.Status = status;
             submission.ReviewedByAdminId = adminUserId;
-            submission.ReviewedAt = EgyptTimeHelper.NowInEgypt();
+            submission.ReviewedAt = DateTime.UtcNow;
 
             if ((status == "rejected" || status == "edit_required") && !string.IsNullOrWhiteSpace(rejectionReason))
             {

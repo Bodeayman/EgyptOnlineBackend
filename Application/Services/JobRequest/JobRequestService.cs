@@ -42,7 +42,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                 City = city,
                 WorkerType = workerType,
                 PayRate = payRate,
-                CreatedAt = EgyptTimeHelper.NowInEgypt()
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.JobRequests.Add(request);
@@ -268,14 +268,14 @@ namespace EgyptOnline.Application.Services.JobRequest
                     JobRequestId = requestId,
                     ServiceProviderUserId = serviceProviderUserId,
                     IsInterested = isInterested,
-                    UpdatedAt = EgyptTimeHelper.NowInEgypt()
+                    UpdatedAt = DateTime.UtcNow
                 };
                 _context.JobRequestInterests.Add(interest);
             }
             else
             {
                 interest.IsInterested = isInterested;
-                interest.UpdatedAt = EgyptTimeHelper.NowInEgypt();
+                interest.UpdatedAt = DateTime.UtcNow;
             }
 
             await _context.SaveChangesAsync();

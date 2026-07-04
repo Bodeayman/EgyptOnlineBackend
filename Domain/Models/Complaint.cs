@@ -62,7 +62,7 @@ namespace EgyptOnline.Models
 
         // ── Timestamps ──────────────────────────────────────────────────────
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Column(TypeName = "timestamptz")]
         public DateTime? ResolvedAt { get; set; }

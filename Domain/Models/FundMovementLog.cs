@@ -33,6 +33,6 @@ namespace EgyptOnline.Models
         public string Reason { get; set; } = string.Empty;
 
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

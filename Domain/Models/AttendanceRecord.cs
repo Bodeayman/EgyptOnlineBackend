@@ -31,6 +31,6 @@ namespace EgyptOnline.Models
         public DateTime? CheckInTime { get; set; }
 
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

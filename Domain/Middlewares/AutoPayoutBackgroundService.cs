@@ -78,7 +78,8 @@ public class AutoPayoutBackgroundService : BackgroundService
             if (contractDay.Status == ContractDayStatus.AbsentDisputed) continue;
 
             // ShiftEndTime stored in Egypt-local terms. Date is also Egypt-local.
-            var shiftEnd = contractDay.Date.Date.Add(contract.ShiftEndTime);
+            var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
+            var shiftEnd = contractDay.Date.Date.Add(shiftEndTime);
 
             bool shouldPayout;
 
@@ -111,7 +112,7 @@ public class AutoPayoutBackgroundService : BackgroundService
         {
             contractDay.Status = ContractDayStatus.Completed;
             contractDay.IsProcessed = true;
-            contractDay.ProcessedAt = EgyptTimeHelper.NowInEgypt();
+            contractDay.ProcessedAt = DateTime.UtcNow;
 
             // Transfer daily salary: client frozen → worker free
             await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, contract.DailySalary);
@@ -125,7 +126,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             if (allDaysProcessed)
             {
                 contract.Status = "completed";
-                contract.CompletedAt = EgyptTimeHelper.NowInEgypt();
+                contract.CompletedAt = DateTime.UtcNow;
 
                 // Release both penalty deposits back to free balance
                 if (contract.PenaltyAmount > 0)
@@ -189,7 +190,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, totalFrozen);
 
             contract.Status = "cancelled";
-            contract.CancelledAt = EgyptTimeHelper.NowInEgypt();
+            contract.CancelledAt = DateTime.UtcNow;
             contract.CancelledBy = "System (auto-expired)";
             contract.TerminationReason = "انتهت صلاحية العقد - لم يتم قبوله قبل تاريخ البداية";
 

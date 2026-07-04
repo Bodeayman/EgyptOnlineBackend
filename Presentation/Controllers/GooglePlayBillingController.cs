@@ -98,7 +98,7 @@ namespace EgyptOnline.Controllers
                 {
                     payment.Status = PaymentStatus.Failed;
                     payment.ErrorMessage = "Subscription could not be renewed";
-                    payment.ProcessedAt = EgyptTimeHelper.NowInEgypt();
+                    payment.ProcessedAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                     await transaction.RollbackAsync();
 
@@ -109,7 +109,7 @@ namespace EgyptOnline.Controllers
                 }
 
                 payment.Status = PaymentStatus.Success;
-                payment.ProcessedAt = EgyptTimeHelper.NowInEgypt();
+                payment.ProcessedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();

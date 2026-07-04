@@ -55,7 +55,7 @@ namespace EgyptOnline.Application.Services.Contract
                 await _walletService.TransferFreeToFrozenAsync(contract.ClientUserId, totalRequired);
 
                 contract.Status = "pending";
-                contract.CreatedAt = EgyptTimeHelper.NowInEgypt();
+                contract.CreatedAt = DateTime.UtcNow;
 
                 _context.Contracts.Add(contract);
                 await _context.SaveChangesAsync();
@@ -124,7 +124,7 @@ namespace EgyptOnline.Application.Services.Contract
                 await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, totalRequired);
 
                 contract.Status = "cancelled";
-                contract.CancelledAt = EgyptTimeHelper.NowInEgypt();
+                contract.CancelledAt = DateTime.UtcNow;
                 contract.CancelledBy = contract.ServiceProviderPhoneNumber;
 
                 await _context.SaveChangesAsync();
@@ -213,7 +213,7 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException($"Provider has already arrived for day {dayNumber}");
 
             // Validate arrival is within the shift time span (with 30-minute grace period)
-            var currentTime = EgyptTimeHelper.NowInEgypt();
+            var currentTime = DateTime.UtcNow;
 
             // Ensure contract day date is valid and has correct DateTimeKind
             if (contractDay.Date == DateTime.MinValue)
@@ -225,21 +225,32 @@ namespace EgyptOnline.Application.Services.Contract
             if (contract.ShiftStartTime < TimeSpan.Zero || contract.ShiftStartTime >= TimeSpan.FromDays(1))
                 throw new InvalidOperationException($"Invalid shift start time: {contract.ShiftStartTime}");
 
-            if (contract.ShiftEndTime < TimeSpan.Zero || contract.ShiftEndTime >= TimeSpan.FromDays(1))
-                throw new InvalidOperationException($"Invalid shift end time: {contract.ShiftEndTime}");
-
             var shiftStart = contractDayDate.Add(contract.ShiftStartTime);
-            var shiftEnd = contractDayDate.Add(contract.ShiftEndTime);
             var gracePeriod = TimeSpan.FromMinutes(30);
 
-            if (currentTime < shiftStart.Subtract(gracePeriod))
-                throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+            // If ShiftEndTime is provided, validate it as well
+            if (contract.ShiftEndTime.HasValue)
+            {
+                if (contract.ShiftEndTime.Value < TimeSpan.Zero || contract.ShiftEndTime.Value >= TimeSpan.FromDays(1))
+                    throw new InvalidOperationException($"Invalid shift end time: {contract.ShiftEndTime.Value}");
 
-            if (currentTime > shiftEnd.Add(gracePeriod))
-                throw new InvalidOperationException($"Cannot arrive after shift end. Shift ended at {shiftEnd:HH:mm} (with 30-minute grace period)");
+                var shiftEnd = contractDayDate.Add(contract.ShiftEndTime.Value);
+
+                if (currentTime < shiftStart.Subtract(gracePeriod))
+                    throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+
+                if (currentTime > shiftEnd.Add(gracePeriod))
+                    throw new InvalidOperationException($"Cannot arrive after shift end. Shift ended at {shiftEnd:HH:mm} (with 30-minute grace period)");
+            }
+            else
+            {
+                // No shift end time, only validate against shift start
+                if (currentTime < shiftStart.Subtract(gracePeriod))
+                    throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+            }
 
             contractDay.ProviderArrived = true;
-            contractDay.ArrivalTime = EgyptTimeHelper.NowInEgypt();
+            contractDay.ArrivalTime = DateTime.UtcNow;
             contractDay.Status = ContractDayStatus.Pending;
 
             await _context.SaveChangesAsync();
@@ -283,7 +294,7 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException("هذا اليوم معلق بنزاع أو إبلاغ غياب");
 
             contractDay.ClientConfirmed = true;
-            contractDay.ClientConfirmedAt = EgyptTimeHelper.NowInEgypt();
+            contractDay.ClientConfirmedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -307,9 +318,9 @@ namespace EgyptOnline.Application.Services.Contract
             if (contractDay == null)
                 throw new InvalidOperationException($"Contract day {dayNumber} not found");
 
-            var shiftEndTime = contract.ShiftEndTime;
+            var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
             var gracePeriodEnd = contractDay.Date.Add(shiftEndTime).AddHours(3);
-            var currentTime = EgyptTimeHelper.NowInEgypt();
+            var currentTime = DateTime.UtcNow;
 
             if (currentTime > gracePeriodEnd)
                 throw new InvalidOperationException($"Dispute cannot be reported after 3-hour grace period expired. Grace period ended at: {gracePeriodEnd}");
@@ -320,7 +331,7 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.Status = "suspended";
 
                 contractDay.Status = ContractDayStatus.AbsentDisputed;
-                contractDay.DisputeReportedAt = EgyptTimeHelper.NowInEgypt();
+                contractDay.DisputeReportedAt = DateTime.UtcNow;
                 contractDay.DisputeReason = reason;
 
                 await _context.SaveChangesAsync();
@@ -366,10 +377,10 @@ namespace EgyptOnline.Application.Services.Contract
                 // Admin will manually resolve via balance override
 
                 contract.Status = "terminated";
-                contract.TerminatedAt = EgyptTimeHelper.NowInEgypt();
+                contract.TerminatedAt = DateTime.UtcNow;
                 contract.TerminatedBy = "Mutual";
                 contract.CancelledBy = "Mutual";
-                contract.CancelledAt = EgyptTimeHelper.NowInEgypt();
+                contract.CancelledAt = DateTime.UtcNow;
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
@@ -416,10 +427,10 @@ namespace EgyptOnline.Application.Services.Contract
                 // Admin will manually resolve via balance override
 
                 contract.Status = "terminated";
-                contract.TerminatedAt = EgyptTimeHelper.NowInEgypt();
+                contract.TerminatedAt = DateTime.UtcNow;
                 contract.TerminatedBy = contract.ClientUserId;
                 contract.CancelledBy = contract.ClientUserId;
-                contract.CancelledAt = EgyptTimeHelper.NowInEgypt();
+                contract.CancelledAt = DateTime.UtcNow;
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
@@ -471,10 +482,10 @@ namespace EgyptOnline.Application.Services.Contract
                 // Admin will manually resolve via balance override
 
                 contract.Status = "terminated";
-                contract.TerminatedAt = EgyptTimeHelper.NowInEgypt();
+                contract.TerminatedAt = DateTime.UtcNow;
                 contract.TerminatedBy = contract.ServiceProviderPhoneNumber;
                 contract.CancelledBy = contract.ServiceProviderPhoneNumber;
-                contract.CancelledAt = EgyptTimeHelper.NowInEgypt();
+                contract.CancelledAt = DateTime.UtcNow;
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
@@ -602,14 +613,14 @@ namespace EgyptOnline.Application.Services.Contract
 
                 // Update contract status
                 contract.Status = "terminated";
-                contract.TerminatedAt = EgyptTimeHelper.NowInEgypt();
+                contract.TerminatedAt = DateTime.UtcNow;
                 contract.TerminatedBy = "Admin";
                 contract.TerminationReason = comment;
 
                 foreach (var day in contract.ContractDays.Where(d => !d.IsProcessed))
                 {
                     day.IsProcessed = true;
-                    day.ProcessedAt = EgyptTimeHelper.NowInEgypt();
+                    day.ProcessedAt = DateTime.UtcNow;
                     day.Status = ContractDayStatus.Completed;
                 }
 
@@ -622,7 +633,7 @@ namespace EgyptOnline.Application.Services.Contract
                     comp.Status = "resolved";
                     comp.ResolvedByAdminId = adminUserId;
                     comp.AdminNote = comment;
-                    comp.ResolvedAt = EgyptTimeHelper.NowInEgypt();
+                    comp.ResolvedAt = DateTime.UtcNow;
                 }
 
                 await _context.SaveChangesAsync();
@@ -682,7 +693,7 @@ namespace EgyptOnline.Application.Services.Contract
                     comp.Status = "resolved";
                     comp.ResolvedByAdminId = adminUserId;
                     comp.AdminNote = comment;
-                    comp.ResolvedAt = EgyptTimeHelper.NowInEgypt();
+                    comp.ResolvedAt = DateTime.UtcNow;
                 }
 
                 await _context.SaveChangesAsync();
@@ -754,13 +765,13 @@ namespace EgyptOnline.Application.Services.Contract
                 foreach (var day in contract.ContractDays.Where(d => !d.IsProcessed))
                 {
                     day.IsProcessed = true;
-                    day.ProcessedAt = EgyptTimeHelper.NowInEgypt();
+                    day.ProcessedAt = DateTime.UtcNow;
                     day.Status = ContractDayStatus.Completed;
                 }
 
                 // Set contract status to "incomplete" (preserved for statistics)
                 contract.Status = "incomplete";
-                contract.TerminatedAt = EgyptTimeHelper.NowInEgypt();
+                contract.TerminatedAt = DateTime.UtcNow;
                 contract.TerminatedBy = "Admin";
                 contract.TerminationReason = comment;
 
@@ -773,7 +784,7 @@ namespace EgyptOnline.Application.Services.Contract
                     comp.Status = "resolved";
                     comp.ResolvedByAdminId = adminUserId;
                     comp.AdminNote = comment;
-                    comp.ResolvedAt = EgyptTimeHelper.NowInEgypt();
+                    comp.ResolvedAt = DateTime.UtcNow;
                 }
 
                 await _context.SaveChangesAsync();

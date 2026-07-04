@@ -46,7 +46,7 @@ namespace EgyptOnline.Models
         public decimal PayRate { get; set; }
 
         [Column(TypeName = "timestamptz")]
-        public DateTime CreatedAt { get; set; } = EgyptTimeHelper.NowInEgypt();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Required]
         [MaxLength(20)]
