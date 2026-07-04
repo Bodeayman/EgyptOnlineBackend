@@ -283,6 +283,33 @@ namespace EgyptOnline.Controllers
                     }
                 }
 
+                // Update wallet balances if provided
+                if (dto.FreeBalance.HasValue || dto.FrozenBalance.HasValue)
+                {
+                    var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == user.Id);
+                    if (wallet == null)
+                    {
+                        // Create wallet if it doesn't exist
+                        wallet = new UserWallet
+                        {
+                            UserId = user.Id,
+                            FreeBalance = dto.FreeBalance ?? 0,
+                            FrozenBalance = dto.FrozenBalance ?? 0,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.UserWallets.Add(wallet);
+                    }
+                    else
+                    {
+                        if (dto.FreeBalance.HasValue)
+                            wallet.FreeBalance = dto.FreeBalance.Value;
+                        if (dto.FrozenBalance.HasValue)
+                            wallet.FrozenBalance = dto.FrozenBalance.Value;
+                        wallet.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
                 return Ok(new { message = "User updated successfully" });

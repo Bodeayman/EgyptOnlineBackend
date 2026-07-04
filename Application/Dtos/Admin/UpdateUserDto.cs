@@ -14,6 +14,9 @@ namespace EgyptOnline.Dtos
         public string? ProviderType { get; set; }
         public string? Email { get; set; }
 
+        public decimal? FreeBalance { get; set; }
+        public decimal? FrozenBalance { get; set; }
+
         /// <summary>
         /// Expected format: "yyyy-MM-ddTHH:mm:ssZ" (ISO 8601), e.g. "2026-03-11T00:00:00Z"
         /// </summary>
