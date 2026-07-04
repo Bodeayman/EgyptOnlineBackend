@@ -345,6 +345,12 @@ namespace EgyptOnline.Application.Services.Contract
                     "daily_absence"
                 );
 
+                // Notify admins about the new complaint
+                await _notificationService.SendNotificationToAdmins(
+                    "شكوى جديدة - غياب مقدم الخدمة",
+                    $"تم الإبلاغ عن غياب مقدم الخدمة في العقد #{contractId}، يوم {dayNumber}. السبب: {reason}"
+                );
+
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("Dispute reported for contract {ContractId}, day {DayNumber}. Reason: {Reason}", contractId, dayNumber, reason);
@@ -384,15 +390,6 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
-
-                // Auto-create complaint for terminated contract (filed by client)
-                await _complaintService.FileComplaintAsync(
-                    contract.ClientUserId,
-                    contractId,
-                    "contract_termination",
-                    $"تم إنهاء العقد بالاتفاق المتبادل. السبب: {reason}",
-                    "mutual_termination_request"
-                );
 
                 await transaction.CommitAsync();
 
@@ -434,15 +431,6 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
-
-                // Auto-create complaint for terminated contract
-                await _complaintService.FileComplaintAsync(
-                    contract.ClientUserId,
-                    contractId,
-                    "contract_termination",
-                    $"تم إنهاء العقد من قبل العميل. السبب: {reason}",
-                    "unilateral_termination_request"
-                );
 
                 await transaction.CommitAsync();
 
@@ -489,15 +477,6 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.TerminationReason = reason;
 
                 await _context.SaveChangesAsync();
-
-                // Auto-create complaint for terminated contract
-                await _complaintService.FileComplaintAsync(
-                    providerUserId,
-                    contractId,
-                    "contract_termination",
-                    $"تم إنهاء العقد من قبل مقدم الخدمة. السبب: {reason}",
-                    "unilateral_termination_request"
-                );
 
                 await transaction.CommitAsync();
 

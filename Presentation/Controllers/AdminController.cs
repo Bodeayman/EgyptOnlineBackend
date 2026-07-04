@@ -935,6 +935,137 @@ namespace EgyptOnline.Controllers
         }
 
         /// <summary>
+        /// Admin terminates a disputed contract.
+        /// POST /api/v1/Admin/contracts/{id}/terminate
+        /// </summary>
+        [HttpPost("contracts/{id}/terminate")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> TerminateContract(int id, [FromBody] AdminTerminateContractDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
+
+                var contract = await _context.Contracts
+                    .Include(c => c.ContractDays)
+                    .FirstOrDefaultAsync(c => c.Id == id)
+                    ?? throw new KeyNotFoundException("العقد غير موجود");
+
+                if (contract.Status != "suspended")
+                    throw new InvalidOperationException($"العقد يجب أن يكون معلقاً للإنهاء. الحالة الحالية: {contract.Status}");
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    contract.Status = "terminated";
+                    contract.TerminatedAt = DateTime.UtcNow;
+                    contract.TerminatedBy = adminId;
+                    contract.CancelledBy = adminId;
+                    contract.CancelledAt = DateTime.UtcNow;
+                    contract.TerminationReason = dto.Reason;
+
+                    // Mark all contract days as processed
+                    foreach (var day in contract.ContractDays.Where(d => !d.IsProcessed))
+                    {
+                        day.IsProcessed = true;
+                        day.ProcessedAt = DateTime.UtcNow;
+                    }
+
+                    // Resolve related open complaints
+                    var complaints = await _context.Complaints
+                        .Where(c => c.ContractId == id && c.Status == "open")
+                        .ToListAsync();
+                    foreach (var comp in complaints)
+                    {
+                        comp.Status = "resolved";
+                        comp.ResolvedByAdminId = adminId;
+                        comp.AdminNote = dto.Reason;
+                        comp.ResolvedAt = DateTime.UtcNow;
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new { message = "تم إنهاء العقد بنجاح", data = contract });
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        /// <summary>
+        /// Admin resumes a suspended contract.
+        /// POST /api/v1/Admin/contracts/{id}/resume
+        /// </summary>
+        [HttpPost("contracts/{id}/resume")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> ResumeContract(int id, [FromBody] AdminResumeContractDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
+
+                var contract = await _context.Contracts
+                    .Include(c => c.ContractDays)
+                    .FirstOrDefaultAsync(c => c.Id == id)
+                    ?? throw new KeyNotFoundException("العقد غير موجود");
+
+                if (contract.Status != "suspended")
+                    throw new InvalidOperationException($"العقد يجب أن يكون معلقاً للاستئناف. الحالة الحالية: {contract.Status}");
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    contract.Status = "active";
+
+                    // Reset disputed day to pending status
+                    var disputedDay = contract.ContractDays.FirstOrDefault(d => d.Status == ContractDayStatus.AbsentDisputed);
+                    if (disputedDay != null)
+                    {
+                        disputedDay.Status = ContractDayStatus.Pending;
+                        disputedDay.DisputeReportedAt = null;
+                        disputedDay.DisputeReason = null;
+                    }
+
+                    // Resolve related open complaints
+                    var complaints = await _context.Complaints
+                        .Where(c => c.ContractId == id && c.Status == "open")
+                        .ToListAsync();
+                    foreach (var comp in complaints)
+                    {
+                        comp.Status = "resolved";
+                        comp.ResolvedByAdminId = adminId;
+                        comp.AdminNote = dto.Reason;
+                        comp.ResolvedAt = DateTime.UtcNow;
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new { message = "تم استئناف العقد بنجاح", data = contract });
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+        }
+
+        /// <summary>
         /// Mark a disputed contract as Incomplete (preserves it in statistics).
         /// Settles wages for days worked, refunds remainder to client, releases both penalties.
         /// POST /api/v1/Admin/contracts/{id}/resolve/mark-incomplete
@@ -1070,5 +1201,19 @@ namespace EgyptOnline.Controllers
         [Required]
         [MaxLength(1000)]
         public string Comment { get; set; } = string.Empty;
+    }
+
+    public class AdminTerminateContractDto
+    {
+        [Required]
+        [StringLength(500, MinimumLength = 5, ErrorMessage = "السبب يجب أن يكون بين 5 و 500 حرف")]
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    public class AdminResumeContractDto
+    {
+        [Required]
+        [StringLength(500, MinimumLength = 5, ErrorMessage = "السبب يجب أن يكون بين 5 و 500 حرف")]
+        public string Reason { get; set; } = string.Empty;
     }
 }

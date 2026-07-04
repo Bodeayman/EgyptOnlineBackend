@@ -9,17 +9,20 @@ namespace EgyptOnline.Services
     public interface INotificationService
     {
         Task SendNotificationToUser(string userId, string title, string body, string senderId = null, string senderName = null);
+        Task SendNotificationToAdmins(string title, string body);
     }
 
     public class NotificationService : INotificationService
     {
         private readonly ApplicationDbContext _context;
         private readonly NotificationMongoService _notificationMongoService;
+        private readonly UserManager<User> _userManager;
 
-        public NotificationService(ApplicationDbContext context, NotificationMongoService notificationMongoService)
+        public NotificationService(ApplicationDbContext context, NotificationMongoService notificationMongoService, UserManager<User> userManager)
         {
             _context = context;
             _notificationMongoService = notificationMongoService;
+            _userManager = userManager;
         }
 
         // ✅ UPDATED: Added senderId and senderName parameters
@@ -74,6 +77,16 @@ namespace EgyptOnline.Services
                 {
                     Console.WriteLine($"Failed to send to {token.Token}: {ex.Message}");
                 }
+            }
+        }
+
+        public async Task SendNotificationToAdmins(string title, string body)
+        {
+            var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+            
+            foreach (var admin in adminUsers)
+            {
+                await SendNotificationToUser(admin.Id, title, body);
             }
         }
     }
