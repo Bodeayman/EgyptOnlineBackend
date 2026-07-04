@@ -9,7 +9,7 @@ using Serilog;
 public class AutoPayoutBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(5);
+    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(15);
     private readonly TimeSpan _gracePeriod = TimeSpan.FromHours(3);
 
     public AutoPayoutBackgroundService(IServiceScopeFactory scopeFactory)

@@ -43,13 +43,18 @@ namespace EgyptOnline.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
+                // Set default values for Egypt time (UTC+2)
+                var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+                var nowInEgypt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptTimeZone);
+                var tomorrowInEgypt = nowInEgypt.Date.AddDays(1);
+
                 var contract = new Contract
                 {
                     ClientUserId = userId,
                     ServiceProviderPhoneNumber = dto.ServiceProviderPhoneNumber,
-                    StartDate = DateTime.SpecifyKind(dto.StartDate, DateTimeKind.Utc),
-                    ShiftStartTime = dto.ShiftStartTime,
-                    ShiftEndTime = dto.ShiftEndTime,
+                    StartDate = DateTime.SpecifyKind(tomorrowInEgypt, DateTimeKind.Utc),
+                    ShiftStartTime = TimeSpan.FromHours(5), // 5 AM
+                    ShiftEndTime = TimeSpan.FromHours(22), // 10 PM
                     TotalDays = dto.TotalDays,
                     DailySalary = dto.DailySalary,
                     TotalAmount = dto.DailySalary * dto.TotalDays,
@@ -214,7 +219,7 @@ namespace EgyptOnline.Controllers
         }
 
         /// <summary>
-        /// Client reports dispute (provider absence).
+        /// Client or provider reports a dispute.
         /// POST /api/v1/contracts/dispute
         /// </summary>
         [HttpPost("dispute")]
@@ -228,8 +233,8 @@ namespace EgyptOnline.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(new { message = "Validation failed", errors = ModelState });
 
-                var contract = await _contractService.ReportDisputeAsync(dto.ContractId, dto.DayNumber, dto.Reason);
-                return Ok(new { message = "تم الإبلاغ عن الغياب وتجميد العقد وإحالته للأدمن", data = contract });
+                var contract = await _contractService.ReportDisputeAsync(dto.ContractId, dto.DayNumber, dto.Reason, userId);
+                return Ok(new { message = "تم الإبلاغ عن المشكلة وتجميد العقد وإحالته للأدمن", data = contract });
             }
             catch (KeyNotFoundException ex)
             {
@@ -308,15 +313,6 @@ namespace EgyptOnline.Controllers
     {
         [Required(ErrorMessage = "رقم موبايل مقدم الخدمة مطلوب")]
         public string ServiceProviderPhoneNumber { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "تاريخ أول يوم شغل مطلوب")]
-        public DateTime StartDate { get; set; }
-
-        [Required(ErrorMessage = "ساعة الحضور مطلوبة")]
-        public TimeSpan ShiftStartTime { get; set; }
-
-        [Required(ErrorMessage = "ساعة الانصراف مطلوبة")]
-        public TimeSpan ShiftEndTime { get; set; }
 
         [Required(ErrorMessage = "عدد الأيام مطلوب")]
         [Range(1, int.MaxValue, ErrorMessage = "عدد الأيام يجب أن يكون 1 على الأقل")]

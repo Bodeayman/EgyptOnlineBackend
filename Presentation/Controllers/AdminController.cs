@@ -1037,6 +1037,33 @@ namespace EgyptOnline.Controllers
                         disputedDay.DisputeReason = null;
                     }
 
+                    // Handle contract amount adjustment if provided
+                    if (dto.AdjustmentAmount.HasValue && dto.AdjustmentAmount != 0)
+                    {
+                        var adjustment = dto.AdjustmentAmount.Value;
+                        var providerUser = await _context.Users
+                            .FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+
+                        if (adjustment < 0)
+                        {
+                            // Decrease: refund to client, deduct from provider
+                            var refundAmount = Math.Abs(adjustment);
+                            await _walletService.SubtractFromFrozenBalanceAsync(providerUser?.Id ?? throw new InvalidOperationException("مقدم الخدمة غير موجود"), refundAmount);
+                            await _walletService.AddToFreeBalanceAsync(contract.ClientUserId, refundAmount);
+                            contract.TotalAmount -= refundAmount;
+                        }
+                        else
+                        {
+                            // Increase: charge client, add to provider frozen
+                            await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, adjustment);
+                            await _walletService.AddToFrozenBalanceAsync(providerUser?.Id ?? throw new InvalidOperationException("مقدم الخدمة غير موجود"), adjustment);
+                            contract.TotalAmount += adjustment;
+                        }
+
+                        // Recalculate daily salary
+                        contract.DailySalary = contract.TotalDays > 0 ? contract.TotalAmount / contract.TotalDays : contract.DailySalary;
+                    }
+
                     // Resolve related open complaints
                     var complaints = await _context.Complaints
                         .Where(c => c.ContractId == id && c.Status == "open")
@@ -1215,5 +1242,12 @@ namespace EgyptOnline.Controllers
         [Required]
         [StringLength(500, MinimumLength = 5, ErrorMessage = "السبب يجب أن يكون بين 5 و 500 حرف")]
         public string Reason { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Optional adjustment to the contract total amount.
+        /// Negative value = decrease (refund to client, deduct from provider)
+        /// Positive value = increase (charge client, add to provider frozen)
+        /// </summary>
+        public decimal? AdjustmentAmount { get; set; }
     }
 }

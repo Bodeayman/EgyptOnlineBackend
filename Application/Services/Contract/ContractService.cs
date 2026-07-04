@@ -302,7 +302,7 @@ namespace EgyptOnline.Application.Services.Contract
             return contractDay;
         }
 
-        public async Task<ContractModel> ReportDisputeAsync(int contractId, int dayNumber, string reason)
+        public async Task<ContractModel> ReportDisputeAsync(int contractId, int dayNumber, string reason, string reporterUserId)
         {
             var contract = await _context.Contracts
                 .Include(c => c.ContractDays)
@@ -313,6 +313,17 @@ namespace EgyptOnline.Application.Services.Contract
 
             if (contract.Status != "active")
                 throw new InvalidOperationException($"Contract is not in Active status. Current status: {contract.Status}");
+
+            // Verify the reporter is a party to this contract
+            var reporterUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == reporterUserId)
+                ?? throw new InvalidOperationException("المستخدم غير موجود");
+
+            bool isClient = contract.ClientUserId == reporterUserId;
+            bool isProvider = reporterUser.PhoneNumber == contract.ServiceProviderPhoneNumber;
+
+            if (!isClient && !isProvider)
+                throw new UnauthorizedAccessException("أنت لست طرفاً في هذا العقد");
 
             var contractDay = contract.ContractDays.FirstOrDefault(cd => cd.DayNumber == dayNumber);
             if (contractDay == null)
@@ -336,24 +347,30 @@ namespace EgyptOnline.Application.Services.Contract
 
                 await _context.SaveChangesAsync();
 
-                // Create complaint for admin review
+                // Create complaint for admin review with appropriate reason based on reporter
+                string complaintReason = isClient ? "غياب مقدم الخدمة" : "شكوى من مقدم الخدمة";
+                string complaintDescription = isClient
+                    ? $"تم الإبلاغ عن غياب مقدم الخدمة في يوم {dayNumber}. السبب: {reason}"
+                    : $"قدم مقدم الخدمة شكوى في يوم {dayNumber}. السبب: {reason}";
+
                 await _complaintService.FileComplaintAsync(
-                    contract.ClientUserId,
+                    reporterUserId,
                     contractId,
-                    "غياب مقدم الخدمة",
-                    $"تم الإبلاغ عن غياب مقدم الخدمة في يوم {dayNumber}. السبب: {reason}",
-                    "daily_absence"
+                    complaintReason,
+                    complaintDescription,
+                    "daily_dispute"
                 );
 
                 // Notify admins about the new complaint
                 await _notificationService.SendNotificationToAdmins(
-                    "شكوى جديدة - غياب مقدم الخدمة",
-                    $"تم الإبلاغ عن غياب مقدم الخدمة في العقد #{contractId}، يوم {dayNumber}. السبب: {reason}"
+                    $"شكوى جديدة - {complaintReason}",
+                    $"تم الإبلاغ عن مشكلة في العقد #{contractId}، يوم {dayNumber}. السبب: {reason}"
                 );
 
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("Dispute reported for contract {ContractId}, day {DayNumber}. Reason: {Reason}", contractId, dayNumber, reason);
+                _logger.LogInformation("Dispute reported for contract {ContractId}, day {DayNumber} by {Reporter}. Reason: {Reason}",
+                    contractId, dayNumber, isClient ? "client" : "provider", reason);
 
                 return contract;
             }
