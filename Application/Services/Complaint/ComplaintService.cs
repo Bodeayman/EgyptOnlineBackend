@@ -126,14 +126,14 @@ namespace EgyptOnline.Application.Services.Complaint
         /// <summary>
         /// List all complaints — optionally filtered by status.
         /// </summary>
-        public async Task<(List<Models.Complaint> Items, int TotalCount)> GetAllComplaintsAsync(
+        public async Task<(List<object> Items, int TotalCount)> GetAllComplaintsAsync(
             string? statusFilter = null,
             int pageNumber = 1,
             int pageSize = 20)
         {
             var query = _context.Complaints
-                .Include(c => c.Reporter)
                 .Include(c => c.Contract)
+                .ThenInclude(c => c.ClientUser)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(statusFilter))
@@ -144,11 +144,70 @@ namespace EgyptOnline.Application.Services.Complaint
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
 
-            var items = await Helper.PaginateUsers(
+            var complaints = await Helper.PaginateUsers(
                     query.OrderByDescending(c => c.CreatedAt),
                     pageNumber,
                     pageSize)
                 .ToListAsync();
+
+            var items = new List<object>();
+            foreach (var complaint in complaints)
+            {
+                var providerUser = await _context.Users
+                    .Include(u => u.ServiceProvider)
+                    .FirstOrDefaultAsync(u => u.PhoneNumber == complaint.Contract.ServiceProviderPhoneNumber);
+
+                // Determine if reporter is client or provider
+                bool isClientReporter = complaint.ReporterUserId == complaint.Contract.ClientUserId;
+                string reporterType = isClientReporter ? "client" : "provider";
+
+                items.Add(new
+                {
+                    complaint.Id,
+                    complaint.ContractId,
+                    complaint.Reason,
+                    complaint.Description,
+                    complaint.ReportType,
+                    complaint.Status,
+                    complaint.CreatedAt,
+                    complaint.ResolvedAt,
+                    complaint.AdminNote,
+                    reporterType,
+                    contract = new
+                    {
+                        complaint.Contract.Id,
+                        complaint.Contract.Status,
+                        complaint.Contract.TotalAmount,
+                        complaint.Contract.TotalDays,
+                        complaint.Contract.DailySalary,
+                        complaint.Contract.PenaltyAmount,
+                        complaint.Contract.StartDate,
+                        complaint.Contract.TerminationReason,
+                        client = new
+                        {
+                            id = complaint.Contract.ClientUser.Id,
+                            firstName = complaint.Contract.ClientUser.FirstName,
+                            lastName = complaint.Contract.ClientUser.LastName,
+                            phoneNumber = complaint.Contract.ClientUser.PhoneNumber
+                        },
+                        provider = new
+                        {
+                            id = providerUser?.Id,
+                            firstName = providerUser?.FirstName,
+                            lastName = providerUser?.LastName,
+                            phoneNumber = providerUser?.PhoneNumber,
+                            specialization = providerUser?.ServiceProvider?.GetSpecialization()
+                        }
+                    },
+                    reporter = new
+                    {
+                        id = complaint.ReporterUserId,
+                        firstName = (await _context.Users.FindAsync(complaint.ReporterUserId))?.FirstName,
+                        lastName = (await _context.Users.FindAsync(complaint.ReporterUserId))?.LastName,
+                        phoneNumber = (await _context.Users.FindAsync(complaint.ReporterUserId))?.PhoneNumber
+                    }
+                });
+            }
 
             return (items, total);
         }
