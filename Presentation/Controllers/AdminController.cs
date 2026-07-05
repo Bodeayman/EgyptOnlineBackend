@@ -988,6 +988,23 @@ namespace EgyptOnline.Controllers
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
+                    // Notify both parties about termination
+                    var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+                    if (providerUser != null)
+                    {
+                        await _notificationService.SendNotificationToUser(
+                            providerUser.Id,
+                            "تم إنهاء العقد",
+                            $"تم إنهاء العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}"
+                        );
+                    }
+
+                    await _notificationService.SendNotificationToUser(
+                        contract.ClientUserId,
+                        "تم إنهاء العقد",
+                        $"تم إنهاء العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}"
+                    );
+
                     return Ok(new { message = "تم إنهاء العقد بنجاح", data = contract });
                 }
                 catch
@@ -1078,6 +1095,23 @@ namespace EgyptOnline.Controllers
 
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
+
+                    // Notify both parties about resume
+                    var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+                    if (providerUser != null)
+                    {
+                        await _notificationService.SendNotificationToUser(
+                            providerUser.Id,
+                            "تم استئناف العقد",
+                            $"تم استئناف العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}"
+                        );
+                    }
+
+                    await _notificationService.SendNotificationToUser(
+                        contract.ClientUserId,
+                        "تم استئناف العقد",
+                        $"تم استئناف العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}"
+                    );
 
                     return Ok(new { message = "تم استئناف العقد بنجاح", data = contract });
                 }

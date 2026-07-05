@@ -116,7 +116,6 @@ namespace EgyptOnline.Application.Services.Kyc
         public async Task<List<KycSubmission>> GetPendingKycSubmissionsAsync(int pageNumber = 1, int pageSize = 20)
         {
             return await _context.KycSubmissions
-                .Include(k => k.User)
                 .Where(k => k.Status == "pending")
                 .OrderBy(k => k.SubmittedAt)
                 .Skip((pageNumber - 1) * pageSize)

@@ -243,7 +243,6 @@ namespace EgyptOnline.Application.Services.Wallet
         public async Task<List<DepositRequest>> GetPendingDepositsAsync(int pageNumber = 1, int pageSize = 20)
         {
             return await _context.DepositRequests
-                .Include(r => r.User)
                 .Where(r => r.Status == "pending")
                 .OrderBy(r => r.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
@@ -258,7 +257,6 @@ namespace EgyptOnline.Application.Services.Wallet
             string? rejectionReason)
         {
             var request = await _context.DepositRequests
-                .Include(r => r.User)
                 .FirstOrDefaultAsync(r => r.Id == depositId)
                 ?? throw new KeyNotFoundException("طلب الإيداع غير موجود");
 
@@ -361,7 +359,6 @@ namespace EgyptOnline.Application.Services.Wallet
         public async Task<List<WithdrawRequest>> GetPendingWithdrawalsAsync(int pageNumber = 1, int pageSize = 20)
         {
             return await _context.WithdrawRequests
-                .Include(r => r.User)
                 .Where(r => r.Status == "pending")
                 .OrderBy(r => r.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
@@ -376,7 +373,6 @@ namespace EgyptOnline.Application.Services.Wallet
             string? rejectionReason)
         {
             var request = await _context.WithdrawRequests
-                .Include(r => r.User)
                 .FirstOrDefaultAsync(r => r.Id == withdrawId)
                 ?? throw new KeyNotFoundException("طلب السحب غير موجود");
 

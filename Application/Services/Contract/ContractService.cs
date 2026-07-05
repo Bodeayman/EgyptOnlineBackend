@@ -367,6 +367,23 @@ namespace EgyptOnline.Application.Services.Contract
                     $"تم الإبلاغ عن مشكلة في العقد #{contractId}، يوم {dayNumber}. السبب: {reason}"
                 );
 
+                // Notify both parties about the dispute
+                var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+                if (providerUser != null)
+                {
+                    await _notificationService.SendNotificationToUser(
+                        providerUser.Id,
+                        "تم رفع نزاع على العقد",
+                        $"تم رفع نزاع على العقد #{contractId}، يوم {dayNumber}. السبب: {reason}"
+                    );
+                }
+
+                await _notificationService.SendNotificationToUser(
+                    contract.ClientUserId,
+                    "تم رفع نزاع على العقد",
+                    $"تم رفع نزاع على العقد #{contractId}، يوم {dayNumber}. السبب: {reason}"
+                );
+
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("Dispute reported for contract {ContractId}, day {DayNumber} by {Reporter}. Reason: {Reason}",
