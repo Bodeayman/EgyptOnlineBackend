@@ -204,7 +204,7 @@ namespace EgyptOnline.Application.Services.Complaint
                 .Select(c => new
                 {
                     c.Id,
-                    c.ContractId,
+                    ComplaintContractId = c.ContractId,
                     c.Reason,
                     c.Description,
                     c.ReportType,
@@ -213,16 +213,16 @@ namespace EgyptOnline.Application.Services.Complaint
                     c.ResolvedAt,
                     c.AdminNote,
                     c.ReporterUserId,
-                    c.Contract.Id,
-                    c.Contract.Status,
-                    c.Contract.TotalAmount,
-                    c.Contract.TotalDays,
-                    c.Contract.DailySalary,
-                    c.Contract.PenaltyAmount,
-                    c.Contract.StartDate,
-                    c.Contract.TerminationReason,
-                    c.Contract.ClientUserId,
-                    c.Contract.ServiceProviderPhoneNumber
+                    ContractId = c.Contract.Id,
+                    ContractStatus = c.Contract.Status,
+                    ContractTotalAmount = c.Contract.TotalAmount,
+                    ContractTotalDays = c.Contract.TotalDays,
+                    ContractDailySalary = c.Contract.DailySalary,
+                    ContractPenaltyAmount = c.Contract.PenaltyAmount,
+                    ContractStartDate = c.Contract.StartDate,
+                    ContractTerminationReason = c.Contract.TerminationReason,
+                    ClientUserId = c.Contract.ClientUserId,
+                    ServiceProviderPhoneNumber = c.Contract.ServiceProviderPhoneNumber
                 });
 
             var items = await itemsQuery.ToListAsync();
@@ -255,7 +255,7 @@ namespace EgyptOnline.Application.Services.Complaint
                 result.Add(new
                 {
                     item.Id,
-                    item.ContractId,
+                    item.ComplaintContractId,
                     item.Reason,
                     item.Description,
                     item.ReportType,
@@ -266,14 +266,14 @@ namespace EgyptOnline.Application.Services.Complaint
                     reporterType,
                     contract = new
                     {
-                        item.Id,
-                        item.Status,
-                        item.TotalAmount,
-                        item.TotalDays,
-                        item.DailySalary,
-                        item.PenaltyAmount,
-                        item.StartDate,
-                        item.TerminationReason,
+                        id = item.ContractId,
+                        status = item.ContractStatus,
+                        totalAmount = item.ContractTotalAmount,
+                        totalDays = item.ContractTotalDays,
+                        dailySalary = item.ContractDailySalary,
+                        penaltyAmount = item.ContractPenaltyAmount,
+                        startDate = item.ContractStartDate,
+                        terminationReason = item.ContractTerminationReason,
                         client = new
                         {
                             id = clientUser?.Id,
@@ -319,7 +319,6 @@ namespace EgyptOnline.Application.Services.Complaint
 
             var complaint = await _context.Complaints
                 .Include(c => c.Contract)
-                .Include(c => c.Reporter)
                 .FirstOrDefaultAsync(c => c.Id == complaintId)
                 ?? throw new KeyNotFoundException("الشكوى غير موجودة");
 

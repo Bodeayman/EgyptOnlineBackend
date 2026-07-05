@@ -140,11 +140,6 @@ namespace EgyptOnline.Data
                 entity.HasIndex(e => e.ContractId);
                 entity.HasIndex(e => e.ReporterUserId);
                 entity
-                    .HasOne(c => c.Reporter)
-                    .WithMany()
-                    .HasForeignKey(c => c.ReporterUserId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                entity
                     .HasOne(c => c.Contract)
                     .WithMany()
                     .HasForeignKey(c => c.ContractId)
