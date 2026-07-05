@@ -1058,14 +1058,14 @@ namespace EgyptOnline.Controllers
                     if (dto.AdjustmentAmount.HasValue && dto.AdjustmentAmount != 0)
                     {
                         var adjustment = dto.AdjustmentAmount.Value;
-                        var providerUser = await _context.Users
+                        var providerUserForWallet = await _context.Users
                             .FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
 
                         if (adjustment < 0)
                         {
                             // Decrease: refund to client, deduct from provider
                             var refundAmount = Math.Abs(adjustment);
-                            await _walletService.SubtractFromFrozenBalanceAsync(providerUser?.Id ?? throw new InvalidOperationException("مقدم الخدمة غير موجود"), refundAmount);
+                            await _walletService.SubtractFromFrozenBalanceAsync(providerUserForWallet?.Id ?? throw new InvalidOperationException("مقدم الخدمة غير موجود"), refundAmount);
                             await _walletService.AddToFreeBalanceAsync(contract.ClientUserId, refundAmount);
                             contract.TotalAmount -= refundAmount;
                         }
@@ -1073,7 +1073,7 @@ namespace EgyptOnline.Controllers
                         {
                             // Increase: charge client, add to provider frozen
                             await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, adjustment);
-                            await _walletService.AddToFrozenBalanceAsync(providerUser?.Id ?? throw new InvalidOperationException("مقدم الخدمة غير موجود"), adjustment);
+                            await _walletService.AddToFrozenBalanceAsync(providerUserForWallet?.Id ?? throw new InvalidOperationException("مقدم الخدمة غير موجود"), adjustment);
                             contract.TotalAmount += adjustment;
                         }
 

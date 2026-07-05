@@ -532,7 +532,7 @@ namespace EgyptOnline.Application.Services.Contract
         }
         */
 
-        public async Task<object?> GetContractByIdAsync(int contractId)
+        public async Task<object?> GetContractByIdAsync(int contractId, string userId)
         {
             var contract = await _context.Contracts
                 .Include(c => c.ClientUser)
@@ -541,6 +541,12 @@ namespace EgyptOnline.Application.Services.Contract
 
             if (contract == null)
                 return null;
+
+            // Only parties to the contract may view its details
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            bool isParty = contract.ClientUserId == userId || (currentUser != null && currentUser.PhoneNumber == contract.ServiceProviderPhoneNumber);
+            if (!isParty)
+                throw new UnauthorizedAccessException("ليس لديك صلاحية لعرض هذا العقد");
 
             // Load provider user by phone number
             var providerUser = await _context.Users

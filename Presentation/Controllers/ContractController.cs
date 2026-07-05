@@ -289,17 +289,14 @@ namespace EgyptOnline.Controllers
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-                var contract = await _contractService.GetContractByIdAsync(id);
+                var contract = await _contractService.GetContractByIdAsync(id, userId);
                 if (contract == null) return NotFound(new { message = "العقد غير موجود" });
 
-                // Only parties to the contract may view its details
-                // Get current user's phone number to check against service provider phone
-                var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                bool isParty = contract.ClientUserId == userId || (currentUser != null && currentUser.PhoneNumber == contract.ServiceProviderPhoneNumber);
-                if (!isParty)
-                    return StatusCode(403, new { message = "ليس لديك صلاحية لعرض هذا العقد" });
-
                 return Ok(new { data = contract });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
             }
             catch (Exception ex)
             {
