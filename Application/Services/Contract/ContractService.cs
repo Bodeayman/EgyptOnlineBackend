@@ -732,6 +732,25 @@ namespace EgyptOnline.Application.Services.Contract
                         startDateUtc = TimeZoneInfo.ConvertTimeToUtc(newStartDate.Value, egyptTimeZone);
                     }
 
+                    // Validate newStartDate is not in the past
+                    if (startDateUtc < DateTime.UtcNow.Date)
+                    {
+                        throw new InvalidOperationException("تاريخ البدء الجديد يجب أن يكون في المستقبل أو اليوم الحالي على الأقل");
+                    }
+
+                    // Validate daysWorked doesn't exceed total days
+                    if (daysWorked >= contract.TotalDays)
+                    {
+                        throw new InvalidOperationException($"عدد الأيام المدفوع ({daysWorked}) يجب أن يكون أقل من إجمالي أيام العقد ({contract.TotalDays})");
+                    }
+
+                    // Validate newStartDate is not before the last worked day
+                    var lastWorkedDay = contract.ContractDays.FirstOrDefault(cd => cd.DayNumber == daysWorked);
+                    if (lastWorkedDay != null && startDateUtc < lastWorkedDay.Date.Date)
+                    {
+                        throw new InvalidOperationException($"تاريخ البدء الجديد يجب أن يكون بعد أو مساوٍ لتاريخ آخر يوم عمل ({lastWorkedDay.Date:yyyy-MM-dd})");
+                    }
+
                     // Update contract start date
                     contract.StartDate = startDateUtc;
 
