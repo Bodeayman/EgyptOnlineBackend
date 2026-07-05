@@ -362,7 +362,7 @@ namespace EgyptOnline.Application.Services.Complaint
         private async Task SafeNotifyByUserId(string userId, string senderId, string title, string body)
         {
             if (userId == senderId) return;
-            try { await _notificationService.SendNotificationToUser(userId, title, body); }
+            try { await _notificationService.SendNotificationToUser(userId, title, body, "contract"); }
             catch (Exception ex) { Log.Warning(ex, "Failed to notify user {UserId}", userId); }
         }
 
@@ -373,7 +373,7 @@ namespace EgyptOnline.Application.Services.Complaint
             {
                 var userId = (await _context.Users.FirstOrDefaultAsync(u => u.UserName == targetUsername))?.Id;
                 if (string.IsNullOrEmpty(userId)) return;
-                await _notificationService.SendNotificationToUser(userId, title, body);
+                await _notificationService.SendNotificationToUser(userId, title, body, "contract");
             }
             catch (Exception ex) { Log.Warning(ex, "Failed to notify {Username}", targetUsername); }
         }

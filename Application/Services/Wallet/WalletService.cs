@@ -507,7 +507,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (wallet == null)
             {
-                throw new InvalidOperationException($"Wallet not found for user ID: {userId}");
+                throw new InvalidOperationException($"المحفظة غير موجودة لمعرف المستخدم: {userId}");
             }
 
             return wallet;
@@ -521,7 +521,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (wallet == null)
             {
-                throw new InvalidOperationException($"Wallet not found for phone number: {phoneNumber}");
+                throw new InvalidOperationException($"المحفظة غير موجودة لرقم الهاتف: {phoneNumber}");
             }
 
             return wallet;
@@ -532,7 +532,7 @@ namespace EgyptOnline.Application.Services.Wallet
             var existingWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId);
             if (existingWallet != null)
             {
-                throw new InvalidOperationException($"Wallet already exists for user ID: {userId}");
+                throw new InvalidOperationException($"المحفظة موجودة بالفعل لمعرف المستخدم: {userId}");
             }
 
             var wallet = new UserWallet
@@ -568,7 +568,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (wallet.FreeBalance < amount)
             {
-                throw new InvalidOperationException($"Insufficient free balance. Required: {amount}, Available: {wallet.FreeBalance}");
+                throw new InvalidOperationException($"الرصيد المتاح غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FreeBalance}");
             }
 
             wallet.FreeBalance -= amount;
@@ -585,7 +585,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (wallet.FrozenBalance < amount)
             {
-                throw new InvalidOperationException($"Insufficient frozen balance. Required: {amount}, Available: {wallet.FrozenBalance}");
+                throw new InvalidOperationException($"الرصيد المجمد غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FrozenBalance}");
             }
 
             wallet.FrozenBalance -= amount;
@@ -603,7 +603,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (fromWallet.FreeBalance < amount)
             {
-                throw new InvalidOperationException($"Insufficient free balance for sender. Required: {amount}, Available: {fromWallet.FreeBalance}");
+                throw new InvalidOperationException($"الرصيد المتاح للمرسل غير كافٍ. المطلوب: {amount}، المتاح: {fromWallet.FreeBalance}");
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -634,7 +634,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (fromWallet.FrozenBalance < amount)
             {
-                throw new InvalidOperationException($"Insufficient frozen balance for sender. Required: {amount}, Available: {fromWallet.FrozenBalance}");
+                throw new InvalidOperationException($"الرصيد المجمد للمرسل غير كافٍ. المطلوب: {amount}، المتاح: {fromWallet.FrozenBalance}");
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -673,7 +673,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (wallet.FreeBalance < amount)
             {
-                throw new InvalidOperationException($"Insufficient free balance. Required: {amount}, Available: {wallet.FreeBalance}");
+                throw new InvalidOperationException($"الرصيد المتاح غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FreeBalance}");
             }
 
             wallet.FreeBalance -= amount;
@@ -697,7 +697,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (wallet.FrozenBalance < amount)
             {
-                throw new InvalidOperationException($"Insufficient frozen balance. Required: {amount}, Available: {wallet.FrozenBalance}");
+                throw new InvalidOperationException($"الرصيد المجمد غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FrozenBalance}");
             }
 
             wallet.FrozenBalance -= amount;
@@ -745,7 +745,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (wallet.FreeBalance < amount)
             {
-                throw new InvalidOperationException($"Insufficient free balance for withdrawal. Required: {amount}, Available: {wallet.FreeBalance}");
+                throw new InvalidOperationException($"الرصيد المتاح غير كافٍ للسحب. المطلوب: {amount}، المتاح: {wallet.FreeBalance}");
             }
 
             wallet.FreeBalance -= amount;
@@ -764,7 +764,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
             if (newValue < 0)
             {
-                throw new InvalidOperationException($"Cannot deduct {amount} from {balanceType} balance. Current: {oldValue}");
+                throw new InvalidOperationException($"لا يمكن خصم {amount} من رصيد {balanceType}. الحالي: {oldValue}");
             }
 
             if (balanceType == "free")

@@ -40,14 +40,14 @@ namespace EgyptOnline.Application.Services.Contract
             var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
 
             if (clientUser == null)
-                throw new InvalidOperationException($"Client user not found: {contract.ClientUserId}");
+                throw new InvalidOperationException($"مستخدم العميل غير موجود: {contract.ClientUserId}");
             if (providerUser == null)
-                throw new InvalidOperationException($"Service provider not found with phone number: {contract.ServiceProviderPhoneNumber}");
+                throw new InvalidOperationException($"مقدم الخدمة غير موجود برقم الهاتف: {contract.ServiceProviderPhoneNumber}");
 
             var totalRequired = contract.TotalAmount + contract.PenaltyAmount;
             var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(contract.ClientUserId, totalRequired);
             if (!hasSufficientBalance)
-                throw new InvalidOperationException($"Client has insufficient free balance. Required: {totalRequired}");
+                throw new InvalidOperationException($"رصيد العميل المتاح غير كافٍ. المبلغ المطلوب: {totalRequired}");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -108,15 +108,15 @@ namespace EgyptOnline.Application.Services.Contract
                 .FirstOrDefaultAsync(c => c.Id == contractId);
 
             if (contract == null)
-                throw new InvalidOperationException($"Contract not found: {contractId}");
+                throw new InvalidOperationException($"العقد غير موجود: {contractId}");
 
             // Verify the caller is the service provider by phone number
             var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == providerUserId);
             if (providerUser == null || providerUser.PhoneNumber != contract.ServiceProviderPhoneNumber)
-                throw new UnauthorizedAccessException("You are not authorized to reject this contract");
+                throw new UnauthorizedAccessException("ليس لديك صلاحية لرفض هذا العقد");
 
             if (contract.Status != "pending")
-                throw new InvalidOperationException($"Contract is not in Pending status. Current status: {contract.Status}");
+                throw new InvalidOperationException($"العقد ليس في حالة معلق. الحالة الحالية: {contract.Status}");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -147,15 +147,15 @@ namespace EgyptOnline.Application.Services.Contract
             var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == contractId);
 
             if (contract == null)
-                throw new InvalidOperationException($"Contract not found: {contractId}");
+                throw new InvalidOperationException($"العقد غير موجود: {contractId}");
 
             // Verify the caller is the service provider by phone number
             var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == providerUserId);
             if (providerUser == null || providerUser.PhoneNumber != contract.ServiceProviderPhoneNumber)
-                throw new UnauthorizedAccessException("You are not authorized to accept this contract");
+                throw new UnauthorizedAccessException("ليس لديك صلاحية لقبول هذا العقد");
 
             if (contract.Status != "pending")
-                throw new InvalidOperationException($"Contract is not in Pending status. Current status: {contract.Status}");
+                throw new InvalidOperationException($"العقد ليس في حالة معلق. الحالة الحالية: {contract.Status}");
 
             var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(providerUserId, contract.PenaltyAmount);
             if (!hasSufficientBalance)
@@ -197,58 +197,62 @@ namespace EgyptOnline.Application.Services.Contract
                 .FirstOrDefaultAsync(c => c.Id == contractId);
 
             if (contract == null)
-                throw new InvalidOperationException($"Contract not found: {contractId}");
+                throw new InvalidOperationException($"العقد غير موجود: {contractId}");
 
             // Verify the caller is the service provider by phone number
             var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == providerUserId);
             if (providerUser == null || providerUser.PhoneNumber != contract.ServiceProviderPhoneNumber)
-                throw new UnauthorizedAccessException("You are not authorized to register arrival for this contract");
+                throw new UnauthorizedAccessException("ليس لديك صلاحية لتسجيل الوصول لهذا العقد");
 
             if (contract.Status != "active")
-                throw new InvalidOperationException($"Contract is not in Active status. Current status: {contract.Status}");
+                throw new InvalidOperationException($"العقد ليس في حالة نشط. الحالة الحالية: {contract.Status}");
 
             var contractDay = contract.ContractDays.FirstOrDefault(cd => cd.DayNumber == dayNumber);
             if (contractDay == null)
-                throw new InvalidOperationException($"Contract day {dayNumber} not found for contract {contractId}");
+                throw new InvalidOperationException($"يوم العقد رقم {dayNumber} غير موجود للعقد {contractId}");
 
             if (contractDay.ProviderArrived)
-                throw new InvalidOperationException($"Provider has already arrived for day {dayNumber}");
+                throw new InvalidOperationException($"مقدم الخدمة قد سجل وصوله بالفعل لليوم {dayNumber}");
 
             // Validate arrival is within the shift time span (with 30-minute grace period)
-            var currentTime = DateTime.UtcNow;
+            var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+            var currentTimeUtc = DateTime.UtcNow;
+            var currentTimeEgypt = TimeZoneInfo.ConvertTimeFromUtc(currentTimeUtc, egyptTimeZone);
 
             // Ensure contract day date is valid and has correct DateTimeKind
             if (contractDay.Date == DateTime.MinValue)
-                throw new InvalidOperationException($"Invalid contract day date for day {dayNumber}");
+                throw new InvalidOperationException($"تاريخ يوم العقد غير صالح لليوم {dayNumber}");
 
-            var contractDayDate = DateTime.SpecifyKind(contractDay.Date, DateTimeKind.Utc);
+            // Convert contract day date (UTC) to Egypt local time for shift calculations
+            var contractDayEgyptLocal = TimeZoneInfo.ConvertTimeFromUtc(contractDay.Date, egyptTimeZone);
 
             // Validate shift start/end times are valid
             if (contract.ShiftStartTime < TimeSpan.Zero || contract.ShiftStartTime >= TimeSpan.FromDays(1))
-                throw new InvalidOperationException($"Invalid shift start time: {contract.ShiftStartTime}");
+                throw new InvalidOperationException($"وقت بدء الوردية غير صالح: {contract.ShiftStartTime}");
 
-            var shiftStart = contractDayDate.Add(contract.ShiftStartTime);
+            // Shift times are stored as TimeSpan representing Egypt local time
+            var shiftStart = contractDayEgyptLocal.Date.Add(contract.ShiftStartTime);
             var gracePeriod = TimeSpan.FromMinutes(30);
 
             // If ShiftEndTime is provided, validate it as well
             if (contract.ShiftEndTime.HasValue)
             {
                 if (contract.ShiftEndTime.Value < TimeSpan.Zero || contract.ShiftEndTime.Value >= TimeSpan.FromDays(1))
-                    throw new InvalidOperationException($"Invalid shift end time: {contract.ShiftEndTime.Value}");
+                    throw new InvalidOperationException($"وقت انتهاء الوردية غير صالح: {contract.ShiftEndTime.Value}");
 
-                var shiftEnd = contractDayDate.Add(contract.ShiftEndTime.Value);
+                var shiftEnd = contractDayEgyptLocal.Date.Add(contract.ShiftEndTime.Value);
 
-                if (currentTime < shiftStart.Subtract(gracePeriod))
-                    throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+                if (currentTimeEgypt < shiftStart.Subtract(gracePeriod))
+                    throw new InvalidOperationException($"لا يمكن التسجيل قبل بدء الوردية. تبدأ الوردية عند {shiftStart:HH:mm} (مع فترة سماح 30 دقيقة)");
 
-                if (currentTime > shiftEnd.Add(gracePeriod))
-                    throw new InvalidOperationException($"Cannot arrive after shift end. Shift ended at {shiftEnd:HH:mm} (with 30-minute grace period)");
+                if (currentTimeEgypt > shiftEnd.Add(gracePeriod))
+                    throw new InvalidOperationException($"لا يمكن التسجيل بعد انتهاء الوردية. انتهت الوردية عند {shiftEnd:HH:mm} (مع فترة سماح 30 دقيقة)");
             }
             else
             {
                 // No shift end time, only validate against shift start
-                if (currentTime < shiftStart.Subtract(gracePeriod))
-                    throw new InvalidOperationException($"Cannot arrive before shift start. Shift starts at {shiftStart:HH:mm} (with 30-minute grace period)");
+                if (currentTimeEgypt < shiftStart.Subtract(gracePeriod))
+                    throw new InvalidOperationException($"لا يمكن التسجيل قبل بدء الوردية. تبدأ الوردية عند {shiftStart:HH:mm} (مع فترة سماح 30 دقيقة)");
             }
 
             contractDay.ProviderArrived = true;
@@ -312,10 +316,10 @@ namespace EgyptOnline.Application.Services.Contract
                 .FirstOrDefaultAsync(c => c.Id == contractId);
 
             if (contract == null)
-                throw new InvalidOperationException($"Contract not found: {contractId}");
+                throw new InvalidOperationException($"العقد غير موجود: {contractId}");
 
             if (contract.Status != "active")
-                throw new InvalidOperationException($"Contract is not in Active status. Current status: {contract.Status}");
+                throw new InvalidOperationException($"العقد ليس في حالة نشط. الحالة الحالية: {contract.Status}");
 
             // Verify the reporter is a party to this contract
             var reporterUser = await _context.Users
@@ -330,7 +334,7 @@ namespace EgyptOnline.Application.Services.Contract
 
             var contractDay = contract.ContractDays.FirstOrDefault(cd => cd.DayNumber == dayNumber);
             if (contractDay == null)
-                throw new InvalidOperationException($"Contract day {dayNumber} not found");
+                throw new InvalidOperationException($"يوم العقد رقم {dayNumber} غير موجود");
 
             // Dispute can be reported at any time during the day (no time restriction)
             // var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
@@ -411,7 +415,7 @@ namespace EgyptOnline.Application.Services.Contract
                 .FirstOrDefaultAsync(c => c.Id == contractId);
 
             if (contract == null)
-                throw new InvalidOperationException($"Contract not found: {contractId}");
+                throw new InvalidOperationException($"العقد غير موجود: {contractId}");
 
             if (contract.Status != "active" && contract.Status != "suspended")
                 throw new InvalidOperationException($"Contract must be Active or Suspended for mutual termination. Current status: {contract.Status}");
@@ -454,7 +458,7 @@ namespace EgyptOnline.Application.Services.Contract
                 .FirstOrDefaultAsync(c => c.Id == contractId);
 
             if (contract == null)
-                throw new InvalidOperationException($"Contract not found: {contractId}");
+                throw new InvalidOperationException($"العقد غير موجود: {contractId}");
 
             if (contract.Status != "active" && contract.Status != "suspended")
                 throw new InvalidOperationException($"Contract must be Active or Suspended for unilateral termination. Current status: {contract.Status}");
@@ -497,7 +501,7 @@ namespace EgyptOnline.Application.Services.Contract
                 .FirstOrDefaultAsync(c => c.Id == contractId);
 
             if (contract == null)
-                throw new InvalidOperationException($"Contract not found: {contractId}");
+                throw new InvalidOperationException($"العقد غير موجود: {contractId}");
 
             // Verify the caller is the service provider by phone number
             var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == providerUserId);

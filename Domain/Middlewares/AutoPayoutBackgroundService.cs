@@ -80,9 +80,13 @@ public class AutoPayoutBackgroundService : BackgroundService
             if (!contractDay.ProviderArrived) continue;
             if (contractDay.Status == ContractDayStatus.AbsentDisputed) continue;
 
-            // ShiftEndTime stored in Egypt-local terms. Date is also Egypt-local.
+            // Convert contract day date (UTC) to Egypt local time for shift calculations
+            var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+            var contractDayEgyptLocal = TimeZoneInfo.ConvertTimeFromUtc(contractDay.Date, egyptTimeZone);
+            
+            // Shift times are stored as TimeSpan representing Egypt local time
             var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
-            var shiftEnd = contractDay.Date.Date.Add(shiftEndTime);
+            var shiftEnd = contractDayEgyptLocal.Date.Add(shiftEndTime);
 
             bool shouldPayout;
 
