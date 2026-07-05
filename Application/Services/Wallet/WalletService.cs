@@ -240,14 +240,44 @@ namespace EgyptOnline.Application.Services.Wallet
             return request;
         }
 
-        public async Task<List<DepositRequest>> GetPendingDepositsAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<List<object>> GetPendingDepositsAsync(int pageNumber = 1, int pageSize = 20)
         {
-            return await _context.DepositRequests
+            var requests = await _context.DepositRequests
                 .Where(r => r.Status == "pending")
                 .OrderBy(r => r.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            var userIds = requests.Select(r => r.UserId).Distinct().ToList();
+            var users = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber })
+                .ToDictionaryAsync(u => u.Id);
+
+            var result = new List<object>();
+            foreach (var request in requests)
+            {
+                var user = users.GetValueOrDefault(request.UserId);
+                result.Add(new
+                {
+                    request.Id,
+                    request.UserId,
+                    userName = user != null ? $"{user.FirstName} {user.LastName}" : null,
+                    firstName = user?.FirstName,
+                    lastName = user?.LastName,
+                    phoneNumber = user?.PhoneNumber,
+                    request.Amount,
+                    request.SourceWalletNumber,
+                    request.WalletOwnerName,
+                    request.RecipientPhoneNumber,
+                    request.ReceiptImagePath,
+                    request.Status,
+                    request.CreatedAt
+                });
+            }
+
+            return result;
         }
 
         public async Task<DepositRequest> ReviewDepositRequestAsync(
@@ -356,14 +386,43 @@ namespace EgyptOnline.Application.Services.Wallet
             }
         }
 
-        public async Task<List<WithdrawRequest>> GetPendingWithdrawalsAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<List<object>> GetPendingWithdrawalsAsync(int pageNumber = 1, int pageSize = 20)
         {
-            return await _context.WithdrawRequests
+            var requests = await _context.WithdrawRequests
                 .Where(r => r.Status == "pending")
                 .OrderBy(r => r.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            var userIds = requests.Select(r => r.UserId).Distinct().ToList();
+            var users = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber })
+                .ToDictionaryAsync(u => u.Id);
+
+            var result = new List<object>();
+            foreach (var request in requests)
+            {
+                var user = users.GetValueOrDefault(request.UserId);
+                result.Add(new
+                {
+                    request.Id,
+                    request.UserId,
+                    userName = user != null ? $"{user.FirstName} {user.LastName}" : null,
+                    firstName = user?.FirstName,
+                    lastName = user?.LastName,
+                    phoneNumber = user?.PhoneNumber,
+                    request.Amount,
+                    request.DestinationWalletNumber,
+                    request.WalletOwnerName,
+                    request.SourceWalletNumber,
+                    request.Status,
+                    request.CreatedAt
+                });
+            }
+
+            return result;
         }
 
         public async Task<WithdrawRequest> ReviewWithdrawRequestAsync(

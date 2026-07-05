@@ -95,12 +95,12 @@ namespace EgyptOnline.Application.Services.Complaint
         /// <summary>
         /// Get all complaints submitted by the current user.
         /// </summary>
-        public async Task<List<Models.Complaint>> GetMyComplaintsAsync(string userId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
+        public async Task<List<object>> GetMyComplaintsAsync(string userId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
         {
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
 
-            return await Helper.PaginateUsers(
+            var complaints = await Helper.PaginateUsers(
                     _context.Complaints
                         .Include(c => c.Contract)
                         .Where(c => c.ReporterUserId == userId)
@@ -108,6 +108,61 @@ namespace EgyptOnline.Application.Services.Complaint
                     pageNumber,
                     pageSize)
                 .ToListAsync();
+
+            var result = new List<object>();
+            foreach (var complaint in complaints)
+            {
+                var providerUser = await _context.Users
+                    .Include(u => u.ServiceProvider)
+                    .FirstOrDefaultAsync(u => u.PhoneNumber == complaint.Contract.ServiceProviderPhoneNumber);
+
+                var clientUser = await _context.Users.FindAsync(complaint.Contract.ClientUserId);
+
+                bool isClientReporter = complaint.ReporterUserId == complaint.Contract.ClientUserId;
+                string reporterType = isClientReporter ? "client" : "provider";
+
+                result.Add(new
+                {
+                    complaint.Id,
+                    complaint.ContractId,
+                    complaint.Reason,
+                    complaint.Description,
+                    complaint.ReportType,
+                    complaint.Status,
+                    complaint.CreatedAt,
+                    complaint.ResolvedAt,
+                    complaint.AdminNote,
+                    reporterType,
+                    contract = new
+                    {
+                        complaint.Contract.Id,
+                        complaint.Contract.Status,
+                        complaint.Contract.TotalAmount,
+                        complaint.Contract.TotalDays,
+                        complaint.Contract.DailySalary,
+                        complaint.Contract.PenaltyAmount,
+                        complaint.Contract.StartDate,
+                        complaint.Contract.TerminationReason,
+                        client = new
+                        {
+                            id = clientUser?.Id,
+                            firstName = clientUser?.FirstName,
+                            lastName = clientUser?.LastName,
+                            phoneNumber = clientUser?.PhoneNumber
+                        },
+                        provider = new
+                        {
+                            id = providerUser?.Id,
+                            firstName = providerUser?.FirstName,
+                            lastName = providerUser?.LastName,
+                            phoneNumber = providerUser?.PhoneNumber,
+                            specialization = providerUser?.ServiceProvider?.GetSpecialization()
+                        }
+                    }
+                });
+            }
+
+            return result;
         }
 
         /// <summary>

@@ -113,14 +113,44 @@ namespace EgyptOnline.Application.Services.Kyc
             return submission;
         }
 
-        public async Task<List<KycSubmission>> GetPendingKycSubmissionsAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<List<object>> GetPendingKycSubmissionsAsync(int pageNumber = 1, int pageSize = 20)
         {
-            return await _context.KycSubmissions
+            var submissions = await _context.KycSubmissions
                 .Where(k => k.Status == "pending")
                 .OrderBy(k => k.SubmittedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            var userIds = submissions.Select(k => k.UserId).Distinct().ToList();
+            var users = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber })
+                .ToDictionaryAsync(u => u.Id);
+
+            var result = new List<object>();
+            foreach (var submission in submissions)
+            {
+                var user = users.GetValueOrDefault(submission.UserId);
+                result.Add(new
+                {
+                    submission.Id,
+                    submission.UserId,
+                    userName = user != null ? $"{user.FirstName} {user.LastName}" : null,
+                    firstName = user?.FirstName,
+                    lastName = user?.LastName,
+                    phoneNumber = user?.PhoneNumber,
+                    submission.Status,
+                    submission.SubmittedAt,
+                    submission.FrontImagePath,
+                    submission.BackImagePath,
+                    submission.SelfieImagePath,
+                    submission.RejectionReason,
+                    submission.ReviewedAt
+                });
+            }
+
+            return result;
         }
     }
 }
