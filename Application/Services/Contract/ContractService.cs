@@ -88,6 +88,7 @@ namespace EgyptOnline.Application.Services.Contract
                     providerUser.Id,
                     "عقد جديد بانتظار توقيعك",
                     $"تم إنشاء عقد جديد #{contract.Id} بقيمة {contract.TotalAmount} جنيه. يرجى مراجعة التفاصيل والتوقيع",
+                    "contract",
                     contract.ClientUserId
                 );
 
@@ -176,6 +177,7 @@ namespace EgyptOnline.Application.Services.Contract
                     contract.ClientUserId,
                     "تم قبول العقد",
                     $"تم قبول العقد #{contract.Id} من قبل مقدم الخدمة",
+                    "contract",
                     providerUserId
                 );
 
@@ -262,6 +264,7 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.ClientUserId,
                 "وصول مقدم الخدمة",
                 $"وصل مقدم الخدمة لموقع العمل - يوم {dayNumber} من العقد #{contractId}",
+                "contract",
                 providerUserId
             );
 
@@ -329,12 +332,12 @@ namespace EgyptOnline.Application.Services.Contract
             if (contractDay == null)
                 throw new InvalidOperationException($"Contract day {dayNumber} not found");
 
-            var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
-            var gracePeriodEnd = contractDay.Date.Add(shiftEndTime).AddHours(3);
-            var currentTime = DateTime.UtcNow;
-
-            if (currentTime > gracePeriodEnd)
-                throw new InvalidOperationException($"Dispute cannot be reported after 3-hour grace period expired. Grace period ended at: {gracePeriodEnd}");
+            // Dispute can be reported at any time during the day (no time restriction)
+            // var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
+            // var gracePeriodEnd = contractDay.Date.Add(shiftEndTime).AddHours(3);
+            // var currentTime = DateTime.UtcNow;
+            // if (currentTime > gracePeriodEnd)
+            //     throw new InvalidOperationException($"Dispute cannot be reported after 3-hour grace period expired. Grace period ended at: {gracePeriodEnd}");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -374,14 +377,16 @@ namespace EgyptOnline.Application.Services.Contract
                     await _notificationService.SendNotificationToUser(
                         providerUser.Id,
                         "تم رفع نزاع على العقد",
-                        $"تم رفع نزاع على العقد #{contractId}، يوم {dayNumber}. السبب: {reason}"
+                        $"تم رفع نزاع على العقد #{contractId}، يوم {dayNumber}. السبب: {reason}",
+                        "contract"
                     );
                 }
 
                 await _notificationService.SendNotificationToUser(
                     contract.ClientUserId,
                     "تم رفع نزاع على العقد",
-                    $"تم رفع نزاع على العقد #{contractId}، يوم {dayNumber}. السبب: {reason}"
+                    $"تم رفع نزاع على العقد #{contractId}، يوم {dayNumber}. السبب: {reason}",
+                    "contract"
                 );
 
                 await transaction.CommitAsync();
@@ -770,7 +775,7 @@ namespace EgyptOnline.Application.Services.Contract
 
         public async Task<ContractModel> AdminAdjustAndResumeAsync(
             int contractId,
-            decimal adjustmentAmount,
+            int daysWorked,
             string direction, // "client_to_free" or "client_to_worker"
             string adminUserId,
             string comment)
@@ -782,6 +787,9 @@ namespace EgyptOnline.Application.Services.Contract
 
             var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber)
                 ?? throw new InvalidOperationException("مقدم الخدمة غير موجود");
+
+            // Calculate adjustment amount based on days worked
+            var adjustmentAmount = daysWorked * contract.DailySalary;
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -817,7 +825,7 @@ namespace EgyptOnline.Application.Services.Contract
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("Admin {AdminId} resolved contract {ContractId} via Adjust & Resume", adminUserId, contractId);
+                _logger.LogInformation("Admin {AdminId} resolved contract {ContractId} via Adjust & Resume for {DaysWorked} days", adminUserId, contractId, daysWorked);
                 return contract;
             }
             catch (Exception ex)

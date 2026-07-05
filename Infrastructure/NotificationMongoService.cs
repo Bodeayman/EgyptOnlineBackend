@@ -31,7 +31,7 @@ namespace EgyptOnline.Services
             });
         }
 
-        public async Task<string> SaveNotificationAsync(string userId, string title, string body, string? senderId = null, string? senderName = null)
+        public async Task<string> SaveNotificationAsync(string userId, string title, string body, string type = "general", string? senderId = null, string? senderName = null)
         {
             var notification = new Notification
             {
@@ -40,6 +40,7 @@ namespace EgyptOnline.Services
                 Body = body,
                 IsRead = false,
                 Timestamp = DateTime.UtcNow,
+                Type = type,
                 SenderId = senderId,
                 SenderName = senderName
             };

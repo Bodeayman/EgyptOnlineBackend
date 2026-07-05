@@ -13,9 +13,12 @@ namespace EgyptOnline.Domain.Models
         public required string Title { get; set; }
         public required string Body { get; set; }
         public bool IsRead { get; set; } = false;
-        
+
         [BsonRepresentation(BsonType.DateTime)]
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        // Notification type for client-side routing
+        public string Type { get; set; } = "general";
 
         // Optional fields for sender information
         public string? SenderId { get; set; }

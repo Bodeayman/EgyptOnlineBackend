@@ -103,7 +103,7 @@ namespace EgyptOnline.Presentation.Hubs
                 await Clients.Caller.SendAsync("MessageSent", messageId, receiverId, content);
                 await _notificationService.SendNotificationToUser(receiverId, $" ارسل {user.FirstName} {user.LastName} لك",
                  "لقد استلمت رسالة جديدة في الدردشة.",
-                 senderId, $"{user.FirstName} {user.LastName}");
+                 "chat", senderId, $"{user.FirstName} {user.LastName}");
             }
             catch (Exception ex)
             {

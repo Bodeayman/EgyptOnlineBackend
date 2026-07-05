@@ -8,7 +8,7 @@ namespace EgyptOnline.Services
 {
     public interface INotificationService
     {
-        Task SendNotificationToUser(string userId, string title, string body, string senderId = null, string senderName = null);
+        Task SendNotificationToUser(string userId, string title, string body, string type = "general", string senderId = null, string senderName = null);
         Task SendNotificationToAdmins(string title, string body);
     }
 
@@ -30,11 +30,12 @@ namespace EgyptOnline.Services
             string userId,
             string title,
             string body,
+            string type = "general",
             string senderId = null,
             string senderName = null)
         {
             // Save to MongoDB
-            await _notificationMongoService.SaveNotificationAsync(userId, title, body, senderId, senderName);
+            await _notificationMongoService.SaveNotificationAsync(userId, title, body, type, senderId, senderName);
 
             var user = await _context.Users.Include(u => u.FirebaseTokens)
                 .FirstOrDefaultAsync(u => u.Id == userId);
@@ -46,6 +47,8 @@ namespace EgyptOnline.Services
             {
                 // ✅ UPDATED: Build data payload
                 var data = new Dictionary<string, string>();
+
+                data["type"] = type;
 
                 if (!string.IsNullOrEmpty(senderId))
                 {

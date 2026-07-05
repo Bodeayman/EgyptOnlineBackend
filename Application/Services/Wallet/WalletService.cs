@@ -489,7 +489,7 @@ namespace EgyptOnline.Application.Services.Wallet
         {
             try
             {
-                await _notificationService.SendNotificationToUser(userId, title, body);
+                await _notificationService.SendNotificationToUser(userId, title, body, "wallet");
             }
             catch (Exception ex)
             {

@@ -134,7 +134,8 @@ public class AutoPayoutBackgroundService : BackgroundService
                 await notificationService.SendNotificationToUser(
                     providerUser.Id,
                     "دفع يومي مستلم",
-                    $"تم استلام {contract.DailySalary} جنيه من {clientName} عن يوم {contractDay.DayNumber} من العقد #{contract.Id}"
+                    $"تم استلام {contract.DailySalary} جنيه من {clientName} عن يوم {contractDay.DayNumber} من العقد #{contract.Id}",
+                    "wallet"
                 );
             }
             catch (Exception ex)

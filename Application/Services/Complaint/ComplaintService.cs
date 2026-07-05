@@ -355,7 +355,7 @@ namespace EgyptOnline.Application.Services.Complaint
 
         private async Task SafeNotifyById(string userId, string title, string body)
         {
-            try { await _notificationService.SendNotificationToUser(userId, title, body); }
+            try { await _notificationService.SendNotificationToUser(userId, title, body, "contract"); }
             catch (Exception ex) { Log.Warning(ex, "Failed to notify user {UserId}", userId); }
         }
 

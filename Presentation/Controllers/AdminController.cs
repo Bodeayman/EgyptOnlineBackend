@@ -462,7 +462,7 @@ namespace EgyptOnline.Controllers
 
                 try
                 {
-                    await _notificationService.SendNotificationToUser(result.UserId, title, body);
+                    await _notificationService.SendNotificationToUser(result.UserId, title, body, "kyc");
                 }
                 catch (Exception ex)
                 {
@@ -930,7 +930,7 @@ namespace EgyptOnline.Controllers
                 var adminUserId = User.FindFirst("uid")?.Value ?? string.Empty;
                 var contract = await _contractService.AdminAdjustAndResumeAsync(
                     id,
-                    dto.AdjustmentAmount,
+                    dto.DaysWorked,
                     dto.Direction,
                     adminUserId,
                     dto.Comment
@@ -1004,14 +1004,16 @@ namespace EgyptOnline.Controllers
                         await _notificationService.SendNotificationToUser(
                             providerUser.Id,
                             "تم إنهاء العقد",
-                            $"تم إنهاء العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}"
+                            $"تم إنهاء العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}",
+                            "contract"
                         );
                     }
 
                     await _notificationService.SendNotificationToUser(
                         contract.ClientUserId,
                         "تم إنهاء العقد",
-                        $"تم إنهاء العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}"
+                        $"تم إنهاء العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}",
+                        "contract"
                     );
 
                     return Ok(new { message = "تم إنهاء العقد بنجاح", data = contract });
@@ -1112,14 +1114,16 @@ namespace EgyptOnline.Controllers
                         await _notificationService.SendNotificationToUser(
                             providerUser.Id,
                             "تم استئناف العقد",
-                            $"تم استئناف العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}"
+                            $"تم استئناف العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}",
+                            "contract"
                         );
                     }
 
                     await _notificationService.SendNotificationToUser(
                         contract.ClientUserId,
                         "تم استئناف العقد",
-                        $"تم استئناف العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}"
+                        $"تم استئناف العقد #{contract.Id} من قبل الإدارة. السبب: {dto.Reason}",
+                        "contract"
                     );
 
                     return Ok(new { message = "تم استئناف العقد بنجاح", data = contract });
@@ -1249,8 +1253,8 @@ namespace EgyptOnline.Controllers
     public class AdminAdjustResumeDto
     {
         [Required]
-        [Range(0, double.MaxValue)]
-        public decimal AdjustmentAmount { get; set; }
+        [Range(0, int.MaxValue)]
+        public int DaysWorked { get; set; }
 
         [Required]
         [RegularExpression("^(client_to_free|client_to_worker)$", ErrorMessage = "Direction must be 'client_to_free' or 'client_to_worker'")]

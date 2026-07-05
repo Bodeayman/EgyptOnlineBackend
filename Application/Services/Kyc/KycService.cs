@@ -55,7 +55,8 @@ namespace EgyptOnline.Application.Services.Kyc
                 await _notificationService.SendNotificationToUser(
                     userId,
                     "تم استلام طلب التحقق الشخصي",
-                    "تم استلام صور التحقق الخاصة بك وسيتم مراجعتها قريبًا.");
+                    "تم استلام صور التحقق الخاصة بك وسيتم مراجعتها قريبًا.",
+                    "kyc");
             }
             catch (Exception ex)
             {
@@ -103,7 +104,7 @@ namespace EgyptOnline.Application.Services.Kyc
                     _ => "تم تحديث حالة التحقق الشخصي الخاصة بك"
                 };
 
-                await _notificationService.SendNotificationToUser(submission.UserId, title, body);
+                await _notificationService.SendNotificationToUser(submission.UserId, title, body, "kyc");
             }
             catch (Exception ex)
             {
