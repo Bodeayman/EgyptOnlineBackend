@@ -408,20 +408,22 @@ namespace EgyptOnline.Controllers
                 var formatted = new List<object>();
                 foreach (var s in submissions)
                 {
+                    dynamic submission = s;
                     formatted.Add(new
                     {
-                        s.Id,
-                        s.UserId,
-                        userName = s.User?.UserName,
-                        firstName = s.User?.FirstName,
-                        lastName = s.User?.LastName,
-                        s.Status,
-                        s.SubmittedAt,
-                        frontImageUrl = !string.IsNullOrEmpty(s.FrontImagePath) ? await _cdnService.GetPresignedUrlAsync(s.FrontImagePath) : null,
-                        backImageUrl = !string.IsNullOrEmpty(s.BackImagePath) ? await _cdnService.GetPresignedUrlAsync(s.BackImagePath) : null,
-                        selfieImageUrl = !string.IsNullOrEmpty(s.SelfieImagePath) ? await _cdnService.GetPresignedUrlAsync(s.SelfieImagePath) : null,
-                        s.RejectionReason,
-                        s.ReviewedAt
+                        submission.Id,
+                        submission.UserId,
+                        submission.userName,
+                        submission.firstName,
+                        submission.lastName,
+                        submission.phoneNumber,
+                        submission.Status,
+                        submission.SubmittedAt,
+                        frontImageUrl = !string.IsNullOrEmpty(submission.FrontImagePath) ? await _cdnService.GetPresignedUrlAsync(submission.FrontImagePath) : null,
+                        backImageUrl = !string.IsNullOrEmpty(submission.BackImagePath) ? await _cdnService.GetPresignedUrlAsync(submission.BackImagePath) : null,
+                        selfieImageUrl = !string.IsNullOrEmpty(submission.SelfieImagePath) ? await _cdnService.GetPresignedUrlAsync(submission.SelfieImagePath) : null,
+                        submission.RejectionReason,
+                        submission.ReviewedAt
                     });
                 }
                 return Ok(new { data = formatted, pageNumber, pageSize });
@@ -506,20 +508,22 @@ namespace EgyptOnline.Controllers
                 var formatted = new List<object>();
                 foreach (var d in deposits)
                 {
+                    dynamic deposit = d;
                     formatted.Add(new
                     {
-                        depositId = d.Id,
-                        userId = d.UserId,
-                        userName = d.User?.UserName,
-                        firstName = d.User?.FirstName,
-                        lastName = d.User?.LastName,
-                        amount = d.Amount,
-                        receiptImageUrl = !string.IsNullOrEmpty(d.ReceiptImagePath) ? await _cdnService.GetPresignedUrlAsync(d.ReceiptImagePath) : null,
-                        sourceWalletNumber = d.SourceWalletNumber,
-                        walletOwnerName = d.WalletOwnerName,
-                        recipientPhoneNumber = d.RecipientPhoneNumber,
-                        status = d.Status,
-                        createdAt = d.CreatedAt
+                        depositId = deposit.Id,
+                        userId = deposit.UserId,
+                        userName = deposit.userName,
+                        firstName = deposit.firstName,
+                        lastName = deposit.lastName,
+                        phoneNumber = deposit.phoneNumber,
+                        amount = deposit.Amount,
+                        receiptImageUrl = !string.IsNullOrEmpty(deposit.ReceiptImagePath) ? await _cdnService.GetPresignedUrlAsync(deposit.ReceiptImagePath) : null,
+                        sourceWalletNumber = deposit.SourceWalletNumber,
+                        walletOwnerName = deposit.WalletOwnerName,
+                        recipientPhoneNumber = deposit.RecipientPhoneNumber,
+                        status = deposit.Status,
+                        createdAt = deposit.CreatedAt
                     });
                 }
                 return Ok(new { data = formatted, pageNumber, pageSize });
@@ -572,19 +576,24 @@ namespace EgyptOnline.Controllers
             try
             {
                 var withdrawals = await _walletService.GetPendingWithdrawalsAsync(pageNumber, pageSize);
-                var formatted = withdrawals.Select(w => new
+                var formatted = withdrawals.Select(w =>
                 {
-                    withdrawId = w.Id,
-                    userId = w.UserId,
-                    userName = w.User?.UserName,
-                    firstName = w.User?.FirstName,
-                    lastName = w.User?.LastName,
-                    amount = w.Amount,
-                    destinationWalletNumber = w.DestinationWalletNumber,
-                    walletOwnerName = w.WalletOwnerName,
-                    sourceWalletNumber = w.SourceWalletNumber,
-                    status = w.Status,
-                    createdAt = w.CreatedAt
+                    dynamic withdraw = w;
+                    return new
+                    {
+                        withdrawId = withdraw.Id,
+                        userId = withdraw.UserId,
+                        userName = withdraw.userName,
+                        firstName = withdraw.firstName,
+                        lastName = withdraw.lastName,
+                        phoneNumber = withdraw.phoneNumber,
+                        amount = withdraw.Amount,
+                        destinationWalletNumber = withdraw.DestinationWalletNumber,
+                        walletOwnerName = withdraw.WalletOwnerName,
+                        sourceWalletNumber = withdraw.SourceWalletNumber,
+                        status = withdraw.Status,
+                        createdAt = withdraw.CreatedAt
+                    };
                 });
                 return Ok(new { data = formatted, pageNumber, pageSize });
             }
