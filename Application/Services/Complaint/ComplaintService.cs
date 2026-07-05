@@ -172,7 +172,6 @@ namespace EgyptOnline.Application.Services.Complaint
         {
             return await _context.Complaints
                 .Include(c => c.Contract)
-                .Include(c => c.Reporter)
                 .FirstOrDefaultAsync(c => c.Id == complaintId);
         }
 
@@ -186,64 +185,101 @@ namespace EgyptOnline.Application.Services.Complaint
             int pageNumber = 1,
             int pageSize = 20)
         {
-            var query = _context.Complaints
+            var baseQuery = _context.Complaints
                 .Include(c => c.Contract)
-                .ThenInclude(c => c.ClientUser)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(statusFilter))
-                query = query.Where(c => c.Status == statusFilter);
+                baseQuery = baseQuery.Where(c => c.Status == statusFilter);
 
-            var total = await query.CountAsync();
+            var total = await baseQuery.CountAsync();
 
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
 
-            var complaints = await Helper.PaginateUsers(
-                    query.OrderByDescending(c => c.CreatedAt),
-                    pageNumber,
-                    pageSize)
-                .ToListAsync();
+            var itemsQuery = baseQuery
+                .OrderByDescending(c => c.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.ContractId,
+                    c.Reason,
+                    c.Description,
+                    c.ReportType,
+                    c.Status,
+                    c.CreatedAt,
+                    c.ResolvedAt,
+                    c.AdminNote,
+                    c.ReporterUserId,
+                    c.Contract.Id,
+                    c.Contract.Status,
+                    c.Contract.TotalAmount,
+                    c.Contract.TotalDays,
+                    c.Contract.DailySalary,
+                    c.Contract.PenaltyAmount,
+                    c.Contract.StartDate,
+                    c.Contract.TerminationReason,
+                    c.Contract.ClientUserId,
+                    c.Contract.ServiceProviderPhoneNumber
+                });
 
-            var items = new List<object>();
-            foreach (var complaint in complaints)
+            var items = await itemsQuery.ToListAsync();
+
+            // Load all related users in single queries
+            var allUserIds = items.Select(i => i.ClientUserId).Concat(items.Select(i => i.ReporterUserId)).Distinct().ToList();
+            var allPhoneNumbers = items.Select(i => i.ServiceProviderPhoneNumber).Distinct().ToList();
+
+            var usersById = await _context.Users
+                .Where(u => allUserIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber })
+                .ToDictionaryAsync(u => u.Id);
+
+            var usersByPhone = await _context.Users
+                .Include(u => u.ServiceProvider)
+                .Where(u => allPhoneNumbers.Contains(u.PhoneNumber))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber, u.ServiceProvider })
+                .ToDictionaryAsync(u => u.PhoneNumber);
+
+            var result = new List<object>();
+            foreach (var item in items)
             {
-                var providerUser = await _context.Users
-                    .Include(u => u.ServiceProvider)
-                    .FirstOrDefaultAsync(u => u.PhoneNumber == complaint.Contract.ServiceProviderPhoneNumber);
+                var clientUser = usersById.GetValueOrDefault(item.ClientUserId);
+                var reporterUser = usersById.GetValueOrDefault(item.ReporterUserId);
+                var providerUser = usersByPhone.GetValueOrDefault(item.ServiceProviderPhoneNumber);
 
-                // Determine if reporter is client or provider
-                bool isClientReporter = complaint.ReporterUserId == complaint.Contract.ClientUserId;
+                bool isClientReporter = item.ReporterUserId == item.ClientUserId;
                 string reporterType = isClientReporter ? "client" : "provider";
 
-                items.Add(new
+                result.Add(new
                 {
-                    complaint.Id,
-                    complaint.ContractId,
-                    complaint.Reason,
-                    complaint.Description,
-                    complaint.ReportType,
-                    complaint.Status,
-                    complaint.CreatedAt,
-                    complaint.ResolvedAt,
-                    complaint.AdminNote,
+                    item.Id,
+                    item.ContractId,
+                    item.Reason,
+                    item.Description,
+                    item.ReportType,
+                    item.Status,
+                    item.CreatedAt,
+                    item.ResolvedAt,
+                    item.AdminNote,
                     reporterType,
                     contract = new
                     {
-                        complaint.Contract.Id,
-                        complaint.Contract.Status,
-                        complaint.Contract.TotalAmount,
-                        complaint.Contract.TotalDays,
-                        complaint.Contract.DailySalary,
-                        complaint.Contract.PenaltyAmount,
-                        complaint.Contract.StartDate,
-                        complaint.Contract.TerminationReason,
+                        item.Id,
+                        item.Status,
+                        item.TotalAmount,
+                        item.TotalDays,
+                        item.DailySalary,
+                        item.PenaltyAmount,
+                        item.StartDate,
+                        item.TerminationReason,
                         client = new
                         {
-                            id = complaint.Contract.ClientUser.Id,
-                            firstName = complaint.Contract.ClientUser.FirstName,
-                            lastName = complaint.Contract.ClientUser.LastName,
-                            phoneNumber = complaint.Contract.ClientUser.PhoneNumber
+                            id = clientUser?.Id,
+                            firstName = clientUser?.FirstName,
+                            lastName = clientUser?.LastName,
+                            phoneNumber = clientUser?.PhoneNumber
                         },
                         provider = new
                         {
@@ -256,15 +292,15 @@ namespace EgyptOnline.Application.Services.Complaint
                     },
                     reporter = new
                     {
-                        id = complaint.ReporterUserId,
-                        firstName = (await _context.Users.FindAsync(complaint.ReporterUserId))?.FirstName,
-                        lastName = (await _context.Users.FindAsync(complaint.ReporterUserId))?.LastName,
-                        phoneNumber = (await _context.Users.FindAsync(complaint.ReporterUserId))?.PhoneNumber
+                        id = reporterUser?.Id,
+                        firstName = reporterUser?.FirstName,
+                        lastName = reporterUser?.LastName,
+                        phoneNumber = reporterUser?.PhoneNumber
                     }
                 });
             }
 
-            return (items, total);
+            return (result, total);
         }
 
         /// <summary>

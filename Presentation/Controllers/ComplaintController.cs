@@ -27,6 +27,7 @@ namespace EgyptOnline.Presentation.Controllers
 
         // ── USER ENDPOINTS ────────────────────────────────────────────────────
 
+        /*
         /// <summary>
         /// File a new complaint on an active contract you are a party of.
         ///
@@ -74,7 +75,9 @@ namespace EgyptOnline.Presentation.Controllers
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
+        */
 
+        /*
         /// <summary>
         /// Get all complaints I have filed.
         /// GET /api/v1/Complaint/my?pageNumber=1&pageSize=20
@@ -118,6 +121,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
+        */
     }
 
     // ── DTOs ─────────────────────────────────────────────────────────────────
