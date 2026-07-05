@@ -48,13 +48,26 @@ namespace EgyptOnline.Controllers
                 var nowInEgypt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptTimeZone);
                 var tomorrowInEgypt = nowInEgypt.Date.AddDays(1);
 
+                // Use provided values or defaults
+                var startDate = dto.StartDate.HasValue && dto.StartDate.Value != default(DateTime)
+                    ? TimeZoneInfo.ConvertTimeToUtc(dto.StartDate.Value, egyptTimeZone)
+                    : TimeZoneInfo.ConvertTimeToUtc(tomorrowInEgypt, egyptTimeZone);
+
+                var shiftStartTime = dto.ShiftStartTime.HasValue && dto.ShiftStartTime.Value != TimeSpan.Zero
+                    ? dto.ShiftStartTime.Value
+                    : TimeSpan.FromHours(5); // 5 AM default
+
+                var shiftEndTime = dto.ShiftEndTime.HasValue && dto.ShiftEndTime.Value != TimeSpan.Zero
+                    ? dto.ShiftEndTime.Value
+                    : TimeSpan.FromHours(22); // 10 PM default
+
                 var contract = new Contract
                 {
                     ClientUserId = userId,
                     ServiceProviderPhoneNumber = dto.ServiceProviderPhoneNumber,
-                    StartDate = DateTime.SpecifyKind(tomorrowInEgypt, DateTimeKind.Utc),
-                    ShiftStartTime = TimeSpan.FromHours(5), // 5 AM
-                    ShiftEndTime = TimeSpan.FromHours(22), // 10 PM
+                    StartDate = startDate,
+                    ShiftStartTime = shiftStartTime,
+                    ShiftEndTime = shiftEndTime,
                     TotalDays = dto.TotalDays,
                     DailySalary = dto.DailySalary,
                     TotalAmount = dto.DailySalary * dto.TotalDays,
@@ -335,6 +348,10 @@ namespace EgyptOnline.Controllers
         public string? DetailedAddress { get; set; }
         public string? Notes { get; set; }
         public string? RestrictedTerms { get; set; }
+
+        public DateTime? StartDate { get; set; }
+        public TimeSpan? ShiftStartTime { get; set; }
+        public TimeSpan? ShiftEndTime { get; set; }
     }
 
     public class RegisterArrivalDto
