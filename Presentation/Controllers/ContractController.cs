@@ -49,9 +49,28 @@ namespace EgyptOnline.Controllers
                 var tomorrowInEgypt = nowInEgypt.Date.AddDays(1);
 
                 // Use provided values or defaults
-                var startDate = dto.StartDate.HasValue && dto.StartDate.Value != default(DateTime)
-                    ? TimeZoneInfo.ConvertTimeToUtc(dto.StartDate.Value, egyptTimeZone)
-                    : TimeZoneInfo.ConvertTimeToUtc(tomorrowInEgypt, egyptTimeZone);
+                DateTime startDate;
+                if (dto.StartDate.HasValue && dto.StartDate.Value != default(DateTime))
+                {
+                    // Handle the DateTime based on its Kind property
+                    if (dto.StartDate.Value.Kind == DateTimeKind.Utc)
+                    {
+                        startDate = dto.StartDate.Value;
+                    }
+                    else if (dto.StartDate.Value.Kind == DateTimeKind.Local)
+                    {
+                        startDate = TimeZoneInfo.ConvertTimeToUtc(dto.StartDate.Value);
+                    }
+                    else
+                    {
+                        // Unspecified - assume it's Egypt local time
+                        startDate = TimeZoneInfo.ConvertTimeToUtc(dto.StartDate.Value, egyptTimeZone);
+                    }
+                }
+                else
+                {
+                    startDate = TimeZoneInfo.ConvertTimeToUtc(tomorrowInEgypt, egyptTimeZone);
+                }
 
                 var shiftStartTime = dto.ShiftStartTime.HasValue && dto.ShiftStartTime.Value != TimeSpan.Zero
                     ? dto.ShiftStartTime.Value
