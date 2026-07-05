@@ -3,6 +3,7 @@ using EgyptOnline.Domain.Models;
 using EgyptOnline.Domain.Models.Enums;
 using EgyptOnline.Application.Services.Wallet;
 using EgyptOnline.Models;
+using EgyptOnline.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -46,6 +47,7 @@ public class AutoPayoutBackgroundService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var walletService = scope.ServiceProvider.GetRequiredService<WalletService>();
+        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
         // Current Egypt local time
         var currentEgyptTime = EgyptTimeHelper.NowInEgypt();
@@ -58,13 +60,14 @@ public class AutoPayoutBackgroundService : BackgroundService
         foreach (var contract in activeContracts)
         {
             if (stoppingToken.IsCancellationRequested) break;
-            await ProcessContractDaysAsync(context, walletService, contract, currentEgyptTime, stoppingToken);
+            await ProcessContractDaysAsync(context, walletService, notificationService, contract, currentEgyptTime, stoppingToken);
         }
     }
 
     private async Task ProcessContractDaysAsync(
         ApplicationDbContext context,
         WalletService walletService,
+        INotificationService notificationService,
         Contract contract,
         DateTime currentEgyptTime,
         CancellationToken stoppingToken)
@@ -96,13 +99,14 @@ public class AutoPayoutBackgroundService : BackgroundService
 
             if (!shouldPayout) continue;
 
-            await ProcessDayPayoutAsync(context, walletService, contract, contractDay, currentEgyptTime);
+            await ProcessDayPayoutAsync(context, walletService, notificationService, contract, contractDay, currentEgyptTime);
         }
     }
 
     private async Task ProcessDayPayoutAsync(
         ApplicationDbContext context,
         WalletService walletService,
+        INotificationService notificationService,
         Contract contract,
         ContractDay contractDay,
         DateTime currentEgyptTime)
@@ -120,6 +124,23 @@ public class AutoPayoutBackgroundService : BackgroundService
             var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
             if (providerUser != null)
                 await walletService.AddToFreeBalanceAsync(providerUser.Id, contract.DailySalary);
+
+            // Notify provider about the payout
+            try
+            {
+                var clientUser = await context.Users.FindAsync(contract.ClientUserId);
+                var clientName = clientUser != null ? $"{clientUser.FirstName} {clientUser.LastName}" : "العميل";
+
+                await notificationService.SendNotificationToUser(
+                    providerUser.Id,
+                    "دفع يومي مستلم",
+                    $"تم استلام {contract.DailySalary} جنيه من {clientName} عن يوم {contractDay.DayNumber} من العقد #{contract.Id}"
+                );
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to send payout notification to provider {ProviderId}", providerUser?.Id);
+            }
 
             // Check if all days are now processed → complete the contract
             var allDaysProcessed = contract.ContractDays.All(cd => cd.IsProcessed);

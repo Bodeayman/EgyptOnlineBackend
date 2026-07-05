@@ -243,6 +243,9 @@ namespace EgyptOnline.Application.Services.JobRequest
             if (request.Status != "Pending")
                 throw new InvalidOperationException("لا يمكن إبداء الاهتمام بطلب عمل غير معلق");
 
+            if (request.ClientUserId == serviceProviderUserId)
+                throw new UnauthorizedAccessException("لا يمكنك إبداء الاهتمام بطلبك الخاص");
+
             var interest = await _context.JobRequestInterests
                 .FirstOrDefaultAsync(i => i.JobRequestId == requestId && i.ServiceProviderUserId == serviceProviderUserId);
 
