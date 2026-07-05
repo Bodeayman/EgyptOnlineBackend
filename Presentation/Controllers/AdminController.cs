@@ -551,7 +551,18 @@ namespace EgyptOnline.Controllers
                 return Ok(new
                 {
                     message = dto.Status == "approved" ? "تم قبول طلب الإيداع" : "تم رفض طلب الإيداع",
-                    data = result
+                    data = new
+                    {
+                        result.Id,
+                        result.UserId,
+                        result.Amount,
+                        result.SourceWalletNumber,
+                        result.WalletOwnerName,
+                        result.Status,
+                        result.RejectionReason,
+                        result.CreatedAt,
+                        result.ReviewedAt
+                    }
                 });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
@@ -620,7 +631,18 @@ namespace EgyptOnline.Controllers
                 return Ok(new
                 {
                     message = dto.Status == "approved" ? "تم قبول طلب السحب" : "تم رفض طلب السحب",
-                    data = result
+                    data = new
+                    {
+                        result.Id,
+                        result.UserId,
+                        result.Amount,
+                        result.DestinationWalletNumber,
+                        result.WalletOwnerName,
+                        result.Status,
+                        result.RejectionReason,
+                        result.CreatedAt,
+                        result.ReviewedAt
+                    }
                 });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
@@ -900,6 +922,7 @@ namespace EgyptOnline.Controllers
                     id,
                     dto.DaysWorked,
                     dto.Direction,
+                    dto.NewStartDate,
                     adminUserId,
                     dto.Comment
                 );
@@ -1167,6 +1190,8 @@ namespace EgyptOnline.Controllers
         [Required]
         [RegularExpression("^(client_to_free|client_to_worker)$", ErrorMessage = "Direction must be 'client_to_free' or 'client_to_worker'")]
         public string Direction { get; set; } = string.Empty;
+
+        public DateTime? NewStartDate { get; set; }
 
         [Required]
         [MaxLength(1000)]

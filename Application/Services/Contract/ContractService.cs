@@ -682,6 +682,7 @@ namespace EgyptOnline.Application.Services.Contract
             int contractId,
             int daysWorked,
             string direction, // "client_to_free" or "client_to_worker"
+            DateTime? newStartDate,
             string adminUserId,
             string comment)
         {
@@ -709,6 +710,38 @@ namespace EgyptOnline.Application.Services.Contract
                     {
                         await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, adjustmentAmount);
                         await _walletService.AddToFreeBalanceAsync(providerUser.Id, adjustmentAmount);
+                    }
+                }
+
+                // Shift remaining days if newStartDate is provided
+                if (newStartDate.HasValue && newStartDate.Value != default(DateTime))
+                {
+                    var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+                    DateTime startDateUtc;
+                    
+                    if (newStartDate.Value.Kind == DateTimeKind.Utc)
+                    {
+                        startDateUtc = newStartDate.Value;
+                    }
+                    else if (newStartDate.Value.Kind == DateTimeKind.Local)
+                    {
+                        startDateUtc = TimeZoneInfo.ConvertTimeToUtc(newStartDate.Value);
+                    }
+                    else
+                    {
+                        startDateUtc = TimeZoneInfo.ConvertTimeToUtc(newStartDate.Value, egyptTimeZone);
+                    }
+
+                    // Update contract start date
+                    contract.StartDate = startDateUtc;
+
+                    // Shift remaining days (daysWorked + 1 to totalDays)
+                    var remainingDays = contract.ContractDays.Where(cd => cd.DayNumber > daysWorked).ToList();
+                    for (int i = 0; i < remainingDays.Count; i++)
+                    {
+                        var day = remainingDays[i];
+                        var newDayDate = startDateUtc.AddDays(i);
+                        day.Date = DateTime.SpecifyKind(newDayDate, DateTimeKind.Utc);
                     }
                 }
 
