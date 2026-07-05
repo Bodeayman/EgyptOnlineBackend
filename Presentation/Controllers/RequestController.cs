@@ -66,7 +66,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -89,7 +89,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -121,7 +121,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -146,7 +146,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -179,7 +179,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -204,7 +204,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -233,7 +233,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -262,7 +262,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
     }

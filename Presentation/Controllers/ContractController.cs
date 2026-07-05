@@ -41,7 +41,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
 
                 // Set default values for Egypt time (UTC+2)
                 var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
@@ -76,7 +76,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -109,7 +109,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -142,7 +142,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -159,7 +159,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
 
                 var contract = await _contractService.RegisterArrivalAsync(dto.ContractId, dto.DayNumber, userId);
                 return Ok(new { message = "تم تسجيل الوصول وإشعار العميل", data = contract });
@@ -178,7 +178,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -195,7 +195,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
 
                 var contractDay = await _contractService.ClientConfirmAttendanceAsync(dto.ContractId, dto.DayNumber, userId);
                 return Ok(new { message = "تم تأكيد الحضور لليوم بنجاح وسيتم الصرف عند نهاية الشيفت اليومي", data = contractDay });
@@ -214,7 +214,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -231,7 +231,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
 
                 var contract = await _contractService.ReportDisputeAsync(dto.ContractId, dto.DayNumber, dto.Reason, userId);
                 return Ok(new { message = "تم الإبلاغ عن المشكلة وتجميد العقد وإحالته للأدمن", data = contract });
@@ -250,7 +250,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -273,7 +273,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -300,7 +300,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
     }

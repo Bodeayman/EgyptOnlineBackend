@@ -46,7 +46,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -64,7 +64,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
 
                 // Validate and upload receipt image
                 var receiptPath = await ValidateAndUploadReceiptAsync(dto.ReceiptImage, $"receipt_{userId}");
@@ -98,7 +98,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -115,7 +115,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
 
                 var request = await _walletService.SubmitWithdrawRequestAsync(
                     userId,
@@ -143,7 +143,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -181,7 +181,7 @@ namespace EgyptOnline.Controllers
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
 
                 var (fromWallet, toWallet) = await _walletService.TransferAsync(userId, dto.ToUserId, dto.Amount);
                 return Ok(new
@@ -196,7 +196,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 
@@ -213,7 +213,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
             }
         }
 

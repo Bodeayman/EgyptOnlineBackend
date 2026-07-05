@@ -103,7 +103,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["contracts", "arrival"]
             },
-            "description": "Worker presses Arrive for the day.\n\nValidation: can only arrive within 30 min before shiftStart or before shiftEnd + 30 min.\n\nAfter this, the client can either:\n  ✅ Confirm attendance → wages released at shiftEnd\n  🚫 Report absence → contract suspended, complaint filed\n  ⏳ Do nothing → wages auto-released 3 hours after shiftEnd"
+            "description": "Worker presses Arrive for the day.\n\nAfter this, the client can either:\n  ✅ Confirm attendance → wages released at shiftEnd\n  🚫 Report absence → contract suspended, complaint filed\n  ⏳ Do nothing → wages auto-released 3 hours after shiftEnd"
           }
         },
         {
@@ -244,27 +244,6 @@
           }
         },
         {
-          "name": "Resolve — Cancel & Refund 💸",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"clientRefundWages\": 600,\n  \"clientRefundPenalty\": 300,\n  \"workerRefundPenalty\": 300,\n  \"clientPenaltyPayoutToWorker\": 0,\n  \"workerPenaltyPayoutToClient\": 0,\n  \"workerWagesPayout\": 400,\n  \"comment\": \"تم الفصل لصالح العامل جزئياً — 2 أيام عمل مؤكدة\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Admin/contracts/:id/resolve/cancel-refund",
-              "host": ["{{baseUrl}}"],
-              "path": ["Admin", "contracts", ":id", "resolve", "cancel-refund"],
-              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
-            },
-            "description": "Admin fully cancels the contract and manually specifies how frozen funds are distributed.\n\nFields (all decimal ≥ 0):\n- clientRefundWages: portion of wages returned to client FreeBalance\n- clientRefundPenalty: client's penalty deposit returned to client FreeBalance\n- workerRefundPenalty: worker's penalty deposit returned to worker FreeBalance\n- clientPenaltyPayoutToWorker: client's penalty paid OUT to worker FreeBalance\n- workerPenaltyPayoutToClient: worker's penalty paid OUT to client FreeBalance\n- workerWagesPayout: wages paid to worker from client's frozen balance\n\n⚡ Also resolves all open complaints on this contract."
-          }
-        },
-        {
           "name": "Resolve — Adjust & Resume ▶️",
           "request": {
             "method": "POST",
@@ -274,7 +253,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"adjustmentAmount\": 200,\n  \"direction\": \"client_to_worker\",\n  \"comment\": \"تعويض العامل عن اليوم المتنازع عليه واستئناف العقد\"\n}"
+              "raw": "{\n  \"daysWorked\": 2,\n  \"direction\": \"client_to_worker\",\n  \"comment\": \"تعويض العامل عن يومين عمل واستئناف العقد\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/Admin/contracts/:id/resolve/adjust-resume",
@@ -282,28 +261,7 @@
               "path": ["Admin", "contracts", ":id", "resolve", "adjust-resume"],
               "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
             },
-            "description": "Admin makes a partial balance adjustment then resumes the contract.\n\nFields:\n- adjustmentAmount: amount to move (decimal ≥ 0)\n- direction:\n    'client_to_free' → returns amount from client frozen → client free\n    'client_to_worker' → pays amount from client frozen → worker free\n\n⚡ Contract status → active. All open complaints resolved."
-          }
-        },
-        {
-          "name": "Resolve — Mark Incomplete 📊",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"daysWorked\": 3,\n  \"comment\": \"العامل أتم 3 أيام من أصل 5. تم الإغلاق باتفاق الأطراف.\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Admin/contracts/:id/resolve/mark-incomplete",
-              "host": ["{{baseUrl}}"],
-              "path": ["Admin", "contracts", ":id", "resolve", "mark-incomplete"],
-              "variable": [{ "key": "id", "value": "1", "description": "Contract ID" }]
-            },
-            "description": "Admin closes a mid-dispute contract as 'incomplete'. The contract is preserved in statistics/profiles.\n\nFields:\n- daysWorked: number of days the worker actually completed (0 to totalDays)\n\n💰 MONEY FLOW:\n1. Worker paid: dailySalary × daysWorked → worker FreeBalance\n2. Client refunded: TotalAmount − (dailySalary × daysWorked) → client FreeBalance\n3. Both penalty deposits released → each party's FreeBalance\n4. Contract status → 'incomplete' (stays in DB for statistics)\n5. All open complaints resolved"
+            "description": "Admin makes a partial balance adjustment based on days worked then resumes the contract.\n\nFields:\n- daysWorked: number of days worked (int ≥ 0)\n- direction:\n    'client_to_free' → returns (daysWorked × dailySalary) from client frozen → client free\n    'client_to_worker' → pays (daysWorked × dailySalary) from client frozen → worker free\n\n⚡ Contract status → active. All open complaints resolved."
           }
         },
         {
