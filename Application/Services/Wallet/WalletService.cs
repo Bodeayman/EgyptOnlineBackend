@@ -252,7 +252,7 @@ namespace EgyptOnline.Application.Services.Wallet
             var userIds = requests.Select(r => r.UserId).Distinct().ToList();
             var users = await _context.Users
                 .Where(u => userIds.Contains(u.Id))
-                .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber })
+                .Select(u => new { u.Id, u.UserName, u.FirstName, u.LastName, u.PhoneNumber })
                 .ToDictionaryAsync(u => u.Id);
 
             var result = new List<object>();
@@ -263,7 +263,7 @@ namespace EgyptOnline.Application.Services.Wallet
                 {
                     request.Id,
                     request.UserId,
-                    userName = user != null ? $"{user.FirstName} {user.LastName}" : null,
+                    userName = user?.UserName,
                     firstName = user?.FirstName,
                     lastName = user?.LastName,
                     phoneNumber = user?.PhoneNumber,
@@ -398,7 +398,7 @@ namespace EgyptOnline.Application.Services.Wallet
             var userIds = requests.Select(r => r.UserId).Distinct().ToList();
             var users = await _context.Users
                 .Where(u => userIds.Contains(u.Id))
-                .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber })
+                .Select(u => new { u.Id, u.UserName, u.FirstName, u.LastName, u.PhoneNumber })
                 .ToDictionaryAsync(u => u.Id);
 
             var result = new List<object>();
@@ -409,7 +409,7 @@ namespace EgyptOnline.Application.Services.Wallet
                 {
                     request.Id,
                     request.UserId,
-                    userName = user != null ? $"{user.FirstName} {user.LastName}" : null,
+                    userName = user?.UserName,
                     firstName = user?.FirstName,
                     lastName = user?.LastName,
                     phoneNumber = user?.PhoneNumber,
