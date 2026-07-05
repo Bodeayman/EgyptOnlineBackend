@@ -128,10 +128,11 @@ namespace EgyptOnline.Presentation.Controllers
         /// <summary>
         /// Get all job requests created by other users (Other Requests tab),
         /// showing whether the current user is interested.
-        /// GET /api/v1/Request/others?pageNumber=1&pageSize=20
+        /// GET /api/v1/Request/others?pageNumber=1&pageSize=20&governorate=...
         /// </summary>
         [HttpGet("others")]
         public async Task<IActionResult> GetOtherRequests(
+            [FromQuery] string? governorate = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = Constants.PAGE_SIZE)
         {
@@ -140,7 +141,7 @@ namespace EgyptOnline.Presentation.Controllers
 
             try
             {
-                var requests = await _service.GetOtherRequestsAsync(userId, pageNumber, pageSize);
+                var requests = await _service.GetOtherRequestsAsync(userId, governorate, pageNumber, pageSize);
                 return Ok(new { data = requests, pageNumber, pageSize, count = requests.Count });
             }
             catch (Exception ex)

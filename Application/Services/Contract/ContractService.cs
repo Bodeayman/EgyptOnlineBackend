@@ -381,6 +381,7 @@ namespace EgyptOnline.Application.Services.Contract
             }
         }
 
+        /*
         public async Task<ContractModel> MutualTerminationAsync(int contractId, string reason)
         {
             var contract = await _context.Contracts
@@ -421,7 +422,9 @@ namespace EgyptOnline.Application.Services.Contract
                 throw;
             }
         }
+        */
 
+        /*
         public async Task<ContractModel> ClientUnilateralTerminationAsync(int contractId, string reason)
         {
             var contract = await _context.Contracts
@@ -462,7 +465,9 @@ namespace EgyptOnline.Application.Services.Contract
                 throw;
             }
         }
+        */
 
+        /*
         public async Task<ContractModel> ProviderUnilateralTerminationAsync(int contractId, string providerUserId, string reason)
         {
             var contract = await _context.Contracts
@@ -508,16 +513,62 @@ namespace EgyptOnline.Application.Services.Contract
                 throw;
             }
         }
+        */
 
-        public async Task<ContractModel?> GetContractByIdAsync(int contractId)
+        public async Task<object?> GetContractByIdAsync(int contractId)
         {
-            return await _context.Contracts
+            var contract = await _context.Contracts
                 .Include(c => c.ClientUser)
                 .Include(c => c.ContractDays)
                 .FirstOrDefaultAsync(c => c.Id == contractId);
+
+            if (contract == null)
+                return null;
+
+            // Load provider user by phone number
+            var providerUser = await _context.Users
+                .Include(u => u.ServiceProvider)
+                .FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+
+            return new
+            {
+                contract.Id,
+                contract.ClientUserId,
+                contract.ServiceProviderPhoneNumber,
+                contract.StartDate,
+                contract.ShiftStartTime,
+                contract.ShiftEndTime,
+                contract.TotalDays,
+                contract.DailySalary,
+                contract.TotalAmount,
+                contract.PenaltyAmount,
+                contract.Status,
+                contract.Governorate,
+                contract.City,
+                contract.District,
+                contract.DetailedAddress,
+                contract.Notes,
+                contract.RestrictedTerms,
+                contract.ContractDays,
+                client = new
+                {
+                    id = contract.ClientUser.Id,
+                    firstName = contract.ClientUser.FirstName,
+                    lastName = contract.ClientUser.LastName,
+                    phoneNumber = contract.ClientUser.PhoneNumber
+                },
+                provider = new
+                {
+                    id = providerUser?.Id,
+                    firstName = providerUser?.FirstName,
+                    lastName = providerUser?.LastName,
+                    phoneNumber = providerUser?.PhoneNumber,
+                    specialization = providerUser?.ServiceProvider?.GetSpecialization()
+                }
+            };
         }
 
-        public async Task<List<ContractModel>> GetContractsByUserIdAsync(string userId, string? status = null, int pageNumber = 1, int pageSize = 20)
+        public async Task<List<object>> GetContractsByUserIdAsync(string userId, string? status = null, int pageNumber = 1, int pageSize = 20)
         {
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
@@ -525,10 +576,11 @@ namespace EgyptOnline.Application.Services.Contract
             // Get the user's phone number to match against ServiceProviderPhoneNumber
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
-                return new List<ContractModel>();
+                return new List<object>();
 
             var query = _context.Contracts
                 .Include(c => c.ContractDays)
+                .Include(c => c.ClientUser)
                 .Where(c => c.ServiceProviderPhoneNumber == user.PhoneNumber || c.ClientUserId == userId);
 
             if (!string.IsNullOrEmpty(status))
@@ -536,11 +588,58 @@ namespace EgyptOnline.Application.Services.Contract
                 query = query.Where(c => c.Status == status);
             }
 
-            return await query
+            var contracts = await query
                 .OrderByDescending(c => c.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            var result = new List<object>();
+            foreach (var contract in contracts)
+            {
+                var providerUser = await _context.Users
+                    .Include(u => u.ServiceProvider)
+                    .FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+
+                result.Add(new
+                {
+                    contract.Id,
+                    contract.ClientUserId,
+                    contract.ServiceProviderPhoneNumber,
+                    contract.StartDate,
+                    contract.ShiftStartTime,
+                    contract.ShiftEndTime,
+                    contract.TotalDays,
+                    contract.DailySalary,
+                    contract.TotalAmount,
+                    contract.PenaltyAmount,
+                    contract.Status,
+                    contract.Governorate,
+                    contract.City,
+                    contract.District,
+                    contract.DetailedAddress,
+                    contract.Notes,
+                    contract.RestrictedTerms,
+                    contract.ContractDays,
+                    client = new
+                    {
+                        id = contract.ClientUser.Id,
+                        firstName = contract.ClientUser.FirstName,
+                        lastName = contract.ClientUser.LastName,
+                        phoneNumber = contract.ClientUser.PhoneNumber
+                    },
+                    provider = new
+                    {
+                        id = providerUser?.Id,
+                        firstName = providerUser?.FirstName,
+                        lastName = providerUser?.LastName,
+                        phoneNumber = providerUser?.PhoneNumber,
+                        specialization = providerUser?.ServiceProvider?.GetSpecialization()
+                    }
+                });
+            }
+
+            return result;
         }
 
         public async Task<List<ContractModel>> GetActiveContractsForAutoPayoutAsync(DateTime currentTime)

@@ -88,7 +88,9 @@ namespace EgyptOnline.Application.Services.JobRequest
         }
 
         /// <summary>
-        /// Retrieve requests created by the current user along with details of interested service providers.
+        /// Retrieve requests created by the current user with count of interested providers.
+        /// Full provider details available via separate endpoint.
+        /// Ordered by pending first, then completed.
         /// </summary>
         public async Task<List<object>> GetMyRequestsAsync(string clientUserId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
         {
@@ -98,29 +100,17 @@ namespace EgyptOnline.Application.Services.JobRequest
             var requests = await Helper.PaginateUsers(
                     _context.JobRequests
                         .Include(r => r.Interests)
-                            .ThenInclude(i => i.ServiceProviderUser!)
-                                .ThenInclude(u => u.ServiceProvider)
                         .Where(r => r.ClientUserId == clientUserId)
-                        .OrderByDescending(r => r.CreatedAt),
+                        .OrderBy(r => r.Status == "Pending" ? 0 : 1)
+                        .ThenByDescending(r => r.CreatedAt),
                     pageNumber,
                     pageSize)
                 .ToListAsync();
 
-            var providerIds = requests
-                .SelectMany(r => r.Interests)
-                .Select(i => i.ServiceProviderUserId)
-                .Distinct()
-                .ToList();
-
-            var occupiedProviders = await _occupationService.GetOccupiedUsersBatchAsync(providerIds);
-
             var result = new List<object>();
             foreach (var r in requests)
             {
-                var interestedProviders = r.Interests
-                    .Where(i => i.IsInterested && i.ServiceProviderUser != null)
-                    .Select(i => MapServiceProvider(i.ServiceProviderUser!, occupiedProviders.Contains(i.ServiceProviderUserId)))
-                    .ToList();
+                var interestedCount = r.Interests.Count(i => i.IsInterested);
 
                 result.Add(new
                 {
@@ -134,7 +124,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                     r.CreatedAt,
                     r.Status,
                     r.AcceptedProviderUserId,
-                    interestedProviders
+                    interestedCount
                 });
             }
 
@@ -188,36 +178,36 @@ namespace EgyptOnline.Application.Services.JobRequest
 
         /// <summary>
         /// Retrieve other people's requests (Pending only) with 'isInterested' status for the current user.
+        /// Shows count of interested providers, not the full list.
+        /// Filtered by governorate (case-insensitive).
         /// </summary>
-        public async Task<List<object>> GetOtherRequestsAsync(string currentUserId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
+        public async Task<List<object>> GetOtherRequestsAsync(string currentUserId, string? governorate = null, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
         {
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
 
+            var query = _context.JobRequests
+                .Include(r => r.ClientUser)
+                .Include(r => r.Interests)
+                .Where(r => r.ClientUserId != currentUserId && r.Status == "Pending");
+
+            if (!string.IsNullOrEmpty(governorate))
+            {
+                query = query.Where(r => r.Governorate != null && r.Governorate.ToLower() == governorate.ToLower());
+            }
+
             var requests = await Helper.PaginateUsers(
-                    _context.JobRequests
-                        .Include(r => r.ClientUser)
-                        .Include(r => r.Interests)
-                            .ThenInclude(i => i.ServiceProviderUser!)
-                                .ThenInclude(u => u.ServiceProvider)
-                        .Where(r => r.ClientUserId != currentUserId && r.Status == "Pending")
-                        .OrderByDescending(r => r.CreatedAt),
+                    query.OrderByDescending(r => r.CreatedAt),
                     pageNumber,
                     pageSize)
                 .ToListAsync();
-
-            var providerIds = requests
-                .SelectMany(r => r.Interests)
-                .Select(i => i.ServiceProviderUserId)
-                .Distinct()
-                .ToList();
-
-            var occupiedProviders = await _occupationService.GetOccupiedUsersBatchAsync(providerIds);
 
             var result = new List<object>();
             foreach (var r in requests)
             {
                 var interest = r.Interests.FirstOrDefault(i => i.ServiceProviderUserId == currentUserId);
+                var interestedCount = r.Interests.Count(i => i.IsInterested);
+
                 result.Add(new
                 {
                     r.Id,
@@ -232,10 +222,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                     r.CreatedAt,
                     isInterested = interest?.IsInterested ?? false,
                     canInterest = r.Status == "Pending",
-                    interestedProviders = r.Interests
-                        .Where(i => i.IsInterested && i.ServiceProviderUser != null)
-                        .Select(i => MapServiceProvider(i.ServiceProviderUser!, occupiedProviders.Contains(i.ServiceProviderUserId)))
-                        .ToList()
+                    interestedCount
                 });
             }
 
