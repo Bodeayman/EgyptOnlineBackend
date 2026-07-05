@@ -884,38 +884,6 @@ namespace EgyptOnline.Controllers
         }
 
         /// <summary>
-        /// Resolve contract dispute via Cancel & Refund.
-        /// POST /api/v1/Admin/contracts/{id}/resolve/cancel-refund
-        /// </summary>
-        [HttpPost("contracts/{id}/resolve/cancel-refund")]
-        [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> ResolveCancelRefund(int id, [FromBody] AdminCancelRefundDto dto)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            try
-            {
-                var adminUserId = User.FindFirst("uid")?.Value ?? string.Empty;
-                var contract = await _contractService.AdminCancelAndRefundAsync(
-                    id,
-                    dto.ClientRefundWages,
-                    dto.ClientRefundPenalty,
-                    dto.WorkerRefundPenalty,
-                    dto.ClientPenaltyPayoutToWorker,
-                    dto.WorkerPenaltyPayoutToClient,
-                    dto.WorkerWagesPayout,
-                    adminUserId,
-                    dto.Comment
-                );
-
-                return Ok(new { message = "تم إلغاء وتسوية العقد بنجاح", data = contract });
-            }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
-        }
-
-        /// <summary>
         /// Resolve contract dispute via Adjust & Resume.
         /// POST /api/v1/Admin/contracts/{id}/resolve/adjust-resume
         /// </summary>
@@ -1138,35 +1106,6 @@ namespace EgyptOnline.Controllers
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
         }
-
-        /// <summary>
-        /// Mark a disputed contract as Incomplete (preserves it in statistics).
-        /// Settles wages for days worked, refunds remainder to client, releases both penalties.
-        /// POST /api/v1/Admin/contracts/{id}/resolve/mark-incomplete
-        /// </summary>
-        [HttpPost("contracts/{id}/resolve/mark-incomplete")]
-        [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> ResolveMarkIncomplete(int id, [FromBody] AdminMarkIncompleteDto dto)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            try
-            {
-                var adminUserId = User.FindFirst("uid")?.Value ?? string.Empty;
-                var contract = await _contractService.AdminMarkIncompleteAsync(
-                    id,
-                    dto.DaysWorked,
-                    adminUserId,
-                    dto.Comment
-                );
-
-                return Ok(new { message = "تم إغلاق العقد كعقد غير مكتمل بنجاح وتمت تسوية المستحقات", data = contract });
-            }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
-        }
     }
 
     public class SearchAdminDto
@@ -1219,37 +1158,6 @@ namespace EgyptOnline.Controllers
         public string Reason { get; set; } = string.Empty;
     }
 
-    public class AdminCancelRefundDto
-    {
-        [Required]
-        [Range(0, double.MaxValue)]
-        public decimal ClientRefundWages { get; set; }
-
-        [Required]
-        [Range(0, double.MaxValue)]
-        public decimal ClientRefundPenalty { get; set; }
-
-        [Required]
-        [Range(0, double.MaxValue)]
-        public decimal WorkerRefundPenalty { get; set; }
-
-        [Required]
-        [Range(0, double.MaxValue)]
-        public decimal ClientPenaltyPayoutToWorker { get; set; }
-
-        [Required]
-        [Range(0, double.MaxValue)]
-        public decimal WorkerPenaltyPayoutToClient { get; set; }
-
-        [Required]
-        [Range(0, double.MaxValue)]
-        public decimal WorkerWagesPayout { get; set; }
-
-        [Required]
-        [MaxLength(1000)]
-        public string Comment { get; set; } = string.Empty;
-    }
-
     public class AdminAdjustResumeDto
     {
         [Required]
@@ -1259,18 +1167,6 @@ namespace EgyptOnline.Controllers
         [Required]
         [RegularExpression("^(client_to_free|client_to_worker)$", ErrorMessage = "Direction must be 'client_to_free' or 'client_to_worker'")]
         public string Direction { get; set; } = string.Empty;
-
-        [Required]
-        [MaxLength(1000)]
-        public string Comment { get; set; } = string.Empty;
-    }
-
-    public class AdminMarkIncompleteDto
-    {
-        /// <summary>Number of days the worker actually completed before the dispute.</summary>
-        [Required]
-        [Range(0, int.MaxValue)]
-        public int DaysWorked { get; set; }
 
         [Required]
         [MaxLength(1000)]
