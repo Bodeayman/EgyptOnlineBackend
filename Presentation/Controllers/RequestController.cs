@@ -60,7 +60,8 @@ namespace EgyptOnline.Presentation.Controllers
                     dto.Governorate,
                     dto.City,
                     dto.WorkerType,
-                    dto.PayRate);
+                    dto.PayRate,
+                    dto.Days);
 
                 return Ok(new { message = "تم إنشاء طلب العمل بنجاح ونشره في محافظتك", data = request });
             }
@@ -291,6 +292,9 @@ namespace EgyptOnline.Dtos.JobRequest
 
         [Range(0.01, double.MaxValue, ErrorMessage = "الأجر اليومي أو أجر المشروع يجب أن يكون أكبر من صفر")]
         public decimal PayRate { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "عدد الأيام يجب أن يكون أكبر من صفر")]
+        public int? Days { get; set; }
     }
 
     public class SetInterestDto

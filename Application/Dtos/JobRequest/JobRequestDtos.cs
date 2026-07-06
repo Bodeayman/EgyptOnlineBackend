@@ -10,6 +10,7 @@ namespace EgyptOnline.Dtos.JobRequest
         public string City { get; set; } = string.Empty;
         public int? WorkerType { get; set; }
         public decimal PayRate { get; set; }
+        public int? Days { get; set; }
         public DateTime CreatedAt { get; set; }
         public string Status { get; set; } = string.Empty;
         public string? AcceptedProviderUserId { get; set; }

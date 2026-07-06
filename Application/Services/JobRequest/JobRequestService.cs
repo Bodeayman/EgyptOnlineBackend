@@ -31,7 +31,8 @@ namespace EgyptOnline.Application.Services.JobRequest
             string governorate,
             string city,
             WorkerTypes? workerType,
-            decimal payRate)
+            decimal payRate,
+            int? days = null)
         {
             var request = new Models.JobRequest
             {
@@ -42,6 +43,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                 City = city,
                 WorkerType = workerType,
                 PayRate = payRate,
+                Days = days,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -81,6 +83,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                 City = request.City,
                 WorkerType = request.WorkerType.HasValue ? (int?)request.WorkerType.Value : null,
                 PayRate = request.PayRate,
+                Days = request.Days,
                 CreatedAt = request.CreatedAt,
                 Status = request.Status,
                 AcceptedProviderUserId = request.AcceptedProviderUserId
@@ -121,6 +124,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                     r.City,
                     WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                     r.PayRate,
+                    r.Days,
                     r.CreatedAt,
                     r.Status,
                     r.AcceptedProviderUserId,
@@ -219,6 +223,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                     r.City,
                     WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                     r.PayRate,
+                    r.Days,
                     r.CreatedAt,
                     isInterested = interest?.IsInterested ?? false,
                     canInterest = r.Status == "Pending",
@@ -398,6 +403,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                 City = request.City,
                 WorkerType = request.WorkerType.HasValue ? (int?)request.WorkerType.Value : null,
                 PayRate = request.PayRate,
+                Days = request.Days,
                 CreatedAt = request.CreatedAt,
                 Status = request.Status,
                 AcceptedProviderUserId = request.AcceptedProviderUserId
@@ -430,6 +436,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                 City = request.City,
                 WorkerType = request.WorkerType.HasValue ? (int?)request.WorkerType.Value : null,
                 PayRate = request.PayRate,
+                Days = request.Days,
                 CreatedAt = request.CreatedAt,
                 Status = request.Status,
                 AcceptedProviderUserId = request.AcceptedProviderUserId

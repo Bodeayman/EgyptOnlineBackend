@@ -250,6 +250,7 @@ namespace EgyptOnline.Application.Services.Complaint
                 var contractIds = items.Select(i => i.ContractId).Distinct().ToList();
                 var contractDays = await _context.ContractDays
                     .Where(cd => contractIds.Contains(cd.ContractId))
+                    .OrderBy(cd => cd.DayNumber)
                     .ToListAsync();
 
                 var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");

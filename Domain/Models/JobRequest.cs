@@ -45,6 +45,11 @@ namespace EgyptOnline.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal PayRate { get; set; }
 
+        /// <summary>
+        /// Number of days for the job (for daily workers). Null for project-based or other types.
+        /// </summary>
+        public int? Days { get; set; }
+
         [Column(TypeName = "timestamptz")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
