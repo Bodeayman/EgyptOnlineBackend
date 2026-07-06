@@ -183,7 +183,8 @@ namespace EgyptOnline.Application.Services.Complaint
         public async Task<(List<object> Items, int TotalCount)> GetAllComplaintsAsync(
             string? statusFilter = null,
             int pageNumber = 1,
-            int pageSize = 20)
+            int pageSize = 20,
+            bool includeDays = false)
         {
             var baseQuery = _context.Complaints
                 .Include(c => c.Contract)
@@ -242,6 +243,39 @@ namespace EgyptOnline.Application.Services.Complaint
                 .Select(u => new { u.Id, u.FirstName, u.LastName, u.PhoneNumber, u.ServiceProvider })
                 .ToDictionaryAsync(u => u.PhoneNumber);
 
+            // Load contract days if includeDays is true
+            Dictionary<int, List<object>> contractDaysDict = new Dictionary<int, List<object>>();
+            if (includeDays)
+            {
+                var contractIds = items.Select(i => i.ContractId).Distinct().ToList();
+                var contractDays = await _context.ContractDays
+                    .Where(cd => contractIds.Contains(cd.ContractId))
+                    .ToListAsync();
+
+                foreach (var cd in contractDays)
+                {
+                    if (!contractDaysDict.ContainsKey(cd.ContractId))
+                        contractDaysDict[cd.ContractId] = new List<object>();
+                    
+                    contractDaysDict[cd.ContractId].Add(new
+                    {
+                        cd.Id,
+                        cd.ContractId,
+                        cd.DayNumber,
+                        cd.Date,
+                        cd.ProviderArrived,
+                        cd.ClientConfirmed,
+                        cd.ClientConfirmedAt,
+                        cd.Status,
+                        cd.IsProcessed,
+                        cd.ProcessedAt,
+                        cd.ArrivalTime,
+                        cd.DisputeReportedAt,
+                        cd.DisputeReason
+                    });
+                }
+            }
+
             var result = new List<object>();
             foreach (var item in items)
             {
@@ -252,19 +286,36 @@ namespace EgyptOnline.Application.Services.Complaint
                 bool isClientReporter = item.ReporterUserId == item.ClientUserId;
                 string reporterType = isClientReporter ? "client" : "provider";
 
-                result.Add(new
+                var contractData = new
                 {
-                    item.Id,
-                    item.ComplaintContractId,
-                    item.Reason,
-                    item.Description,
-                    item.ReportType,
-                    item.Status,
-                    item.CreatedAt,
-                    item.ResolvedAt,
-                    item.AdminNote,
-                    reporterType,
-                    contract = new
+                    id = item.ContractId,
+                    status = item.ContractStatus,
+                    totalAmount = item.ContractTotalAmount,
+                    totalDays = item.ContractTotalDays,
+                    dailySalary = item.ContractDailySalary,
+                    penaltyAmount = item.ContractPenaltyAmount,
+                    startDate = item.ContractStartDate,
+                    terminationReason = item.ContractTerminationReason,
+                    client = new
+                    {
+                        id = clientUser?.Id,
+                        firstName = clientUser?.FirstName,
+                        lastName = clientUser?.LastName,
+                        phoneNumber = clientUser?.PhoneNumber
+                    },
+                    provider = new
+                    {
+                        id = providerUser?.Id,
+                        firstName = providerUser?.FirstName,
+                        lastName = providerUser?.LastName,
+                        phoneNumber = providerUser?.PhoneNumber,
+                        specialization = providerUser?.ServiceProvider?.GetSpecialization()
+                    }
+                };
+
+                if (includeDays && contractDaysDict.ContainsKey(item.ContractId))
+                {
+                    contractData = new
                     {
                         id = item.ContractId,
                         status = item.ContractStatus,
@@ -274,6 +325,7 @@ namespace EgyptOnline.Application.Services.Complaint
                         penaltyAmount = item.ContractPenaltyAmount,
                         startDate = item.ContractStartDate,
                         terminationReason = item.ContractTerminationReason,
+                        contractDays = contractDaysDict[item.ContractId],
                         client = new
                         {
                             id = clientUser?.Id,
@@ -289,7 +341,22 @@ namespace EgyptOnline.Application.Services.Complaint
                             phoneNumber = providerUser?.PhoneNumber,
                             specialization = providerUser?.ServiceProvider?.GetSpecialization()
                         }
-                    },
+                    };
+                }
+
+                result.Add(new
+                {
+                    item.Id,
+                    item.ComplaintContractId,
+                    item.Reason,
+                    item.Description,
+                    item.ReportType,
+                    item.Status,
+                    item.CreatedAt,
+                    item.ResolvedAt,
+                    item.AdminNote,
+                    reporterType,
+                    contract = contractData,
                     reporter = new
                     {
                         id = reporterUser?.Id,

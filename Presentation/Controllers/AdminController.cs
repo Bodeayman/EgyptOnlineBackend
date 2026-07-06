@@ -656,7 +656,7 @@ namespace EgyptOnline.Controllers
 
         /// <summary>
         /// List all complaints — optionally filter by status.
-        /// GET /api/v1/Admin/complaints?status=open&pageNumber=1&pageSize=20
+        /// GET /api/v1/Admin/complaints?status=open&pageNumber=1&pageSize=20&include=Days
         /// status options: open | under_review | resolved | rejected
         /// </summary>
         [HttpGet("complaints")]
@@ -664,11 +664,13 @@ namespace EgyptOnline.Controllers
         public async Task<IActionResult> GetComplaints(
             [FromQuery] string? status = null,
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20)
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? include = null)
         {
             try
             {
-                var (items, total) = await _complaintService.GetAllComplaintsAsync(status, pageNumber, pageSize);
+                var includeDays = include?.Contains("Days", StringComparison.OrdinalIgnoreCase) == true;
+                var (items, total) = await _complaintService.GetAllComplaintsAsync(status, pageNumber, pageSize, includeDays);
                 return Ok(new
                 {
                     data = items,

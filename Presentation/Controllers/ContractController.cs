@@ -288,19 +288,21 @@ namespace EgyptOnline.Controllers
 
         /// <summary>
         /// Get contracts for the logged-in user (as client or provider).
-        /// GET /api/v1/contracts/my
+        /// GET /api/v1/contracts/my?include=Days
         /// </summary>
         [HttpGet("my")]
         public async Task<IActionResult> GetMyContracts(
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20)
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? include = null)
         {
             try
             {
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-                var contracts = await _contractService.GetContractsByUserIdAsync(userId, null, pageNumber, pageSize);
+                var includeDays = include?.Contains("Days", StringComparison.OrdinalIgnoreCase) == true;
+                var contracts = await _contractService.GetContractsByUserIdAsync(userId, null, pageNumber, pageSize, includeDays);
                 return Ok(new { data = contracts, pageNumber, pageSize });
             }
             catch (Exception ex)
@@ -311,17 +313,18 @@ namespace EgyptOnline.Controllers
 
         /// <summary>
         /// Get contract details by ID.
-        /// GET /api/v1/contracts/{id}
+        /// GET /api/v1/contracts/{id}?include=Days
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(int id, [FromQuery] string? include = null)
         {
             try
             {
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-                var contract = await _contractService.GetContractByIdAsync(id, userId);
+                var includeDays = include?.Contains("Days", StringComparison.OrdinalIgnoreCase) == true;
+                var contract = await _contractService.GetContractByIdAsync(id, userId, includeDays);
                 if (contract == null) return NotFound(new { message = "العقد غير موجود" });
 
                 return Ok(new { data = contract });

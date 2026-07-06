@@ -26,7 +26,8 @@ public static class EgyptTimeHelper
     /// </remarks>
     public static DateTime NowInEgypt()
     {
-        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, EgyptZone);
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, EgyptZone);
+        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc);
     }
 
     /// <summary>
@@ -60,7 +61,8 @@ public static class EgyptTimeHelper
         {
             throw new ArgumentException("DateTime must be in UTC", nameof(utcDateTime));
         }
-        return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, EgyptZone);
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, EgyptZone);
+        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc);
     }
 
     /// <summary>

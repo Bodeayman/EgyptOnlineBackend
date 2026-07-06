@@ -541,12 +541,17 @@ namespace EgyptOnline.Application.Services.Contract
         }
         */
 
-        public async Task<object?> GetContractByIdAsync(int contractId, string userId)
+        public async Task<object?> GetContractByIdAsync(int contractId, string userId, bool includeDays = false)
         {
-            var contract = await _context.Contracts
-                .Include(c => c.ClientUser)
-                .Include(c => c.ContractDays)
-                .FirstOrDefaultAsync(c => c.Id == contractId);
+            var query = _context.Contracts
+                .Include(c => c.ClientUser);
+
+            if (includeDays)
+            {
+                query = query.Include(c => c.ContractDays);
+            }
+
+            var contract = await query.FirstOrDefaultAsync(c => c.Id == contractId);
 
             if (contract == null)
                 return null;
@@ -562,7 +567,7 @@ namespace EgyptOnline.Application.Services.Contract
                 .Include(u => u.ServiceProvider)
                 .FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
 
-            return new
+            var result = new
             {
                 contract.Id,
                 contract.ClientUserId,
@@ -581,7 +586,6 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.DetailedAddress,
                 contract.Notes,
                 contract.RestrictedTerms,
-                contract.ContractDays,
                 client = new
                 {
                     id = contract.ClientUser.Id,
@@ -598,9 +602,38 @@ namespace EgyptOnline.Application.Services.Contract
                     specialization = providerUser?.ServiceProvider?.GetSpecialization()
                 }
             };
+
+            if (includeDays)
+            {
+                return new
+                {
+                    result.Id,
+                    result.ClientUserId,
+                    result.ServiceProviderPhoneNumber,
+                    result.StartDate,
+                    result.ShiftStartTime,
+                    result.ShiftEndTime,
+                    result.TotalDays,
+                    result.DailySalary,
+                    result.TotalAmount,
+                    result.PenaltyAmount,
+                    result.Status,
+                    result.Governorate,
+                    result.City,
+                    result.District,
+                    result.DetailedAddress,
+                    result.Notes,
+                    result.RestrictedTerms,
+                    contract.ContractDays,
+                    result.client,
+                    result.provider
+                };
+            }
+
+            return result;
         }
 
-        public async Task<List<object>> GetContractsByUserIdAsync(string userId, string? status = null, int pageNumber = 1, int pageSize = 20)
+        public async Task<List<object>> GetContractsByUserIdAsync(string userId, string? status = null, int pageNumber = 1, int pageSize = 20, bool includeDays = false)
         {
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
@@ -611,9 +644,13 @@ namespace EgyptOnline.Application.Services.Contract
                 return new List<object>();
 
             var query = _context.Contracts
-                .Include(c => c.ContractDays)
                 .Include(c => c.ClientUser)
                 .Where(c => c.ServiceProviderPhoneNumber == user.PhoneNumber || c.ClientUserId == userId);
+
+            if (includeDays)
+            {
+                query = query.Include(c => c.ContractDays);
+            }
 
             if (!string.IsNullOrEmpty(status))
             {
@@ -633,7 +670,7 @@ namespace EgyptOnline.Application.Services.Contract
                     .Include(u => u.ServiceProvider)
                     .FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
 
-                result.Add(new
+                var contractResult = new
                 {
                     contract.Id,
                     contract.ClientUserId,
@@ -652,7 +689,6 @@ namespace EgyptOnline.Application.Services.Contract
                     contract.DetailedAddress,
                     contract.Notes,
                     contract.RestrictedTerms,
-                    contract.ContractDays,
                     client = new
                     {
                         id = contract.ClientUser.Id,
@@ -668,7 +704,38 @@ namespace EgyptOnline.Application.Services.Contract
                         phoneNumber = providerUser?.PhoneNumber,
                         specialization = providerUser?.ServiceProvider?.GetSpecialization()
                     }
-                });
+                };
+
+                if (includeDays)
+                {
+                    result.Add(new
+                    {
+                        contractResult.Id,
+                        contractResult.ClientUserId,
+                        contractResult.ServiceProviderPhoneNumber,
+                        contractResult.StartDate,
+                        contractResult.ShiftStartTime,
+                        contractResult.ShiftEndTime,
+                        contractResult.TotalDays,
+                        contractResult.DailySalary,
+                        contractResult.TotalAmount,
+                        contractResult.PenaltyAmount,
+                        contractResult.Status,
+                        contractResult.Governorate,
+                        contractResult.City,
+                        contractResult.District,
+                        contractResult.DetailedAddress,
+                        contractResult.Notes,
+                        contractResult.RestrictedTerms,
+                        contract.ContractDays,
+                        contractResult.client,
+                        contractResult.provider
+                    });
+                }
+                else
+                {
+                    result.Add(contractResult);
+                }
             }
 
             return result;
@@ -698,8 +765,12 @@ namespace EgyptOnline.Application.Services.Contract
             var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber)
                 ?? throw new InvalidOperationException("مقدم الخدمة غير موجود");
 
-            // Calculate adjustment amount based on days worked
-            var adjustmentAmount = daysWorked * contract.DailySalary;
+            // Count only the days within the completed range that have not been paid yet
+            var unpaidDaysCount = contract.ContractDays
+                .Count(cd => cd.DayNumber <= daysWorked && !cd.IsProcessed);
+            
+            var adjustmentAmount = unpaidDaysCount * contract.DailySalary;
+
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -708,14 +779,30 @@ namespace EgyptOnline.Application.Services.Contract
                 {
                     if (direction == "client_to_free")
                     {
+                        // Disputed days ruled against provider → refund client, days are closed
                         await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, adjustmentAmount);
                     }
                     else if (direction == "client_to_worker")
                     {
+                        // Days confirmed as worked → transfer to provider
                         await _walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, adjustmentAmount);
                         await _walletService.AddToFreeBalanceAsync(providerUser.Id, adjustmentAmount);
                     }
+
+                    // ── CRITICAL: stamp every settled day as processed so the
+                    // AutoPayoutBackgroundService never pays them a second time. ──
+                    var settledDays = contract.ContractDays
+                        .Where(cd => cd.DayNumber <= daysWorked && !cd.IsProcessed)
+                        .ToList();
+
+                    foreach (var day in settledDays)
+                    {
+                        day.IsProcessed   = true;
+                        day.ProcessedAt   = DateTime.UtcNow;
+                        day.Status        = ContractDayStatus.Completed;
+                    }
                 }
+
 
                 // Shift remaining days if newStartDate is provided
                 if (newStartDate.HasValue && newStartDate.Value != default(DateTime))
