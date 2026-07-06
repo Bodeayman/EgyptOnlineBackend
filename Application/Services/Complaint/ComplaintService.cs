@@ -252,6 +252,8 @@ namespace EgyptOnline.Application.Services.Complaint
                     .Where(cd => contractIds.Contains(cd.ContractId))
                     .ToListAsync();
 
+                var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+
                 foreach (var cd in contractDays)
                 {
                     if (!contractDaysDict.ContainsKey(cd.ContractId))
@@ -262,15 +264,15 @@ namespace EgyptOnline.Application.Services.Complaint
                         cd.Id,
                         cd.ContractId,
                         cd.DayNumber,
-                        cd.Date,
+                        Date = TimeZoneInfo.ConvertTimeFromUtc(cd.Date, egyptTimeZone),
                         cd.ProviderArrived,
                         cd.ClientConfirmed,
-                        cd.ClientConfirmedAt,
+                        ClientConfirmedAt = cd.ClientConfirmedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ClientConfirmedAt.Value, egyptTimeZone) : (DateTime?)null,
                         cd.Status,
                         cd.IsProcessed,
-                        cd.ProcessedAt,
-                        cd.ArrivalTime,
-                        cd.DisputeReportedAt,
+                        ProcessedAt = cd.ProcessedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ProcessedAt.Value, egyptTimeZone) : (DateTime?)null,
+                        ArrivalTime = cd.ArrivalTime.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ArrivalTime.Value, egyptTimeZone) : (DateTime?)null,
+                        DisputeReportedAt = cd.DisputeReportedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.DisputeReportedAt.Value, egyptTimeZone) : (DateTime?)null,
                         cd.DisputeReason
                     });
                 }
@@ -313,7 +315,7 @@ namespace EgyptOnline.Application.Services.Complaint
                     }
                 };
 
-                if (includeDays && contractDaysDict.ContainsKey(item.ContractId))
+                if (includeDays)
                 {
                     contractData = new
                     {
@@ -325,7 +327,7 @@ namespace EgyptOnline.Application.Services.Complaint
                         penaltyAmount = item.ContractPenaltyAmount,
                         startDate = item.ContractStartDate,
                         terminationReason = item.ContractTerminationReason,
-                        contractDays = contractDaysDict[item.ContractId],
+                        contractDays = contractDaysDict.GetValueOrDefault(item.ContractId, new List<object>()),
                         client = new
                         {
                             id = clientUser?.Id,

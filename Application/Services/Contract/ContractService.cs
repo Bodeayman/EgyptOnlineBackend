@@ -605,6 +605,24 @@ namespace EgyptOnline.Application.Services.Contract
 
             if (includeDays)
             {
+                var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+                var contractDaysWithEgyptTime = contract.ContractDays.Select(cd => new
+                {
+                    cd.Id,
+                    cd.ContractId,
+                    cd.DayNumber,
+                    Date = TimeZoneInfo.ConvertTimeFromUtc(cd.Date, egyptTimeZone),
+                    cd.ProviderArrived,
+                    cd.ClientConfirmed,
+                    ClientConfirmedAt = cd.ClientConfirmedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ClientConfirmedAt.Value, egyptTimeZone) : (DateTime?)null,
+                    cd.Status,
+                    cd.IsProcessed,
+                    ProcessedAt = cd.ProcessedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ProcessedAt.Value, egyptTimeZone) : (DateTime?)null,
+                    ArrivalTime = cd.ArrivalTime.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ArrivalTime.Value, egyptTimeZone) : (DateTime?)null,
+                    DisputeReportedAt = cd.DisputeReportedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.DisputeReportedAt.Value, egyptTimeZone) : (DateTime?)null,
+                    cd.DisputeReason
+                }).ToList();
+
                 return new
                 {
                     result.Id,
@@ -624,7 +642,7 @@ namespace EgyptOnline.Application.Services.Contract
                     result.DetailedAddress,
                     result.Notes,
                     result.RestrictedTerms,
-                    contract.ContractDays,
+                    ContractDays = contractDaysWithEgyptTime,
                     result.client,
                     result.provider
                 };
@@ -708,6 +726,24 @@ namespace EgyptOnline.Application.Services.Contract
 
                 if (includeDays)
                 {
+                    var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+                    var contractDaysWithEgyptTime = contract.ContractDays.Select(cd => new
+                    {
+                        cd.Id,
+                        cd.ContractId,
+                        cd.DayNumber,
+                        Date = TimeZoneInfo.ConvertTimeFromUtc(cd.Date, egyptTimeZone),
+                        cd.ProviderArrived,
+                        cd.ClientConfirmed,
+                        ClientConfirmedAt = cd.ClientConfirmedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ClientConfirmedAt.Value, egyptTimeZone) : (DateTime?)null,
+                        cd.Status,
+                        cd.IsProcessed,
+                        ProcessedAt = cd.ProcessedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ProcessedAt.Value, egyptTimeZone) : (DateTime?)null,
+                        ArrivalTime = cd.ArrivalTime.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ArrivalTime.Value, egyptTimeZone) : (DateTime?)null,
+                        DisputeReportedAt = cd.DisputeReportedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.DisputeReportedAt.Value, egyptTimeZone) : (DateTime?)null,
+                        cd.DisputeReason
+                    }).ToList();
+
                     result.Add(new
                     {
                         contractResult.Id,
@@ -727,7 +763,7 @@ namespace EgyptOnline.Application.Services.Contract
                         contractResult.DetailedAddress,
                         contractResult.Notes,
                         contractResult.RestrictedTerms,
-                        contract.ContractDays,
+                        ContractDays = contractDaysWithEgyptTime,
                         contractResult.client,
                         contractResult.provider
                     });
