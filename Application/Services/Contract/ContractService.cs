@@ -336,12 +336,13 @@ namespace EgyptOnline.Application.Services.Contract
             if (contractDay == null)
                 throw new InvalidOperationException($"يوم العقد رقم {dayNumber} غير موجود");
 
-            // Dispute can be reported at any time during the day (no time restriction)
-            // var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
-            // var gracePeriodEnd = contractDay.Date.Add(shiftEndTime).AddHours(3);
-            // var currentTime = DateTime.UtcNow;
-            // if (currentTime > gracePeriodEnd)
-            //     throw new InvalidOperationException($"Dispute cannot be reported after 3-hour grace period expired. Grace period ended at: {gracePeriodEnd}");
+            // Restrict dispute reporting to current day or previous days only (not future days)
+            var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+            var contractDayDateInEgypt = TimeZoneInfo.ConvertTimeFromUtc(contractDay.Date, egyptTimeZone).Date;
+            var todayInEgypt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptTimeZone).Date;
+
+            if (contractDayDateInEgypt > todayInEgypt)
+                throw new InvalidOperationException($"لا يمكن الإبلاغ عن نزاع في الأيام القادمة. يوم العقد: {contractDayDateInEgypt:yyyy-MM-dd}, اليوم: {todayInEgypt:yyyy-MM-dd}");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try

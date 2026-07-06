@@ -92,44 +92,75 @@ namespace EgyptOnline.Application.Services.JobRequest
 
         /// <summary>
         /// Retrieve requests created by the current user with count of interested providers.
-        /// Full provider details available via separate endpoint.
+        /// Full provider details available via separate endpoint or with include=Providers.
         /// Ordered by pending first, then completed.
         /// </summary>
-        public async Task<List<object>> GetMyRequestsAsync(string clientUserId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE)
+        public async Task<List<object>> GetMyRequestsAsync(string clientUserId, int pageNumber = 1, int pageSize = Constants.PAGE_SIZE, bool includeProviders = false)
         {
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Max(1, pageSize);
 
-            var requests = await Helper.PaginateUsers(
-                    _context.JobRequests
-                        .Include(r => r.Interests)
-                        .Where(r => r.ClientUserId == clientUserId)
-                        .OrderBy(r => r.Status == "Pending" ? 0 : 1)
-                        .ThenByDescending(r => r.CreatedAt),
-                    pageNumber,
-                    pageSize)
-                .ToListAsync();
+            var query = _context.JobRequests
+                .Include(r => r.Interests)
+                .Where(r => r.ClientUserId == clientUserId)
+                .OrderBy(r => r.Status == "Pending" ? 0 : 1)
+                .ThenByDescending(r => r.CreatedAt);
+
+            var requests = await Helper.PaginateUsers(query, pageNumber, pageSize).ToListAsync();
 
             var result = new List<object>();
             foreach (var r in requests)
             {
                 var interestedCount = r.Interests.Count(i => i.IsInterested);
 
-                result.Add(new
+                if (includeProviders)
                 {
-                    r.Id,
-                    r.ProviderType,
-                    r.Skill,
-                    r.Governorate,
-                    r.City,
-                    WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
-                    r.PayRate,
-                    r.Days,
-                    r.CreatedAt,
-                    r.Status,
-                    r.AcceptedProviderUserId,
-                    interestedCount
-                });
+                    var interestedProviders = r.Interests
+                        .Where(i => i.IsInterested)
+                        .Select(i => new
+                        {
+                            id = i.Id,
+                            serviceProviderUserId = i.ServiceProviderUserId,
+                            isInterested = i.IsInterested,
+                            updatedAt = i.UpdatedAt
+                        })
+                        .ToList();
+
+                    result.Add(new
+                    {
+                        r.Id,
+                        r.ProviderType,
+                        r.Skill,
+                        r.Governorate,
+                        r.City,
+                        WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
+                        r.PayRate,
+                        r.Days,
+                        r.CreatedAt,
+                        r.Status,
+                        r.AcceptedProviderUserId,
+                        interestedCount,
+                        interestedProviders
+                    });
+                }
+                else
+                {
+                    result.Add(new
+                    {
+                        r.Id,
+                        r.ProviderType,
+                        r.Skill,
+                        r.Governorate,
+                        r.City,
+                        WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
+                        r.PayRate,
+                        r.Days,
+                        r.CreatedAt,
+                        r.Status,
+                        r.AcceptedProviderUserId,
+                        interestedCount
+                    });
+                }
             }
 
             return result;

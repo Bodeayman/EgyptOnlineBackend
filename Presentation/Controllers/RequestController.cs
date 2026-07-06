@@ -73,10 +73,11 @@ namespace EgyptOnline.Presentation.Controllers
 
         /// <summary>
         /// Get all job requests created by the authenticated user.
-        /// GET /api/v1/Request/my?pageNumber=1&pageSize=20
+        /// GET /api/v1/Request/my?pageNumber=1&pageSize=20&include=Providers
         /// </summary>
         [HttpGet("my")]
         public async Task<IActionResult> GetMyRequests(
+            [FromQuery] string? include = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = Constants.PAGE_SIZE)
         {
@@ -85,7 +86,8 @@ namespace EgyptOnline.Presentation.Controllers
 
             try
             {
-                var requests = await _service.GetMyRequestsAsync(userId, pageNumber, pageSize);
+                var includeProviders = include?.Contains("Providers", StringComparison.OrdinalIgnoreCase) == true;
+                var requests = await _service.GetMyRequestsAsync(userId, pageNumber, pageSize, includeProviders);
                 return Ok(new { data = requests, pageNumber, pageSize, count = requests.Count });
             }
             catch (Exception ex)

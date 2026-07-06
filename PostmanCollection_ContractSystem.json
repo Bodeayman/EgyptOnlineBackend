@@ -143,7 +143,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["contracts", "dispute"]
             },
-            "description": "Client reports that the worker was absent or there is an issue.\n\n⚡ EFFECTS:\n- Contract status → suspended (freezes all daily movements)\n- Contract day status → AbsentDisputed\n- Auto-creates a Complaint (reportType: daily_absence)\n- Admin must resolve before the contract can continue"
+            "description": "Client reports that the worker was absent or there is an issue.\n\n⚡ EFFECTS:\n- Contract status → suspended (freezes all daily movements)\n- Contract day status → AbsentDisputed\n- Auto-creates a Complaint (reportType: daily_absence)\n- Admin must resolve before the contract can continue\n\n⚠️ VALIDATION:\n- Cannot report disputes for future days (only current day or previous days allowed)"
           }
         },
         {
@@ -417,7 +417,94 @@
       ]
     },
     {
-      "name": "💰 Wallet",
+      "name": "� Job Requests",
+      "description": "Job request marketplace for finding service providers.",
+      "item": [
+        {
+          "name": "Create Job Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerType\": \"Worker\",\n  \"skill\": \"سباك\",\n  \"governorate\": \"القاهرة\",\n  \"city\": \"مدينة نصر\",\n  \"workerType\": 1,\n  \"payRate\": 150,\n  \"days\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests"]
+            },
+            "description": "Create a new job request to find service providers.\n\nFields:\n- providerType: Worker, Contractor, Engineer, Company, etc.\n- skill: Specialization/skill required\n- governorate: Governorate\n- city: City\n- workerType: 1 (PerDay) or 2 (PerProject) - for Workers only\n- payRate: Daily rate or project rate\n- days: Number of days (for daily workers)"
+          }
+        },
+        {
+          "name": "Get My Job Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clientToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/my?pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "my"],
+              "query": [
+                { "key": "include", "value": "Providers", "description": "Optional: Set to 'Providers' to include interested providers" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Get all job requests created by the authenticated user.\nQuery Parameters:\n- include: Set to 'Providers' to include interested providers array\n- pageNumber: default 1\n- pageSize: default 20\n\nWith include=Providers, response includes:\n- interestedCount: number of interested providers\n- interestedProviders: array with provider IDs and interest status"
+          }
+        },
+        {
+          "name": "Get Other Job Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{providerToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/others?pageNumber=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", "others"],
+              "query": [
+                { "key": "governorate", "value": "القاهرة", "description": "Optional: Filter by governorate" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Get job requests from other users (for providers to browse)."
+          }
+        },
+        {
+          "name": "Set Interest in Job Request",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{providerToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isInterested\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/requests/:id/interest",
+              "host": ["{{baseUrl}}"],
+              "path": ["requests", ":id", "interest"],
+              "variable": [{ "key": "id", "value": "1", "description": "Job Request ID" }]
+            },
+            "description": "Express interest in a job request. isInterested: true or false"
+          }
+        }
+      ]
+    },
+    {
+      "name": "�💰 Wallet",
       "item": [
         {
           "name": "Get Balance",
