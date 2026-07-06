@@ -19,7 +19,9 @@ namespace EgyptOnline.Models
         /// </summary>
         [Required]
         [MaxLength(30)]
+        [ConcurrencyCheck]
         public string Status { get; set; } = "pending";
+
 
         [MaxLength(500)]
         public string? FrontImagePath { get; set; }

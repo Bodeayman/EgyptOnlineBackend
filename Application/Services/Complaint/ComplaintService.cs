@@ -178,20 +178,36 @@ namespace EgyptOnline.Application.Services.Complaint
         // ── ADMIN ACTIONS ─────────────────────────────────────────────────────
 
         /// <summary>
-        /// List all complaints — optionally filtered by status.
+        /// List all complaints — optionally filtered by status and search.
         /// </summary>
         public async Task<(List<object> Items, int TotalCount)> GetAllComplaintsAsync(
             string? statusFilter = null,
+            string? search = null,
             int pageNumber = 1,
             int pageSize = 20,
             bool includeDays = false)
         {
             var baseQuery = _context.Complaints
                 .Include(c => c.Contract)
+                    .ThenInclude(c => c.ClientUser)
+                .Include(c => c.ReporterUser)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(statusFilter))
                 baseQuery = baseQuery.Where(c => c.Status == statusFilter);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower();
+                baseQuery = baseQuery.Where(c =>
+                    c.Reason.ToLower().Contains(searchLower) ||
+                    c.Description.ToLower().Contains(searchLower) ||
+                    c.ReporterUser.FirstName.ToLower().Contains(searchLower) ||
+                    c.ReporterUser.LastName.ToLower().Contains(searchLower) ||
+                    c.Contract.ClientUser.FirstName.ToLower().Contains(searchLower) ||
+                    c.Contract.ClientUser.LastName.ToLower().Contains(searchLower) ||
+                    c.Contract.ServiceProviderPhoneNumber.Contains(searchLower));
+            }
 
             var total = await baseQuery.CountAsync();
 

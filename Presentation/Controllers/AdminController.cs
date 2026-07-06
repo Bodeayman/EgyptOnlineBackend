@@ -394,17 +394,19 @@ namespace EgyptOnline.Controllers
 
         /// <summary>
         /// List all pending KYC submissions (queue for admin review).
-        /// GET /api/v1/Admin/kyc/pending?pageNumber=1&pageSize=20
+        /// GET /api/v1/Admin/kyc/pending?pageNumber=1&pageSize=20&search=keyword
+        /// search: searches in user name, phone number
         /// </summary>
         [HttpGet("kyc/pending")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> GetPendingKyc(
+            [FromQuery] string? search = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             try
             {
-                var submissions = await _kycService.GetPendingKycSubmissionsAsync(pageNumber, pageSize);
+                var submissions = await _kycService.GetPendingKycSubmissionsAsync(search, pageNumber, pageSize);
                 var formatted = new List<object>();
                 foreach (var s in submissions)
                 {
@@ -485,7 +487,12 @@ namespace EgyptOnline.Controllers
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة هذا الطلب بالفعل من قبل مسؤول آخر" });
+            }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -494,17 +501,19 @@ namespace EgyptOnline.Controllers
 
         /// <summary>
         /// List all pending deposits.
-        /// GET /api/v1/Admin/deposits/pending
+        /// GET /api/v1/Admin/deposits/pending?pageNumber=1&pageSize=20&search=keyword
+        /// search: searches in user name, phone number, wallet number
         /// </summary>
         [HttpGet("deposits/pending")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> GetPendingDeposits(
+            [FromQuery] string? search = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             try
             {
-                var deposits = await _walletService.GetPendingDepositsAsync(pageNumber, pageSize);
+                var deposits = await _walletService.GetPendingDepositsAsync(search, pageNumber, pageSize);
                 var formatted = new List<object>();
                 foreach (var d in deposits)
                 {
@@ -567,7 +576,12 @@ namespace EgyptOnline.Controllers
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة طلب الإيداع بالفعل من قبل مسؤول آخر" });
+            }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -576,17 +590,19 @@ namespace EgyptOnline.Controllers
 
         /// <summary>
         /// List all pending withdrawals.
-        /// GET /api/v1/Admin/withdrawals/pending
+        /// GET /api/v1/Admin/withdrawals/pending?pageNumber=1&pageSize=20&search=keyword
+        /// search: searches in user name, phone number, wallet number
         /// </summary>
         [HttpGet("withdrawals/pending")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> GetPendingWithdrawals(
+            [FromQuery] string? search = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             try
             {
-                var withdrawals = await _walletService.GetPendingWithdrawalsAsync(pageNumber, pageSize);
+                var withdrawals = await _walletService.GetPendingWithdrawalsAsync(search, pageNumber, pageSize);
                 var formatted = withdrawals.Select(w =>
                 {
                     dynamic withdraw = w;
@@ -647,7 +663,12 @@ namespace EgyptOnline.Controllers
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة طلب السحب بالفعل من قبل مسؤول آخر" });
+            }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -655,22 +676,22 @@ namespace EgyptOnline.Controllers
         // ═══════════════════════════════════════════════════════════════════
 
         /// <summary>
-        /// List all complaints — optionally filter by status.
-        /// GET /api/v1/Admin/complaints?status=open&pageNumber=1&pageSize=20&include=Days
+        /// List all complaints — optionally filter by status and search.
+        /// GET /api/v1/Admin/complaints?status=open&pageNumber=1&pageSize=20&search=keyword
         /// status options: open | under_review | resolved | rejected
+        /// search: searches in reason, description, reporter name, client name, provider name
         /// </summary>
         [HttpGet("complaints")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> GetComplaints(
             [FromQuery] string? status = null,
+            [FromQuery] string? search = null,
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
-            [FromQuery] string? include = null)
+            [FromQuery] int pageSize = 20)
         {
             try
             {
-                var includeDays = include?.Contains("Days", StringComparison.OrdinalIgnoreCase) == true;
-                var (items, total) = await _complaintService.GetAllComplaintsAsync(status, pageNumber, pageSize, includeDays);
+                var (items, total) = await _complaintService.GetAllComplaintsAsync(status, search, pageNumber, pageSize, true);
                 return Ok(new
                 {
                     data = items,
@@ -741,7 +762,7 @@ namespace EgyptOnline.Controllers
                     .Include(c => c.ClientUser)
                     .Include(c => c.ContractDays)
                     .Where(c => c.Status == "terminated")
-                    .OrderByDescending(c => c.TerminatedAt)
+                    .OrderByDescending(c => c.Id)
                     .ToListAsync();
 
                 var totalCount = contracts.Count;
@@ -904,7 +925,12 @@ namespace EgyptOnline.Controllers
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(409, new { message = "حدث تضارب أثناء تعديل الرصيد. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى" });
+            }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+
         }
 
         /// <summary>

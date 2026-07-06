@@ -114,33 +114,39 @@ namespace EgyptOnline.Application.Services.Kyc
             return submission;
         }
 
-        public async Task<List<object>> GetPendingKycSubmissionsAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<List<object>> GetPendingKycSubmissionsAsync(string? search = null, int pageNumber = 1, int pageSize = 20)
         {
-            var submissions = await _context.KycSubmissions
-                .Where(k => k.Status == "pending")
-                .OrderBy(k => k.SubmittedAt)
+            var query = _context.KycSubmissions
+                .Include(k => k.User)
+                .Where(k => k.Status == "pending");
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower();
+                query = query.Where(k =>
+                    k.User.FirstName.ToLower().Contains(searchLower) ||
+                    k.User.LastName.ToLower().Contains(searchLower) ||
+                    k.User.PhoneNumber.Contains(searchLower) ||
+                    k.User.UserName.ToLower().Contains(searchLower));
+            }
+
+            var submissions = await query
+                .OrderByDescending(k => k.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            var userIds = submissions.Select(k => k.UserId).Distinct().ToList();
-            var users = await _context.Users
-                .Where(u => userIds.Contains(u.Id))
-                .Select(u => new { u.Id, u.UserName, u.FirstName, u.LastName, u.PhoneNumber })
-                .ToDictionaryAsync(u => u.Id);
-
             var result = new List<object>();
             foreach (var submission in submissions)
             {
-                var user = users.GetValueOrDefault(submission.UserId);
                 result.Add(new
                 {
                     submission.Id,
                     submission.UserId,
-                    userName = user?.UserName,
-                    firstName = user?.FirstName,
-                    lastName = user?.LastName,
-                    phoneNumber = user?.PhoneNumber,
+                    userName = submission.User?.UserName,
+                    firstName = submission.User?.FirstName,
+                    lastName = submission.User?.LastName,
+                    phoneNumber = submission.User?.PhoneNumber,
                     submission.Status,
                     submission.SubmittedAt,
                     submission.FrontImagePath,

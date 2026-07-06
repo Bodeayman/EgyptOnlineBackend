@@ -240,33 +240,41 @@ namespace EgyptOnline.Application.Services.Wallet
             return request;
         }
 
-        public async Task<List<object>> GetPendingDepositsAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<List<object>> GetPendingDepositsAsync(string? search = null, int pageNumber = 1, int pageSize = 20)
         {
-            var requests = await _context.DepositRequests
-                .Where(r => r.Status == "pending")
-                .OrderBy(r => r.CreatedAt)
+            var query = _context.DepositRequests
+                .Include(r => r.User)
+                .Where(r => r.Status == "pending");
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower();
+                query = query.Where(r =>
+                    r.User.FirstName.ToLower().Contains(searchLower) ||
+                    r.User.LastName.ToLower().Contains(searchLower) ||
+                    r.User.PhoneNumber.Contains(searchLower) ||
+                    r.User.UserName.ToLower().Contains(searchLower) ||
+                    r.SourceWalletNumber.Contains(searchLower) ||
+                    r.RecipientPhoneNumber.Contains(searchLower));
+            }
+
+            var requests = await query
+                .OrderByDescending(r => r.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            var userIds = requests.Select(r => r.UserId).Distinct().ToList();
-            var users = await _context.Users
-                .Where(u => userIds.Contains(u.Id))
-                .Select(u => new { u.Id, u.UserName, u.FirstName, u.LastName, u.PhoneNumber })
-                .ToDictionaryAsync(u => u.Id);
-
             var result = new List<object>();
             foreach (var request in requests)
             {
-                var user = users.GetValueOrDefault(request.UserId);
                 result.Add(new
                 {
                     request.Id,
                     request.UserId,
-                    userName = user?.UserName,
-                    firstName = user?.FirstName,
-                    lastName = user?.LastName,
-                    phoneNumber = user?.PhoneNumber,
+                    userName = request.User?.UserName,
+                    firstName = request.User?.FirstName,
+                    lastName = request.User?.LastName,
+                    phoneNumber = request.User?.PhoneNumber,
                     request.Amount,
                     request.SourceWalletNumber,
                     request.WalletOwnerName,
@@ -386,33 +394,41 @@ namespace EgyptOnline.Application.Services.Wallet
             }
         }
 
-        public async Task<List<object>> GetPendingWithdrawalsAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<List<object>> GetPendingWithdrawalsAsync(string? search = null, int pageNumber = 1, int pageSize = 20)
         {
-            var requests = await _context.WithdrawRequests
-                .Where(r => r.Status == "pending")
-                .OrderBy(r => r.CreatedAt)
+            var query = _context.WithdrawRequests
+                .Include(r => r.User)
+                .Where(r => r.Status == "pending");
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower();
+                query = query.Where(r =>
+                    r.User.FirstName.ToLower().Contains(searchLower) ||
+                    r.User.LastName.ToLower().Contains(searchLower) ||
+                    r.User.PhoneNumber.Contains(searchLower) ||
+                    r.User.UserName.ToLower().Contains(searchLower) ||
+                    r.DestinationWalletNumber.Contains(searchLower) ||
+                    r.SourceWalletNumber.Contains(searchLower));
+            }
+
+            var requests = await query
+                .OrderByDescending(r => r.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            var userIds = requests.Select(r => r.UserId).Distinct().ToList();
-            var users = await _context.Users
-                .Where(u => userIds.Contains(u.Id))
-                .Select(u => new { u.Id, u.UserName, u.FirstName, u.LastName, u.PhoneNumber })
-                .ToDictionaryAsync(u => u.Id);
-
             var result = new List<object>();
             foreach (var request in requests)
             {
-                var user = users.GetValueOrDefault(request.UserId);
                 result.Add(new
                 {
                     request.Id,
                     request.UserId,
-                    userName = user?.UserName,
-                    firstName = user?.FirstName,
-                    lastName = user?.LastName,
-                    phoneNumber = user?.PhoneNumber,
+                    userName = request.User?.UserName,
+                    firstName = request.User?.FirstName,
+                    lastName = request.User?.LastName,
+                    phoneNumber = request.User?.PhoneNumber,
                     request.Amount,
                     request.DestinationWalletNumber,
                     request.WalletOwnerName,

@@ -20,6 +20,9 @@ namespace EgyptOnline.Models
         [Required]
         public string ReporterUserId { get; set; } = string.Empty;
 
+        [ForeignKey(nameof(ReporterUserId))]
+        public User? ReporterUser { get; set; }
+
         // ── Related contract (mandatory — complaints are always contract-scoped) ─
         [Required]
         public int ContractId { get; set; }

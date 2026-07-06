@@ -43,7 +43,9 @@ namespace EgyptOnline.Models
         /// <summary>pending, approved, rejected</summary>
         [Required]
         [MaxLength(30)]
+        [ConcurrencyCheck]
         public string Status { get; set; } = "pending";
+
 
         public string? ReviewedByAdminId { get; set; }
 
