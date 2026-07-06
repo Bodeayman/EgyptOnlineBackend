@@ -2,6 +2,7 @@ using EgyptOnline.Data;
 using Microsoft.AspNetCore.SignalR;
 using EgyptOnline.Models;
 using EgyptOnline.Extensions;
+using EgyptOnline.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -79,6 +80,9 @@ try
     builder.Services.ApiVersioningSettings();
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddSwaggerWithJwt();
+
+    // Email Service
+    builder.Services.AddTransient<IEmailService, EmailService>();
 
     // SignalR & Chat
     builder.Services.AddSignalR();

@@ -2,6 +2,7 @@ using EgyptOnline.Data;
 using EgyptOnline.Domain.Models;
 using EgyptOnline.Models;
 using EgyptOnline.Services;
+using EgyptOnline.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -13,12 +14,16 @@ namespace EgyptOnline.Application.Services.Wallet
         private readonly ApplicationDbContext _context;
         private readonly INotificationService _notificationService;
         private readonly ILogger<WalletService> _logger;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public WalletService(ApplicationDbContext context, INotificationService notificationService, ILogger<WalletService> logger)
+        public WalletService(ApplicationDbContext context, INotificationService notificationService, ILogger<WalletService> logger, IEmailService emailService, IConfiguration configuration)
         {
             _context = context;
             _notificationService = notificationService;
             _logger = logger;
+            _emailService = emailService;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -237,6 +242,36 @@ namespace EgyptOnline.Application.Services.Wallet
 
             _context.DepositRequests.Add(request);
             await _context.SaveChangesAsync();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+            // Send email to admin
+            try
+            {
+                var adminEmail = _configuration["Admin:Email"];
+                if (!string.IsNullOrEmpty(adminEmail))
+                {
+                    var subject = "طلب إيداع جديد - معاك";
+                    var body = $"تم استلام طلب إيداع جديد:\n\n" +
+                              $"اسم المستخدم: {user?.FirstName} {user?.LastName}\n" +
+                              $"رقم الهاتف: {user?.PhoneNumber}\n" +
+                              $"المبلغ: {amount} ج.م\n" +
+                              $"رقم المحفظة المصدر: {sourceWalletNumber}\n" +
+                              $"اسم مالك المحفظة: {walletOwnerName}\n" +
+                              $"رقم المحفظة المستلمة: {platformWalletNumber}\n" +
+                              $"تاريخ الطلب: {request.CreatedAt:yyyy-MM-dd HH:mm:ss}\n" +
+                              $"معرف المستخدم: {userId}\n" +
+                              $"معرف الطلب: {request.Id}\n\n" +
+                              $"يرجى مراجعة الطلب في لوحة التحكم.";
+
+                    await _emailService.SendEmailAsync(adminEmail, subject, body);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send deposit request email to admin");
+            }
+
             return request;
         }
 
@@ -385,6 +420,34 @@ namespace EgyptOnline.Application.Services.Wallet
                 _context.WithdrawRequests.Add(request);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                // Send email to admin
+                try
+                {
+                    var adminEmail = _configuration["Admin:Email"];
+                    if (!string.IsNullOrEmpty(adminEmail))
+                    {
+                        var subject = "طلب سحب جديد - معاك";
+                        var body = $"تم استلام طلب سحب جديد:\n\n" +
+                                  $"اسم المستخدم: {user?.FirstName} {user?.LastName}\n" +
+                                  $"رقم الهاتف: {user?.PhoneNumber}\n" +
+                                  $"المبلغ: {amount} ج.م\n" +
+                                  $"رقم المحفظة المصدر: {sourceWalletNumber}\n" +
+                                  $"رقم المحفظة المستلمة: {destinationWalletNumber}\n" +
+                                  $"اسم مالك المحفظة: {walletOwnerName}\n" +
+                                  $"تاريخ الطلب: {request.CreatedAt:yyyy-MM-dd HH:mm:ss}\n" +
+                                  $"معرف المستخدم: {userId}\n" +
+                                  $"معرف الطلب: {request.Id}\n\n" +
+                                  $"يرجى مراجعة الطلب في لوحة التحكم.";
+
+                        await _emailService.SendEmailAsync(adminEmail, subject, body);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send withdrawal request email to admin");
+                }
+
                 return request;
             }
             catch
