@@ -288,33 +288,7 @@ namespace EgyptOnline.Application.Services.Complaint
                 bool isClientReporter = item.ReporterUserId == item.ClientUserId;
                 string reporterType = isClientReporter ? "client" : "provider";
 
-                var contractData = new
-                {
-                    id = item.ContractId,
-                    status = item.ContractStatus,
-                    totalAmount = item.ContractTotalAmount,
-                    totalDays = item.ContractTotalDays,
-                    dailySalary = item.ContractDailySalary,
-                    penaltyAmount = item.ContractPenaltyAmount,
-                    startDate = item.ContractStartDate,
-                    terminationReason = item.ContractTerminationReason,
-                    client = new
-                    {
-                        id = clientUser?.Id,
-                        firstName = clientUser?.FirstName,
-                        lastName = clientUser?.LastName,
-                        phoneNumber = clientUser?.PhoneNumber
-                    },
-                    provider = new
-                    {
-                        id = providerUser?.Id,
-                        firstName = providerUser?.FirstName,
-                        lastName = providerUser?.LastName,
-                        phoneNumber = providerUser?.PhoneNumber,
-                        specialization = providerUser?.ServiceProvider?.GetSpecialization()
-                    }
-                };
-
+                object contractData;
                 if (includeDays)
                 {
                     contractData = new
@@ -328,6 +302,35 @@ namespace EgyptOnline.Application.Services.Complaint
                         startDate = item.ContractStartDate,
                         terminationReason = item.ContractTerminationReason,
                         contractDays = contractDaysDict.GetValueOrDefault(item.ContractId, new List<object>()),
+                        client = new
+                        {
+                            id = clientUser?.Id,
+                            firstName = clientUser?.FirstName,
+                            lastName = clientUser?.LastName,
+                            phoneNumber = clientUser?.PhoneNumber
+                        },
+                        provider = new
+                        {
+                            id = providerUser?.Id,
+                            firstName = providerUser?.FirstName,
+                            lastName = providerUser?.LastName,
+                            phoneNumber = providerUser?.PhoneNumber,
+                            specialization = providerUser?.ServiceProvider?.GetSpecialization()
+                        }
+                    };
+                }
+                else
+                {
+                    contractData = new
+                    {
+                        id = item.ContractId,
+                        status = item.ContractStatus,
+                        totalAmount = item.ContractTotalAmount,
+                        totalDays = item.ContractTotalDays,
+                        dailySalary = item.ContractDailySalary,
+                        penaltyAmount = item.ContractPenaltyAmount,
+                        startDate = item.ContractStartDate,
+                        terminationReason = item.ContractTerminationReason,
                         client = new
                         {
                             id = clientUser?.Id,

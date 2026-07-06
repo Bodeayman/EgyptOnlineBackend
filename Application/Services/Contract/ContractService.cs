@@ -543,7 +543,7 @@ namespace EgyptOnline.Application.Services.Contract
 
         public async Task<object?> GetContractByIdAsync(int contractId, string userId, bool includeDays = false)
         {
-            var query = _context.Contracts
+            IQueryable<ContractModel> query = _context.Contracts
                 .Include(c => c.ClientUser);
 
             if (includeDays)
@@ -661,7 +661,7 @@ namespace EgyptOnline.Application.Services.Contract
             if (user == null)
                 return new List<object>();
 
-            var query = _context.Contracts
+            IQueryable<ContractModel> query = _context.Contracts
                 .Include(c => c.ClientUser)
                 .Where(c => c.ServiceProviderPhoneNumber == user.PhoneNumber || c.ClientUserId == userId);
 
