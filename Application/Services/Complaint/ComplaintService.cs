@@ -4,6 +4,7 @@ using EgyptOnline.Services;
 using EgyptOnline.Utilities;
 using EgyptOnline.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Serilog;
 
 namespace EgyptOnline.Application.Services.Complaint
@@ -13,14 +14,14 @@ namespace EgyptOnline.Application.Services.Complaint
         private readonly ApplicationDbContext _context;
         private readonly INotificationService _notificationService;
         private readonly IEmailService _emailService;
-        private readonly IConfiguration _configuration;
+        private readonly UserManager<User> _userManager;
 
-        public ComplaintService(ApplicationDbContext context, INotificationService notificationService, IEmailService emailService, IConfiguration configuration)
+        public ComplaintService(ApplicationDbContext context, INotificationService notificationService, IEmailService emailService, UserManager<User> userManager)
         {
             _context = context;
             _notificationService = notificationService;
             _emailService = emailService;
-            _configuration = configuration;
+            _userManager = userManager;
         }
 
         // ── USER ACTIONS ──────────────────────────────────────────────────────
@@ -94,31 +95,34 @@ namespace EgyptOnline.Application.Services.Complaint
                 await SafeNotifyByUserId(otherPartyId, reporterUserId, "شكوى جديدة", $"تم تقديم شكوى على العقد #{contractId}");
             }
 
-            // Send email to admin
+            // Send email to all admins
             try
             {
-                var adminEmail = _configuration["Admin:Email"];
-                if (!string.IsNullOrEmpty(adminEmail))
+                var admins = await _userManager.GetUsersInRoleAsync("Admin");
+                foreach (var admin in admins)
                 {
-                    var subject = "شكوى جديدة - معاك";
-                    var body = $"تم استلام شكوى جديدة:\n\n" +
-                              $"اسم المبلغ: {reporterUser.FirstName} {reporterUser.LastName}\n" +
-                              $"رقم هاتف المبلغ: {reporterUser.PhoneNumber}\n" +
-                              $"سبب الشكوى: {reason}\n" +
-                              $"وصف الشكوى: {description}\n" +
-                              $"نوع التقرير: {reportType}\n" +
-                              $"معرف العقد: {contractId}\n" +
-                              $"تاريخ التقديم: {complaint.CreatedAt:yyyy-MM-dd HH:mm:ss}\n" +
-                              $"معرف المستخدم: {reporterUserId}\n" +
-                              $"معرف الشكوى: {complaint.Id}\n\n" +
-                              $"يرجى مراجعة الشكوى في لوحة التحكم.";
+                    if (!string.IsNullOrEmpty(admin.Email))
+                    {
+                        var subject = "شكوى جديدة - معاك";
+                        var body = $"تم استلام شكوى جديدة:\n\n" +
+                                  $"اسم المبلغ: {reporterUser.FirstName} {reporterUser.LastName}\n" +
+                                  $"رقم هاتف المبلغ: {reporterUser.PhoneNumber}\n" +
+                                  $"سبب الشكوى: {reason}\n" +
+                                  $"وصف الشكوى: {description}\n" +
+                                  $"نوع التقرير: {reportType}\n" +
+                                  $"معرف العقد: {contractId}\n" +
+                                  $"تاريخ التقديم: {complaint.CreatedAt:yyyy-MM-dd HH:mm:ss}\n" +
+                                  $"معرف المستخدم: {reporterUserId}\n" +
+                                  $"معرف الشكوى: {complaint.Id}\n\n" +
+                                  $"يرجى مراجعة الشكوى في لوحة التحكم.";
 
-                    await _emailService.SendEmailAsync(adminEmail, subject, body);
+                        await _emailService.SendEmailAsync(admin.Email, subject, body);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Failed to send complaint email to admin");
+                Log.Warning(ex, "Failed to send complaint email to admins");
             }
 
             return complaint;

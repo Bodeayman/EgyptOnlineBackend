@@ -3,6 +3,7 @@ using EgyptOnline.Models;
 using EgyptOnline.Services;
 using EgyptOnline.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Serilog;
 
 namespace EgyptOnline.Application.Services.Kyc
@@ -12,14 +13,14 @@ namespace EgyptOnline.Application.Services.Kyc
         private readonly ApplicationDbContext _context;
         private readonly INotificationService _notificationService;
         private readonly IEmailService _emailService;
-        private readonly IConfiguration _configuration;
+        private readonly UserManager<User> _userManager;
 
-        public KycService(ApplicationDbContext context, INotificationService notificationService, IEmailService emailService, IConfiguration configuration)
+        public KycService(ApplicationDbContext context, INotificationService notificationService, IEmailService emailService, UserManager<User> userManager)
         {
             _context = context;
             _notificationService = notificationService;
             _emailService = emailService;
-            _configuration = configuration;
+            _userManager = userManager;
         }
 
         public async Task<KycSubmission> SubmitKycAsync(string userId, string frontImagePath, string backImagePath, string selfieImagePath)
@@ -70,27 +71,30 @@ namespace EgyptOnline.Application.Services.Kyc
                 Log.Warning(ex, "Failed to send KYC submission notification to user {UserId}", userId);
             }
 
-            // Send email to admin
+            // Send email to all admins
             try
             {
-                var adminEmail = _configuration["Admin:Email"];
-                if (!string.IsNullOrEmpty(adminEmail))
+                var admins = await _userManager.GetUsersInRoleAsync("Admin");
+                foreach (var admin in admins)
                 {
-                    var subject = "طلب تحقق شخصي جديد - معاك";
-                    var body = $"تم استلام طلب تحقق شخصي جديد:\n\n" +
-                              $"اسم المستخدم: {user?.FirstName} {user?.LastName}\n" +
-                              $"رقم الهاتف: {user?.PhoneNumber}\n" +
-                              $"تاريخ التقديم: {submission.SubmittedAt:yyyy-MM-dd HH:mm:ss}\n" +
-                              $"معرف المستخدم: {userId}\n" +
-                              $"معرف الطلب: {submission.Id}\n\n" +
-                              $"يرجى مراجعة الطلب في لوحة التحكم.";
+                    if (!string.IsNullOrEmpty(admin.Email))
+                    {
+                        var subject = "طلب تحقق شخصي جديد - معاك";
+                        var body = $"تم استلام طلب تحقق شخصي جديد:\n\n" +
+                                  $"اسم المستخدم: {user?.FirstName} {user?.LastName}\n" +
+                                  $"رقم الهاتف: {user?.PhoneNumber}\n" +
+                                  $"تاريخ التقديم: {submission.SubmittedAt:yyyy-MM-dd HH:mm:ss}\n" +
+                                  $"معرف المستخدم: {userId}\n" +
+                                  $"معرف الطلب: {submission.Id}\n\n" +
+                                  $"يرجى مراجعة الطلب في لوحة التحكم.";
 
-                    await _emailService.SendEmailAsync(adminEmail, subject, body);
+                        await _emailService.SendEmailAsync(admin.Email, subject, body);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Failed to send KYC submission email to admin");
+                Log.Warning(ex, "Failed to send KYC submission email to admins");
             }
 
             return submission;

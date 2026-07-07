@@ -81,9 +81,6 @@ try
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddSwaggerWithJwt();
 
-    // Email Service
-    builder.Services.AddTransient<IEmailService, EmailService>();
-
     // SignalR & Chat
     builder.Services.AddSignalR();
     // Use custom user id provider so SignalR maps our JWT `uid` claim to user identifiers
