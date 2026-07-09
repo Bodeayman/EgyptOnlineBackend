@@ -103,7 +103,7 @@ namespace EgyptOnline.Application.Services.JobRequest
             var query = _context.JobRequests
                 .Include(r => r.Interests)
                 .Where(r => r.ClientUserId == clientUserId)
-                .OrderBy(r => r.Status == "Pending" ? 0 : 1)
+                .OrderBy(r => r.Status == "Pending" ? 0 : r.Status == "Accepted" ? 1 : 2)
                 .ThenByDescending(r => r.CreatedAt);
 
             var requests = await Helper.PaginateUsers(query, pageNumber, pageSize).ToListAsync();
@@ -152,6 +152,9 @@ namespace EgyptOnline.Application.Services.JobRequest
                         r.Skill,
                         r.Governorate,
                         r.City,
+                        r.WorkDetails,
+                        r.WorkerPlace,
+                        r.PerpayDetails,
                         WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                         r.PayRate,
                         r.Days,
@@ -171,6 +174,9 @@ namespace EgyptOnline.Application.Services.JobRequest
                         r.Skill,
                         r.Governorate,
                         r.City,
+                        r.WorkDetails,
+                        r.WorkerPlace,
+                        r.PerpayDetails,
                         WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                         r.PayRate,
                         r.Days,

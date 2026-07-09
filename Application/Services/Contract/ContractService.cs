@@ -679,7 +679,8 @@ namespace EgyptOnline.Application.Services.Contract
             }
 
             var contracts = await query
-                .OrderByDescending(c => c.CreatedAt)
+                .OrderBy(c => c.Status == "active" ? 0 : c.Status == "pending" ? 1 : c.Status == "suspended" ? 2 : 3)
+                .ThenByDescending(c => c.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

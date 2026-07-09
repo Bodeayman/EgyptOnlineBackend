@@ -38,6 +38,24 @@ namespace EgyptOnline.Models
         public string City { get; set; } = string.Empty;
 
         /// <summary>
+        /// Details about the work to be done
+        /// </summary>
+        [MaxLength(1000)]
+        public string? WorkDetails { get; set; }
+
+        /// <summary>
+        /// Location where the work will be performed
+        /// </summary>
+        [MaxLength(500)]
+        public string? WorkerPlace { get; set; }
+
+        /// <summary>
+        /// Payment details/instructions
+        /// </summary>
+        [MaxLength(500)]
+        public string? PerpayDetails { get; set; }
+
+        /// <summary>
         /// Specific to Workers (PerDay, PerPay). Null for other provider types.
         /// </summary>
         public WorkerTypes? WorkerType { get; set; }
