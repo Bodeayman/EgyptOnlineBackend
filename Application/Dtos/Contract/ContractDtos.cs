@@ -108,7 +108,6 @@ namespace EgyptOnline.Dtos.Contract
         [Required(ErrorMessage = "المدينة مطلوبة")]
         public string City { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "الحي مطلوب")]
         public string District { get; set; } = string.Empty;
 
         // Optional Fields
