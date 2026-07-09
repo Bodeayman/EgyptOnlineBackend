@@ -33,9 +33,26 @@ namespace EgyptOnline.Application.Services.Contract
         }
 
         #region 2-Party Contract System (New Simplified Logic)
+        private string NormalizeEgyptianPhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return phoneNumber;
 
+            // Remove spaces and dashes
+            var cleaned = phoneNumber.Replace(" ", "").Replace("-", "");
+
+            // If it doesn't already start with +20, add it
+            if (!cleaned.StartsWith("+20"))
+            {
+                cleaned = "+2" + cleaned;
+            }
+
+            return cleaned;
+        }
         public async Task<ContractModel> CreateContractAsync(ContractModel contract)
         {
+            var phoneNumberNormalized = NormalizeEgyptianPhoneNumber(contract.ServiceProviderPhoneNumber);
+            contract.ServiceProviderPhoneNumber = phoneNumberNormalized;
             var clientUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == contract.ClientUserId);
             var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
 
