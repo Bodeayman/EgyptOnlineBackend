@@ -37,6 +37,10 @@ namespace EgyptOnline.Models
         [MaxLength(100)]
         public string City { get; set; } = string.Empty;
 
+        [MaxLength(100)]
+        public string? District { get; set; }
+
+
         /// <summary>
         /// Details about the work to be done
         /// </summary>

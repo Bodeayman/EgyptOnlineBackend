@@ -8,7 +8,12 @@ namespace EgyptOnline.Dtos.JobRequest
         public string Skill { get; set; } = string.Empty;
         public string Governorate { get; set; } = string.Empty;
         public string City { get; set; } = string.Empty;
+        public string? District { get; set; }
+        public string? WorkDetails { get; set; }
+        public string? WorkerPlace { get; set; }
+        public string? PerpayDetails { get; set; }
         public int? WorkerType { get; set; }
+
         public decimal PayRate { get; set; }
         public int? Days { get; set; }
         public DateTime CreatedAt { get; set; }

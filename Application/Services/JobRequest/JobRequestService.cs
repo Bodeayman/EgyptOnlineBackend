@@ -30,6 +30,10 @@ namespace EgyptOnline.Application.Services.JobRequest
             string skill,
             string governorate,
             string city,
+            string? district,
+            string? workDetails,
+            string? workerPlace,
+            string? perpayDetails,
             WorkerTypes? workerType,
             decimal payRate,
             int? days = null)
@@ -41,6 +45,10 @@ namespace EgyptOnline.Application.Services.JobRequest
                 Skill = skill,
                 Governorate = governorate,
                 City = city,
+                District = district,
+                WorkDetails = workDetails,
+                WorkerPlace = workerPlace,
+                PerpayDetails = perpayDetails,
                 WorkerType = workerType,
                 PayRate = payRate,
                 Days = days,
@@ -81,6 +89,10 @@ namespace EgyptOnline.Application.Services.JobRequest
                 Skill = request.Skill,
                 Governorate = request.Governorate,
                 City = request.City,
+                District = request.District,
+                WorkDetails = request.WorkDetails,
+                WorkerPlace = request.WorkerPlace,
+                PerpayDetails = request.PerpayDetails,
                 WorkerType = request.WorkerType.HasValue ? (int?)request.WorkerType.Value : null,
                 PayRate = request.PayRate,
                 Days = request.Days,
@@ -89,6 +101,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                 AcceptedProviderUserId = request.AcceptedProviderUserId
             };
         }
+
 
         /// <summary>
         /// Retrieve requests created by the current user with count of interested providers.
@@ -152,11 +165,13 @@ namespace EgyptOnline.Application.Services.JobRequest
                         r.Skill,
                         r.Governorate,
                         r.City,
+                        r.District,
                         r.WorkDetails,
                         r.WorkerPlace,
                         r.PerpayDetails,
                         WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                         r.PayRate,
+                        pay = r.PayRate,
                         r.Days,
                         r.CreatedAt,
                         r.Status,
@@ -174,11 +189,13 @@ namespace EgyptOnline.Application.Services.JobRequest
                         r.Skill,
                         r.Governorate,
                         r.City,
+                        r.District,
                         r.WorkDetails,
                         r.WorkerPlace,
                         r.PerpayDetails,
                         WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                         r.PayRate,
+                        pay = r.PayRate,
                         r.Days,
                         r.CreatedAt,
                         r.Status,
@@ -186,6 +203,7 @@ namespace EgyptOnline.Application.Services.JobRequest
                         interestedCount
                     });
                 }
+
             }
 
             return result;
@@ -277,8 +295,13 @@ namespace EgyptOnline.Application.Services.JobRequest
                     r.Skill,
                     r.Governorate,
                     r.City,
+                    r.District,
+                    r.WorkDetails,
+                    r.WorkerPlace,
+                    r.PerpayDetails,
                     WorkerType = r.WorkerType.HasValue ? (int?)r.WorkerType.Value : null,
                     r.PayRate,
+                    pay = r.PayRate,
                     r.Days,
                     r.CreatedAt,
                     isInterested = interest?.IsInterested ?? false,
@@ -288,6 +311,7 @@ namespace EgyptOnline.Application.Services.JobRequest
             }
 
             return result;
+
         }
 
         /// <summary>

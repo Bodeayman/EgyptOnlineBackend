@@ -59,9 +59,14 @@ namespace EgyptOnline.Presentation.Controllers
                     dto.Skill,
                     dto.Governorate,
                     dto.City,
+                    dto.District,
+                    dto.WorkDetails,
+                    dto.WorkerPlace,
+                    dto.PerpayDetails,
                     dto.WorkerType,
                     dto.PayRate,
                     dto.Days);
+
 
                 return Ok(new { message = "تم إنشاء طلب العمل بنجاح ونشره في محافظتك", data = request });
             }
@@ -290,6 +295,18 @@ namespace EgyptOnline.Dtos.JobRequest
         [MaxLength(100)]
         public string City { get; set; } = string.Empty;
 
+        [MaxLength(100)]
+        public string? District { get; set; }
+
+        [MaxLength(1000)]
+        public string? WorkDetails { get; set; }
+
+        [MaxLength(500)]
+        public string? WorkerPlace { get; set; }
+
+        [MaxLength(500)]
+        public string? PerpayDetails { get; set; }
+
         public WorkerTypes? WorkerType { get; set; }
 
         [Range(0.01, double.MaxValue, ErrorMessage = "الأجر اليومي أو أجر المشروع يجب أن يكون أكبر من صفر")]
@@ -297,6 +314,7 @@ namespace EgyptOnline.Dtos.JobRequest
 
         [Range(1, int.MaxValue, ErrorMessage = "عدد الأيام يجب أن يكون أكبر من صفر")]
         public int? Days { get; set; }
+
     }
 
     public class SetInterestDto
