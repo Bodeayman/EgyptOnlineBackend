@@ -43,7 +43,10 @@ namespace EgyptOnline.Application.Services.Contract
                 throw new InvalidOperationException($"مستخدم العميل غير موجود: {contract.ClientUserId}");
             if (providerUser == null)
                 throw new InvalidOperationException($"مقدم الخدمة غير موجود برقم الهاتف: {contract.ServiceProviderPhoneNumber}");
-
+            if (clientUser.Id == providerUser.Id)
+            {
+                throw new InvalidOperationException("لا يمكن إنشاء عقد مع نفسك كمقدم خدمة.");
+            }
             var totalRequired = contract.TotalAmount + contract.PenaltyAmount;
             var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(contract.ClientUserId, totalRequired);
             if (!hasSufficientBalance)
