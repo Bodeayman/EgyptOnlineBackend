@@ -53,7 +53,7 @@ namespace EgyptOnline.Application.Services.Wallet
             // If it doesn't already start with +20, add it
             if (!cleaned.StartsWith("+20"))
             {
-                cleaned = "+20" + cleaned;
+                cleaned = "+2" + cleaned;
             }
 
             return cleaned;
