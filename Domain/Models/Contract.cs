@@ -30,14 +30,12 @@ namespace EgyptOnline.Models
         [Required]
         public int TotalDays { get; set; }
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal DailySalary { get; set; }
+        public int DailySalary { get; set; }
         [Required]
-        public decimal TotalAmount { get; set; }
+        public int TotalAmount { get; set; }
 
         // Mandatory Penalty Field (defaults to 0 if not set)
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal PenaltyAmount { get; set; } = 0;
+        public int PenaltyAmount { get; set; } = 0;
 
         // Location Context (Mandatory)
         public string? Governorate { get; set; }

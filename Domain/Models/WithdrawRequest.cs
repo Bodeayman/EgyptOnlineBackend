@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using EgyptOnline.Domain.Models.Enums;
 
 namespace EgyptOnline.Models
 {
@@ -19,12 +20,13 @@ namespace EgyptOnline.Models
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Amount { get; set; }
+        public int Amount { get; set; }
 
         [Required]
         [MaxLength(100)]
         public string DestinationWalletNumber { get; set; } = string.Empty;
+
+        public PaymentType PaymentType { get; set; } = PaymentType.MobileWallet;
 
         [Required]
         [MaxLength(200)]

@@ -3,10 +3,12 @@ using EgyptOnline.Domain.Models;
 using EgyptOnline.Models;
 using EgyptOnline.Services;
 using EgyptOnline.Infrastructure;
+using EgyptOnline.Domain.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using System.Text.RegularExpressions;
 
 namespace EgyptOnline.Application.Services.Wallet
 {
@@ -25,6 +27,36 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger = logger;
             _emailService = emailService;
             _userManager = userManager;
+        }
+
+        private bool ValidateEgyptianPhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return false;
+
+            // Remove spaces and dashes
+            var cleaned = phoneNumber.Replace(" ", "").Replace("-", "");
+
+            // Egyptian phone number pattern: +20 followed by 10 digits, or 11 digits starting with 01
+            var pattern = @"^(\+20)?01[0125][0-9]{8}$";
+            return Regex.IsMatch(cleaned, pattern);
+        }
+
+        private string NormalizeEgyptianPhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return phoneNumber;
+
+            // Remove spaces and dashes
+            var cleaned = phoneNumber.Replace(" ", "").Replace("-", "");
+
+            // If it doesn't already start with +20, add it
+            if (!cleaned.StartsWith("+20"))
+            {
+                cleaned = "+20" + cleaned;
+            }
+
+            return cleaned;
         }
 
         /// <summary>
@@ -54,7 +86,7 @@ namespace EgyptOnline.Application.Services.Wallet
             return await GetWalletAsync(userId);
         }
 
-        public async Task<UserWallet> DepositAsync(string userId, decimal amount)
+        public async Task<UserWallet> DepositAsync(string userId, int amount)
         {
             if (amount <= 0)
                 throw new InvalidOperationException("المبلغ يجب ان يكون اكبر من صفر");
@@ -89,7 +121,7 @@ namespace EgyptOnline.Application.Services.Wallet
             }
         }
 
-        public async Task<UserWallet> WithdrawAsync(string userId, decimal amount)
+        public async Task<UserWallet> WithdrawAsync(string userId, int amount)
         {
             if (amount <= 0)
                 throw new InvalidOperationException("المبلغ يجب ان يكون اكبر من صفر");
@@ -128,7 +160,7 @@ namespace EgyptOnline.Application.Services.Wallet
             }
         }
 
-        public async Task<(UserWallet fromWallet, UserWallet toWallet)> TransferAsync(string fromUserId, string toUserId, decimal amount)
+        public async Task<(UserWallet fromWallet, UserWallet toWallet)> TransferAsync(string fromUserId, string toUserId, int amount)
         {
             if (amount <= 0)
                 throw new InvalidOperationException("المبلغ يجب ان يكون اكبر من صفر");
@@ -217,13 +249,20 @@ namespace EgyptOnline.Application.Services.Wallet
 
         public async Task<DepositRequest> SubmitDepositRequestAsync(
             string userId,
-            decimal amount,
+            int amount,
             string sourceWalletNumber,
             string walletOwnerName,
-            string receiptImagePath)
+            string receiptImagePath,
+            PaymentType paymentType = PaymentType.MobileWallet)
         {
             if (amount <= 0)
                 throw new InvalidOperationException("المبلغ يجب ان يكون اكبر من صفر");
+
+            if (!ValidateEgyptianPhoneNumber(sourceWalletNumber))
+                throw new InvalidOperationException("رقم المحفظة غير صحيح");
+
+            // Normalize the wallet number to include +20 prefix
+            sourceWalletNumber = NormalizeEgyptianPhoneNumber(sourceWalletNumber);
 
             await RequireApprovedKyc(userId);
 
@@ -235,6 +274,7 @@ namespace EgyptOnline.Application.Services.Wallet
                 UserId = userId,
                 Amount = amount,
                 SourceWalletNumber = sourceWalletNumber,
+                PaymentType = paymentType,
                 WalletOwnerName = walletOwnerName,
                 RecipientPhoneNumber = platformWalletNumber,
                 ReceiptImagePath = receiptImagePath,
@@ -259,6 +299,7 @@ namespace EgyptOnline.Application.Services.Wallet
                                   $"اسم المستخدم: {user?.FirstName} {user?.LastName}\n" +
                                   $"رقم الهاتف: {user?.PhoneNumber}\n" +
                                   $"المبلغ: {amount} ج.م\n" +
+                                  $"نوع الدفع: {paymentType}\n" +
                                   $"رقم المحفظة المصدر: {sourceWalletNumber}\n" +
                                   $"اسم مالك المحفظة: {walletOwnerName}\n" +
                                   $"رقم المحفظة المستلمة: {platformWalletNumber}\n" +
@@ -316,9 +357,11 @@ namespace EgyptOnline.Application.Services.Wallet
                     phoneNumber = request.User?.PhoneNumber,
                     request.Amount,
                     request.SourceWalletNumber,
+                    request.PaymentType,
                     request.WalletOwnerName,
                     request.RecipientPhoneNumber,
                     request.ReceiptImagePath,
+                    request.RejectionReason,
                     request.Status,
                     request.CreatedAt
                 });
@@ -387,12 +430,19 @@ namespace EgyptOnline.Application.Services.Wallet
 
         public async Task<WithdrawRequest> SubmitWithdrawRequestAsync(
             string userId,
-            decimal amount,
+            int amount,
             string destinationWalletNumber,
-            string walletOwnerName)
+            string walletOwnerName,
+            PaymentType paymentType = PaymentType.MobileWallet)
         {
             if (amount <= 0)
                 throw new InvalidOperationException("المبلغ يجب ان يكون اكبر من صفر");
+
+            if (!ValidateEgyptianPhoneNumber(destinationWalletNumber))
+                throw new InvalidOperationException("رقم المحفظة غير صحيح");
+
+            // Normalize the wallet number to include +20 prefix
+            destinationWalletNumber = NormalizeEgyptianPhoneNumber(destinationWalletNumber);
 
             await RequireApprovedKyc(userId);
 
@@ -416,6 +466,7 @@ namespace EgyptOnline.Application.Services.Wallet
                     UserId = userId,
                     Amount = amount,
                     DestinationWalletNumber = destinationWalletNumber,
+                    PaymentType = paymentType,
                     WalletOwnerName = walletOwnerName,
                     SourceWalletNumber = sourceWalletNumber,
                     Status = "pending"
@@ -438,6 +489,7 @@ namespace EgyptOnline.Application.Services.Wallet
                                       $"اسم المستخدم: {user?.FirstName} {user?.LastName}\n" +
                                       $"رقم الهاتف: {user?.PhoneNumber}\n" +
                                       $"المبلغ: {amount} ج.م\n" +
+                                      $"نوع الدفع: {paymentType}\n" +
                                       $"رقم المحفظة المصدر: {sourceWalletNumber}\n" +
                                       $"رقم المحفظة المستلمة: {destinationWalletNumber}\n" +
                                       $"اسم مالك المحفظة: {walletOwnerName}\n" +
@@ -501,8 +553,10 @@ namespace EgyptOnline.Application.Services.Wallet
                     phoneNumber = request.User?.PhoneNumber,
                     request.Amount,
                     request.DestinationWalletNumber,
+                    request.PaymentType,
                     request.WalletOwnerName,
                     request.SourceWalletNumber,
+                    request.RejectionReason,
                     request.Status,
                     request.CreatedAt
                 });
@@ -636,19 +690,19 @@ namespace EgyptOnline.Application.Services.Wallet
             return wallet;
         }
 
-        public async Task<bool> HasSufficientFreeBalanceAsync(string userId, decimal amount)
+        public async Task<bool> HasSufficientFreeBalanceAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
             return wallet.FreeBalance >= amount;
         }
 
-        public async Task<bool> HasSufficientFrozenBalanceAsync(string userId, decimal amount)
+        public async Task<bool> HasSufficientFrozenBalanceAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
             return wallet.FrozenBalance >= amount;
         }
 
-        public async Task TransferFreeToFrozenAsync(string userId, decimal amount)
+        public async Task TransferFreeToFrozenAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
 
@@ -665,7 +719,7 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger.LogInformation("Transferred {Amount} from free to frozen for user {UserId}", amount, userId);
         }
 
-        public async Task TransferFrozenToFreeAsync(string userId, decimal amount)
+        public async Task TransferFrozenToFreeAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
 
@@ -682,7 +736,7 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger.LogInformation("Transferred {Amount} from frozen to free for user {UserId}", amount, userId);
         }
 
-        public async Task TransferFreeBetweenUsersAsync(string fromUserId, string toUserId, decimal amount)
+        public async Task TransferFreeBetweenUsersAsync(string fromUserId, string toUserId, int amount)
         {
             var fromWallet = await GetWalletByUserIdAsync(fromUserId);
             var toWallet = await GetWalletByUserIdAsync(toUserId);
@@ -713,7 +767,7 @@ namespace EgyptOnline.Application.Services.Wallet
             }
         }
 
-        public async Task TransferFrozenBetweenUsersAsync(string fromUserId, string toUserId, decimal amount)
+        public async Task TransferFrozenBetweenUsersAsync(string fromUserId, string toUserId, int amount)
         {
             var fromWallet = await GetWalletByUserIdAsync(fromUserId);
             var toWallet = await GetWalletByUserIdAsync(toUserId);
@@ -744,7 +798,7 @@ namespace EgyptOnline.Application.Services.Wallet
             }
         }
 
-        public async Task AddToFreeBalanceAsync(string userId, decimal amount)
+        public async Task AddToFreeBalanceAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
             wallet.FreeBalance += amount;
@@ -753,7 +807,7 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger.LogInformation("Added {Amount} to free balance for user {UserId}", amount, userId);
         }
 
-        public async Task SubtractFromFreeBalanceAsync(string userId, decimal amount)
+        public async Task SubtractFromFreeBalanceAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
 
@@ -768,7 +822,7 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger.LogInformation("Subtracted {Amount} from free balance for user {UserId}", amount, userId);
         }
 
-        public async Task AddToFrozenBalanceAsync(string userId, decimal amount)
+        public async Task AddToFrozenBalanceAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
             wallet.FrozenBalance += amount;
@@ -777,7 +831,7 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger.LogInformation("Added {Amount} to frozen balance for user {UserId}", amount, userId);
         }
 
-        public async Task SubtractFromFrozenBalanceAsync(string userId, decimal amount)
+        public async Task SubtractFromFrozenBalanceAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
 
@@ -792,7 +846,7 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger.LogInformation("Subtracted {Amount} from frozen balance for user {UserId}", amount, userId);
         }
 
-        public async Task AdminOverrideBalanceAsync(string userId, decimal newFreeBalance, decimal newFrozenBalance, string reason)
+        public async Task AdminOverrideBalanceAsync(string userId, int newFreeBalance, int newFrozenBalance, string reason)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
 
@@ -808,7 +862,7 @@ namespace EgyptOnline.Application.Services.Wallet
                 userId, oldFree, newFreeBalance, oldFrozen, newFrozenBalance, reason);
         }
 
-        public async Task AdminDepositAsync(string phoneNumber, decimal amount, string reference)
+        public async Task AdminDepositAsync(string phoneNumber, int amount, string reference)
         {
             var wallet = await GetWalletByPhoneNumberAsync(phoneNumber);
 
@@ -819,13 +873,13 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger.LogInformation("Admin deposit of {Amount} to phone {PhoneNumber}. Reference: {Reference}", amount, phoneNumber, reference);
         }
 
-        public async Task<bool> CanInitiateWithdrawalAsync(string userId, decimal amount)
+        public async Task<bool> CanInitiateWithdrawalAsync(string userId, int amount)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
             return wallet.FreeBalance >= amount;
         }
 
-        public async Task AdminCompleteWithdrawalAsync(string userId, decimal amount, string reference)
+        public async Task AdminCompleteWithdrawalAsync(string userId, int amount, string reference)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
 
@@ -841,12 +895,12 @@ namespace EgyptOnline.Application.Services.Wallet
             _logger.LogInformation("Admin completed withdrawal of {Amount} for user {UserId}. Reference: {Reference}", amount, userId, reference);
         }
 
-        public async Task<UserWallet> OverrideUserBalanceAsync(string userId, string balanceType, decimal amount, string operation, string reason, string adminId)
+        public async Task<UserWallet> OverrideUserBalanceAsync(string userId, string balanceType, int amount, string operation, string reason, string adminId)
         {
             var wallet = await GetWalletByUserIdAsync(userId);
 
-            decimal oldValue = balanceType == "free" ? wallet.FreeBalance : wallet.FrozenBalance;
-            decimal newValue = operation == "add" ? oldValue + amount : oldValue - amount;
+            int oldValue = balanceType == "free" ? wallet.FreeBalance : wallet.FrozenBalance;
+            int newValue = operation == "add" ? oldValue + amount : oldValue - amount;
 
             if (newValue < 0)
             {

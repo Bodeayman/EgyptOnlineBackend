@@ -1,18 +1,19 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
+using EgyptOnline.Domain.Models.Enums;
 
 namespace EgyptOnline.Dtos.Wallet
 {
     public class WalletDepositDto
     {
-        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be positive")]
-        public decimal Amount { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "Amount must be positive")]
+        public int Amount { get; set; }
     }
 
     public class WalletWithdrawDto
     {
-        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be positive")]
-        public decimal Amount { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "Amount must be positive")]
+        public int Amount { get; set; }
     }
 
     public class WalletTransferDto
@@ -20,19 +21,21 @@ namespace EgyptOnline.Dtos.Wallet
         [Required(ErrorMessage = "ToUserId is required")]
         public string ToUserId { get; set; } = string.Empty;
 
-        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be positive")]
-        public decimal Amount { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "Amount must be positive")]
+        public int Amount { get; set; }
     }
 
     public class SubmitDepositRequestDto
     {
         [Required(ErrorMessage = "مبلغ الإيداع مطلوب")]
-        [Range(1.0, double.MaxValue, ErrorMessage = "المبلغ يجب أن يكون أكبر من أو يساوي 1")]
-        public decimal Amount { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "المبلغ يجب أن يكون أكبر من أو يساوي 1")]
+        public int Amount { get; set; }
 
         [Required(ErrorMessage = "رقم المحفظة المحول منها مطلوب")]
         [MaxLength(100)]
         public string SourceWalletNumber { get; set; } = string.Empty;
+
+        public PaymentType PaymentType { get; set; } = PaymentType.MobileWallet;
 
         [Required(ErrorMessage = "اسم صاحب المحفظة مطلوب")]
         [MaxLength(200)]
@@ -45,12 +48,14 @@ namespace EgyptOnline.Dtos.Wallet
     public class SubmitWithdrawRequestDto
     {
         [Required(ErrorMessage = "مبلغ السحب مطلوب")]
-        [Range(1.0, double.MaxValue, ErrorMessage = "المبلغ يجب أن يكون أكبر من أو يساوي 1")]
-        public decimal Amount { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "المبلغ يجب أن يكون أكبر من أو يساوي 1")]
+        public int Amount { get; set; }
 
         [Required(ErrorMessage = "رقم المحفظة المحول إليها مطلوب")]
         [MaxLength(100)]
         public string DestinationWalletNumber { get; set; } = string.Empty;
+
+        public PaymentType PaymentType { get; set; } = PaymentType.MobileWallet;
 
         [Required(ErrorMessage = "اسم صاحب المحفظة مطلوب")]
         [MaxLength(200)]

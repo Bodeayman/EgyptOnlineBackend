@@ -115,16 +115,35 @@ namespace EgyptOnline.Application.Services.JobRequest
 
                 if (includeProviders)
                 {
-                    var interestedProviders = r.Interests
+                    var interestedProviderIds = r.Interests
                         .Where(i => i.IsInterested)
-                        .Select(i => new
-                        {
-                            id = i.Id,
-                            serviceProviderUserId = i.ServiceProviderUserId,
-                            isInterested = i.IsInterested,
-                            updatedAt = i.UpdatedAt
-                        })
+                        .Select(i => i.ServiceProviderUserId)
                         .ToList();
+
+                    var interestedProviders = await _context.Users
+                        .Include(u => u.ServiceProvider)
+                        .Where(u => interestedProviderIds.Contains(u.Id))
+                        .Select(u => new
+                        {
+                            userId = u.Id,
+                            name = $"{u.FirstName} {u.LastName}",
+                            skill = u.ServiceProvider != null ? u.ServiceProvider.GetSpecialization() : string.Empty,
+                            governorate = u.Governorate,
+                            city = u.City,
+                            district = u.District,
+                            pay = u.ServiceProvider is Worker ? ((Worker)u.ServiceProvider).ServicePricePerDay : 0,
+                            owner = (string?)null,
+                            imageUrl = u.ImageUrl,
+                            isCompany = false,
+                            workerType = u.ServiceProvider is Worker ? (int)((Worker)u.ServiceProvider).WorkerType : 0,
+                            mobileNumber = u.PhoneNumber,
+                            typeOfService = u.ServiceProvider != null ? u.ServiceProvider.ProviderType : "Worker",
+                            aboutMe = u.ServiceProvider != null ? u.ServiceProvider.Bio : (string?)null,
+                            isOccupied = u.ServiceProvider != null ? !u.ServiceProvider.IsAvailable : false,
+                            marketPlace = u.ServiceProvider != null ? u.ServiceProvider.MarketPlace : (string?)null,
+                            derivedSpec = u.ServiceProvider != null ? u.ServiceProvider.GetDerivedSpecialization() : (string?)null
+                        })
+                        .ToListAsync();
 
                     result.Add(new
                     {

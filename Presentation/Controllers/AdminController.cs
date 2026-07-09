@@ -529,9 +529,11 @@ namespace EgyptOnline.Controllers
                         amount = deposit.Amount,
                         receiptImageUrl = !string.IsNullOrEmpty(deposit.ReceiptImagePath) ? await _cdnService.GetPresignedUrlAsync(deposit.ReceiptImagePath) : null,
                         sourceWalletNumber = deposit.SourceWalletNumber,
+                        paymentType = deposit.PaymentType,
                         walletOwnerName = deposit.WalletOwnerName,
                         recipientPhoneNumber = deposit.RecipientPhoneNumber,
                         status = deposit.Status,
+                        rejectionReason = deposit.RejectionReason,
                         createdAt = deposit.CreatedAt
                     });
                 }
@@ -557,6 +559,25 @@ namespace EgyptOnline.Controllers
             {
                 var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
                 var result = await _walletService.ReviewDepositRequestAsync(id, adminId, dto.Status, dto.RejectionReason);
+
+                // Send Firebase Notification based on new status
+                string title = "تحديث طلب الإيداع";
+                string body = dto.Status switch
+                {
+                    "approved" => $"تهانينا! تم قبول طلب الإيداع بمبلغ {result.Amount} جنيه وإضافته إلى رصيدك.",
+                    "rejected" => $"تم رفض طلب الإيداع بمبلغ {result.Amount} جنيه. السبب: {dto.RejectionReason ?? "غير محدد"}",
+                    _ => "تم تحديث حالة طلب الإيداع الخاص بك"
+                };
+
+                try
+                {
+                    await _notificationService.SendNotificationToUser(result.UserId, title, body, "wallet");
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to send deposit notification to user {UserId}", result.UserId);
+                }
+
                 return Ok(new
                 {
                     message = dto.Status == "approved" ? "تم قبول طلب الإيداع" : "تم رفض طلب الإيداع",
@@ -616,9 +637,11 @@ namespace EgyptOnline.Controllers
                         phoneNumber = withdraw.phoneNumber,
                         amount = withdraw.Amount,
                         destinationWalletNumber = withdraw.DestinationWalletNumber,
+                        paymentType = withdraw.PaymentType,
                         walletOwnerName = withdraw.WalletOwnerName,
                         sourceWalletNumber = withdraw.SourceWalletNumber,
                         status = withdraw.Status,
+                        rejectionReason = withdraw.RejectionReason,
                         createdAt = withdraw.CreatedAt
                     };
                 });
@@ -644,6 +667,25 @@ namespace EgyptOnline.Controllers
             {
                 var adminId = User.FindFirst("uid")?.Value ?? string.Empty;
                 var result = await _walletService.ReviewWithdrawRequestAsync(id, adminId, dto.Status, dto.RejectionReason);
+
+                // Send Firebase Notification based on new status
+                string title = "تحديث طلب السحب";
+                string body = dto.Status switch
+                {
+                    "approved" => $"تهانينا! تم قبول طلب السحب بمبلغ {result.Amount} جنيه والتحويل إلى محفظتك.",
+                    "rejected" => $"تم رفض طلب السحب بمبلغ {result.Amount} جنيه وتم إعادة المبلغ إلى رصيدك. السبب: {dto.RejectionReason ?? "غير محدد"}",
+                    _ => "تم تحديث حالة طلب السحب الخاص بك"
+                };
+
+                try
+                {
+                    await _notificationService.SendNotificationToUser(result.UserId, title, body, "wallet");
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to send withdrawal notification to user {UserId}", result.UserId);
+                }
+
                 return Ok(new
                 {
                     message = dto.Status == "approved" ? "تم قبول طلب السحب" : "تم رفض طلب السحب",
@@ -1197,8 +1239,8 @@ namespace EgyptOnline.Controllers
         public string BalanceType { get; set; } = string.Empty;
 
         [Required]
-        [Range(0.01, double.MaxValue)]
-        public decimal Amount { get; set; }
+        [Range(1, int.MaxValue)]
+        public int Amount { get; set; }
 
         /// <summary>add | deduct</summary>
         [Required]
@@ -1244,6 +1286,6 @@ namespace EgyptOnline.Controllers
         /// Negative value = decrease (refund to client, deduct from provider)
         /// Positive value = increase (charge client, add to provider frozen)
         /// </summary>
-        public decimal? AdjustmentAmount { get; set; }
+        public int? AdjustmentAmount { get; set; }
     }
 }

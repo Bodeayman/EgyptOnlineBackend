@@ -21,8 +21,7 @@ namespace EgyptOnline.Models
         [MaxLength(50)]
         public string Type { get; set; } = string.Empty;
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Amount { get; set; }
+        public int Amount { get; set; }
 
         [MaxLength(500)]
         public string Description { get; set; } = string.Empty;

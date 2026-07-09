@@ -17,14 +17,12 @@ namespace EgyptOnline.Models
         public User? User { get; set; }
 
         // Free Balance: Can be used for cash-out withdrawals and creating new contracts
-        [Column(TypeName = "decimal(18,2)")]
         [ConcurrencyCheck]
-        public decimal FreeBalance { get; set; } = 0;
+        public int FreeBalance { get; set; } = 0;
 
         // Frozen Balance: Locked for active contracts/disputes, cannot be used for withdrawals or new contracts
-        [Column(TypeName = "decimal(18,2)")]
         [ConcurrencyCheck]
-        public decimal FrozenBalance { get; set; } = 0;
+        public int FrozenBalance { get; set; } = 0;
 
 
         [Column(TypeName = "timestamptz")]

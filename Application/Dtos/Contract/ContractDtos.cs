@@ -95,12 +95,12 @@ namespace EgyptOnline.Dtos.Contract
         public int TotalDays { get; set; }
 
         [Required(ErrorMessage = "الأجر اليومي مطلوب")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "الأجر اليومي يجب أن يكون أكبر من صفر")]
-        public decimal DailySalary { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "الأجر اليومي يجب أن يكون أكبر من صفر")]
+        public int DailySalary { get; set; }
 
         [Required(ErrorMessage = "مبلغ الشرط الجزائي مطلوب")]
-        [Range(0.0, double.MaxValue, ErrorMessage = "الشرط الجزائي يجب أن يكون 0 أو أكبر")]
-        public decimal PenaltyAmount { get; set; }
+        [Range(0, int.MaxValue, ErrorMessage = "الشرط الجزائي يجب أن يكون 0 أو أكبر")]
+        public int PenaltyAmount { get; set; }
 
         [Required(ErrorMessage = "المحافظة مطلوبة")]
         public string Governorate { get; set; } = string.Empty;

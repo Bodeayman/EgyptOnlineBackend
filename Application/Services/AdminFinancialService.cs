@@ -24,7 +24,7 @@ namespace EgyptOnline.Application.Services
 
         #region Deposit Operations
 
-        public async Task AdminApproveDepositAsync(string phoneNumber, decimal amount, string reference, string adminUserId)
+        public async Task AdminApproveDepositAsync(string phoneNumber, int amount, string reference, string adminUserId)
         {
             if (amount <= 0)
                 throw new InvalidOperationException("Deposit amount must be positive");
@@ -60,7 +60,7 @@ namespace EgyptOnline.Application.Services
 
         #region Withdrawal Operations
 
-        public async Task<bool> ValidateWithdrawalRequestAsync(string userId, decimal amount)
+        public async Task<bool> ValidateWithdrawalRequestAsync(string userId, int amount)
         {
             if (amount <= 0)
                 return false;
@@ -68,7 +68,7 @@ namespace EgyptOnline.Application.Services
             return await _walletService.CanInitiateWithdrawalAsync(userId, amount);
         }
 
-        public async Task AdminCompleteWithdrawalAsync(string userId, decimal amount, string reference, string adminUserId)
+        public async Task AdminCompleteWithdrawalAsync(string userId, int amount, string reference, string adminUserId)
         {
             if (amount <= 0)
                 throw new InvalidOperationException("Withdrawal amount must be positive");
@@ -114,7 +114,7 @@ namespace EgyptOnline.Application.Services
 
         #region Balance Override Operations
 
-        public async Task AdminOverrideBalanceAsync(string userId, decimal newFreeBalance, decimal newFrozenBalance, string reason, string adminUserId)
+        public async Task AdminOverrideBalanceAsync(string userId, int newFreeBalance, int newFrozenBalance, string reason, string adminUserId)
         {
             if (newFreeBalance < 0)
                 throw new InvalidOperationException("Free balance cannot be negative");

@@ -76,7 +76,8 @@ namespace EgyptOnline.Controllers
                     dto.Amount,
                     dto.SourceWalletNumber,
                     dto.WalletOwnerName,
-                    receiptPath);
+                    receiptPath,
+                    dto.PaymentType);
 
                 return Ok(new
                 {
@@ -121,7 +122,8 @@ namespace EgyptOnline.Controllers
                     userId,
                     dto.Amount,
                     dto.DestinationWalletNumber,
-                    dto.WalletOwnerName);
+                    dto.WalletOwnerName,
+                    dto.PaymentType);
 
                 return Ok(new
                 {
