@@ -529,13 +529,14 @@ namespace EgyptOnline.Controllers
                         amount = deposit.Amount,
                         receiptImageUrl = !string.IsNullOrEmpty(deposit.ReceiptImagePath) ? await _cdnService.GetPresignedUrlAsync(deposit.ReceiptImagePath) : null,
                         sourceWalletNumber = deposit.SourceWalletNumber,
-                        paymentType = deposit.PaymentType,
+                        paymentType = deposit.PaymentType.ToString(),
                         walletOwnerName = deposit.WalletOwnerName,
                         recipientPhoneNumber = deposit.RecipientPhoneNumber,
                         status = deposit.Status,
                         rejectionReason = deposit.RejectionReason,
                         createdAt = deposit.CreatedAt
                     });
+
                 }
                 return Ok(new { data = formatted, pageNumber, pageSize });
             }
@@ -637,13 +638,13 @@ namespace EgyptOnline.Controllers
                         phoneNumber = withdraw.phoneNumber,
                         amount = withdraw.Amount,
                         destinationWalletNumber = withdraw.DestinationWalletNumber,
-                        paymentType = withdraw.PaymentType,
+                        paymentType = withdraw.PaymentType.ToString(),
                         walletOwnerName = withdraw.WalletOwnerName,
-                        sourceWalletNumber = withdraw.SourceWalletNumber,
                         status = withdraw.Status,
                         rejectionReason = withdraw.RejectionReason,
                         createdAt = withdraw.CreatedAt
                     };
+
                 });
                 return Ok(new { data = formatted, pageNumber, pageSize });
             }

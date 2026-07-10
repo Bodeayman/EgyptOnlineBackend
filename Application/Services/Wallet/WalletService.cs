@@ -555,12 +555,12 @@ namespace EgyptOnline.Application.Services.Wallet
                     request.DestinationWalletNumber,
                     request.PaymentType,
                     request.WalletOwnerName,
-                    request.SourceWalletNumber,
                     request.RejectionReason,
                     request.Status,
                     request.CreatedAt
                 });
             }
+
 
             return result;
         }
