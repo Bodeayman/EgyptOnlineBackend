@@ -45,11 +45,6 @@ namespace EgyptOnline.Presentation.Controllers
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            // Validation: if ProviderType is Worker, WorkerType must be specified
-            if (dto.ProviderType.Equals("Worker", StringComparison.OrdinalIgnoreCase) && dto.WorkerType == null)
-            {
-                return BadRequest(new { message = "عند اختيار نوع مزود عامل (Worker)، يجب تحديد نوع الحساب اليومي أو بالمشروع (WorkerType)" });
-            }
 
             try
             {
@@ -64,7 +59,7 @@ namespace EgyptOnline.Presentation.Controllers
                     dto.WorkerPlace,
                     dto.PerpayDetails,
                     dto.WorkerType,
-                    dto.PayRate,
+                    dto.PayRate!.Value,
                     dto.Days);
 
 
@@ -279,9 +274,10 @@ namespace EgyptOnline.Dtos.JobRequest
 {
     public class CreateJobRequestDto
     {
-        [Required(ErrorMessage = "نوع مقدم الخدمة مطلوب")]
+        [Required(ErrorMessage = "نوع مقدم الخدمة مطلوب (مثال: Worker, Engineer, Sculptor, Contractor...)")]
         [MaxLength(50)]
-        public string ProviderType { get; set; } = "Worker"; // Worker, Contractor, Engineer, Company, etc.
+        [RegularExpression("^(?i)(Worker|Contractor|Company|Engineer|Assistant|Sculptor|Marketplace)$", ErrorMessage = "نوع مقدم الخدمة غير صالح")]
+        public string ProviderType { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "المهارة/التخصص مطلوب")]
         [MaxLength(100)]
@@ -307,11 +303,14 @@ namespace EgyptOnline.Dtos.JobRequest
         [MaxLength(500)]
         public string? PerpayDetails { get; set; }
 
+        [Required(ErrorMessage = "نوع العامل مطلوب (يومي أو بالمشروع)")]
         public WorkerTypes? WorkerType { get; set; }
 
-        [Range(0.01, double.MaxValue, ErrorMessage = "الأجر اليومي أو أجر المشروع يجب أن يكون أكبر من صفر")]
-        public decimal PayRate { get; set; }
+        [Required(ErrorMessage = "معدل الأجر مطلوب")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "الأجر يجب أن يكون أكبر من صفر")]
+        public decimal? PayRate { get; set; }
 
+        [Required(ErrorMessage = "عدد الأيام مطلوب")]
         [Range(1, int.MaxValue, ErrorMessage = "عدد الأيام يجب أن يكون أكبر من صفر")]
         public int? Days { get; set; }
 
