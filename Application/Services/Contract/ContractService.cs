@@ -72,7 +72,8 @@ namespace EgyptOnline.Application.Services.Contract
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _walletService.TransferFreeToFrozenAsync(contract.ClientUserId, totalRequired);
+                // Freeze client's total (daily salary + client's penalty)
+                await _walletService.TransferFreeToFrozenAsync(contract.ClientUserId, contract.TotalAmount + contract.PenaltyAmount);
 
                 contract.Status = "pending";
                 contract.CreatedAt = DateTime.UtcNow;
@@ -141,8 +142,8 @@ namespace EgyptOnline.Application.Services.Contract
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var totalRequired = contract.TotalAmount + contract.PenaltyAmount;
-                await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, totalRequired);
+                // Return client's frozen funds (daily salary + client's penalty)
+                await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, contract.TotalAmount + contract.PenaltyAmount);
 
                 contract.Status = "cancelled";
                 contract.CancelledAt = DateTime.UtcNow;

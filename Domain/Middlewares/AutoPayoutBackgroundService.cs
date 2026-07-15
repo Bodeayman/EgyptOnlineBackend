@@ -154,15 +154,25 @@ public class AutoPayoutBackgroundService : BackgroundService
                 contract.Status = "completed";
                 contract.CompletedAt = DateTime.UtcNow;
 
-                // Release both penalty deposits back to free balance
-                if (contract.PenaltyAmount > 0)
+                // Calculate remaining frozen balance for client (includes unused daily salary + client's penalty)
+                var clientWallet = await context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
+                var remainingFrozenBalance = clientWallet?.FrozenBalance ?? 0;
+
+                // Return all remaining frozen money to client
+                if (remainingFrozenBalance > 0)
                 {
-                    await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, contract.PenaltyAmount);
-                    if (providerUser != null)
-                        await walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
+                    await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, remainingFrozenBalance);
+                    Log.Information("Contract {ContractId} completed. Returned {Amount} remaining frozen balance to client", contract.Id, remainingFrozenBalance);
                 }
 
-                Log.Information("Contract {ContractId} completed. All day payouts processed, penalties released", contract.Id);
+                // Release provider's penalty deposit back to free balance
+                if (contract.PenaltyAmount > 0 && providerUser != null)
+                {
+                    await walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
+                    Log.Information("Contract {ContractId} completed. Provider's penalty of {Amount} released", contract.Id, contract.PenaltyAmount);
+                }
+
+                Log.Information("Contract {ContractId} completed. All day payouts processed, remaining funds and penalties released", contract.Id);
             }
 
             await context.SaveChangesAsync();
@@ -211,9 +221,15 @@ public class AutoPayoutBackgroundService : BackgroundService
         using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            // Unfreeze total + penalty back to client's free balance
-            var totalFrozen = contract.TotalAmount + contract.PenaltyAmount;
-            await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, totalFrozen);
+            // Return client's frozen funds (daily salary + client's penalty)
+            await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, contract.TotalAmount + contract.PenaltyAmount);
+
+            // Return provider's frozen penalty deposit
+            var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+            if (providerUser != null && contract.PenaltyAmount > 0)
+            {
+                await walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
+            }
 
             contract.Status = "cancelled";
             contract.CancelledAt = DateTime.UtcNow;
@@ -224,7 +240,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             await transaction.CommitAsync();
 
             Log.Information(
-                "Contract {ContractId} auto-expired (start date {StartDate} passed without provider acceptance). Funds unfrozen.",
+                "Contract {ContractId} auto-expired (start date {StartDate} passed without provider acceptance). Client funds unfrozen.",
                 contract.Id, contract.StartDate.Date);
         }
         catch (Exception ex)
