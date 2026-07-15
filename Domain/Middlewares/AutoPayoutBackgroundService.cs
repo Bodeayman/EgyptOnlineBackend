@@ -27,6 +27,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             {
                 await ProcessAutoPayoutsAsync(stoppingToken);
                 await ExpireStaleContractsAsync(stoppingToken);
+                await CompleteIncompleteContractsAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -247,6 +248,87 @@ public class AutoPayoutBackgroundService : BackgroundService
         {
             await transaction.RollbackAsync();
             Log.Error(ex, "Failed to auto-expire Contract {ContractId}", contract.Id);
+        }
+    }
+
+    // ── SCENARIO: Complete incomplete contracts ─────────────────────────
+
+    private async Task CompleteIncompleteContractsAsync(CancellationToken stoppingToken)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var walletService = scope.ServiceProvider.GetRequiredService<WalletService>();
+
+        // Egypt local date today
+        var egyptDate = DateTime.SpecifyKind(EgyptTimeHelper.NowInEgypt().Date, DateTimeKind.Utc);
+
+        // Find active contracts where end date has passed
+        var incompleteContracts = await context.Contracts
+            .Include(c => c.ContractDays)
+            .Where(c => c.Status == "active" &&
+                        c.StartDate.AddDays(c.TotalDays - 1).Date < egyptDate)
+            .ToListAsync(stoppingToken);
+
+        foreach (var contract in incompleteContracts)
+        {
+            if (stoppingToken.IsCancellationRequested) break;
+            await CompleteContractAsync(context, walletService, contract);
+        }
+    }
+
+    private async Task CompleteContractAsync(
+        ApplicationDbContext context,
+        WalletService walletService,
+        Contract contract)
+    {
+        using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            // Mark all unprocessed days as completed without payout
+            var unprocessedDays = contract.ContractDays.Where(cd => !cd.IsProcessed).ToList();
+            foreach (var day in unprocessedDays)
+            {
+                day.Status = ContractDayStatus.Completed;
+                day.IsProcessed = true;
+                day.ProcessedAt = DateTime.UtcNow;
+            }
+
+            contract.Status = "completed";
+            contract.CompletedAt = DateTime.UtcNow;
+
+            // Calculate remaining frozen balance for client (includes unused daily salary + client's penalty)
+            var clientWallet = await context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
+            var remainingFrozenBalance = clientWallet?.FrozenBalance ?? 0;
+
+            // Return all remaining frozen money to client
+            if (remainingFrozenBalance > 0)
+            {
+                await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, remainingFrozenBalance);
+                Log.Information("Contract {ContractId} completed (incomplete). Returned {Amount} remaining frozen balance to client", contract.Id, remainingFrozenBalance);
+            }
+
+            // Release provider's penalty deposit back to free balance
+            if (contract.PenaltyAmount > 0)
+            {
+                var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+                if (providerUser != null)
+                {
+                    await walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
+                    Log.Information("Contract {ContractId} completed (incomplete). Provider's penalty of {Amount} released", contract.Id, contract.PenaltyAmount);
+                }
+            }
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            Log.Information(
+                "Contract {ContractId} auto-completed (end date passed). {UnprocessedDays} days marked as completed without payout.",
+                contract.Id, unprocessedDays.Count);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            Log.Error(ex, "Failed to auto-complete Contract {ContractId}", contract.Id);
         }
     }
 }

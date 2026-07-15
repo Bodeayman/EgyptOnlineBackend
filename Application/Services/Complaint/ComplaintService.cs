@@ -3,6 +3,7 @@ using EgyptOnline.Models;
 using EgyptOnline.Services;
 using EgyptOnline.Utilities;
 using EgyptOnline.Infrastructure;
+using EgyptOnline.Application.Services.Wallet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
@@ -15,13 +16,15 @@ namespace EgyptOnline.Application.Services.Complaint
         private readonly INotificationService _notificationService;
         private readonly IEmailService _emailService;
         private readonly UserManager<User> _userManager;
+        private readonly WalletService _walletService;
 
-        public ComplaintService(ApplicationDbContext context, INotificationService notificationService, IEmailService emailService, UserManager<User> userManager)
+        public ComplaintService(ApplicationDbContext context, INotificationService notificationService, IEmailService emailService, UserManager<User> userManager, WalletService walletService)
         {
             _context = context;
             _notificationService = notificationService;
             _emailService = emailService;
             _userManager = userManager;
+            _walletService = walletService;
         }
 
         // ── USER ACTIONS ──────────────────────────────────────────────────────
@@ -290,7 +293,15 @@ namespace EgyptOnline.Application.Services.Complaint
                     ContractTerminatedAt = c.Contract.TerminatedAt,
                     ContractTerminatedBy = c.Contract.TerminatedBy,
                     ClientUserId = c.Contract.ClientUserId,
-                    ServiceProviderPhoneNumber = c.Contract.ServiceProviderPhoneNumber
+                    ServiceProviderPhoneNumber = c.Contract.ServiceProviderPhoneNumber,
+                    ClientFrozenBalance = _context.UserWallets
+                        .Where(w => w.UserId == c.Contract.ClientUserId)
+                        .Select(w => w.FrozenBalance)
+                        .FirstOrDefault(),
+                    ProviderFrozenBalance = _context.Users
+                        .Where(u => u.PhoneNumber == c.Contract.ServiceProviderPhoneNumber)
+                        .Join(_context.UserWallets, u => u.Id, w => w.UserId, (u, w) => w.FrozenBalance)
+                        .FirstOrDefault()
                 });
 
             var items = await itemsQuery.ToListAsync();
@@ -460,6 +471,8 @@ namespace EgyptOnline.Application.Services.Complaint
                     item.AdminNote,
                     reporterType,
                     contract = contractData,
+                    clientFrozenBalance = item.ClientFrozenBalance,
+                    providerFrozenBalance = item.ProviderFrozenBalance,
                     reporter = new
                     {
                         id = reporterUser?.Id,
@@ -476,6 +489,7 @@ namespace EgyptOnline.Application.Services.Complaint
         /// <summary>
         /// Admin changes the status of a complaint to under_review, resolved, or rejected.
         /// When resolved or rejected the resolution is recorded with a note.
+        /// When resolved, frozen funds are returned to both parties.
         /// </summary>
         public async Task<Models.Complaint> ReviewComplaintAsync(
             int complaintId,
@@ -501,6 +515,49 @@ namespace EgyptOnline.Application.Services.Complaint
 
             if (newStatus == "resolved" || newStatus == "rejected")
                 complaint.ResolvedAt = DateTime.UtcNow;
+
+            // If resolved, return frozen funds to both parties
+            if (newStatus == "resolved")
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var contract = complaint.Contract;
+
+                    // Calculate remaining frozen balance for client (includes unused daily salary + client's penalty)
+                    var clientWallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
+                    var remainingFrozenBalance = clientWallet?.FrozenBalance ?? 0;
+
+                    // Return all remaining frozen money to client
+                    if (remainingFrozenBalance > 0)
+                    {
+                        await _walletService.TransferFrozenToFreeAsync(contract.ClientUserId, remainingFrozenBalance);
+                        Log.Information("Complaint {ComplaintId} resolved. Returned {Amount} remaining frozen balance to client", complaintId, remainingFrozenBalance);
+                    }
+
+                    // Release provider's penalty deposit back to free balance
+                    if (contract.PenaltyAmount > 0)
+                    {
+                        var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+                        if (providerUser != null)
+                        {
+                            await _walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
+                            Log.Information("Complaint {ComplaintId} resolved. Provider's penalty of {Amount} released", complaintId, contract.PenaltyAmount);
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    Log.Information("Complaint {ComplaintId} resolved. Frozen funds returned to both parties", complaintId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Log.Error(ex, "Failed to return frozen funds when resolving complaint {ComplaintId}", complaintId);
+                    throw;
+                }
+            }
 
             await _context.SaveChangesAsync();
 
