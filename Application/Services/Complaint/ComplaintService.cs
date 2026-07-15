@@ -294,14 +294,11 @@ namespace EgyptOnline.Application.Services.Complaint
                     ContractTerminatedBy = c.Contract.TerminatedBy,
                     ClientUserId = c.Contract.ClientUserId,
                     ServiceProviderPhoneNumber = c.Contract.ServiceProviderPhoneNumber,
-                    ClientFrozenBalance = _context.UserWallets
-                        .Where(w => w.UserId == c.Contract.ClientUserId)
-                        .Select(w => w.FrozenBalance)
-                        .FirstOrDefault(),
-                    ProviderFrozenBalance = _context.Users
-                        .Where(u => u.PhoneNumber == c.Contract.ServiceProviderPhoneNumber)
-                        .Join(_context.UserWallets, u => u.Id, w => w.UserId, (u, w) => w.FrozenBalance)
-                        .FirstOrDefault()
+                    // Calculate contract-specific frozen funds
+                    ClientContractFrozenBalance = c.Contract.ContractDays
+                        .Where(cd => !cd.IsProcessed)
+                        .Count() * c.Contract.DailySalary + c.Contract.PenaltyAmount,
+                    ProviderContractFrozenBalance = c.Contract.PenaltyAmount
                 });
 
             var items = await itemsQuery.ToListAsync();
@@ -471,8 +468,8 @@ namespace EgyptOnline.Application.Services.Complaint
                     item.AdminNote,
                     reporterType,
                     contract = contractData,
-                    clientFrozenBalance = item.ClientFrozenBalance,
-                    providerFrozenBalance = item.ProviderFrozenBalance,
+                    clientFrozenBalance = item.ClientContractFrozenBalance,
+                    providerFrozenBalance = item.ProviderContractFrozenBalance,
                     reporter = new
                     {
                         id = reporterUser?.Id,
