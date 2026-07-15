@@ -255,26 +255,14 @@ namespace EgyptOnline.Application.Services.Contract
             var shiftStart = contractDayEgyptLocal.Date.Add(contract.ShiftStartTime);
             var gracePeriod = TimeSpan.FromMinutes(30);
 
-            // If ShiftEndTime is provided, validate it as well
-            if (contract.ShiftEndTime.HasValue)
-            {
-                if (contract.ShiftEndTime.Value < TimeSpan.Zero || contract.ShiftEndTime.Value >= TimeSpan.FromDays(1))
-                    throw new InvalidOperationException($"وقت انتهاء الوردية غير صالح: {contract.ShiftEndTime.Value}");
+            // Provider can confirm arrival until midnight Egypt time of the contract day
+            var midnightEgypt = contractDayEgyptLocal.Date.AddDays(1).AddTicks(-1);
 
-                var shiftEnd = contractDayEgyptLocal.Date.Add(contract.ShiftEndTime.Value);
+            if (currentTimeEgypt < shiftStart.Subtract(gracePeriod))
+                throw new InvalidOperationException($"لا يمكن التسجيل قبل بدء الوردية. تبدأ الوردية عند {shiftStart:HH:mm} (مع فترة سماح 30 دقيقة)");
 
-                if (currentTimeEgypt < shiftStart.Subtract(gracePeriod))
-                    throw new InvalidOperationException($"لا يمكن التسجيل قبل بدء الوردية. تبدأ الوردية عند {shiftStart:HH:mm} (مع فترة سماح 30 دقيقة)");
-
-                if (currentTimeEgypt > shiftEnd.Add(gracePeriod))
-                    throw new InvalidOperationException($"لا يمكن التسجيل بعد انتهاء الوردية. انتهت الوردية عند {shiftEnd:HH:mm} (مع فترة سماح 30 دقيقة)");
-            }
-            else
-            {
-                // No shift end time, only validate against shift start
-                if (currentTimeEgypt < shiftStart.Subtract(gracePeriod))
-                    throw new InvalidOperationException($"لا يمكن التسجيل قبل بدء الوردية. تبدأ الوردية عند {shiftStart:HH:mm} (مع فترة سماح 30 دقيقة)");
-            }
+            if (currentTimeEgypt > midnightEgypt)
+                throw new InvalidOperationException($"لا يمكن التسجيل بعد منتصف ليل يوم العقد. يوم العقد: {contractDayEgyptLocal:yyyy-MM-dd}");
 
             contractDay.ProviderArrived = true;
             contractDay.ArrivalTime = DateTime.UtcNow;

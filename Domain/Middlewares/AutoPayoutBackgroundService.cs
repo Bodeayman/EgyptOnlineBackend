@@ -83,7 +83,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             // Convert contract day date (UTC) to Egypt local time for shift calculations
             var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
             var contractDayEgyptLocal = TimeZoneInfo.ConvertTimeFromUtc(contractDay.Date, egyptTimeZone);
-            
+
             // Shift times are stored as TimeSpan representing Egypt local time
             var shiftEndTime = contract.ShiftEndTime ?? contract.ShiftStartTime;
             var shiftEnd = contractDayEgyptLocal.Date.Add(shiftEndTime);
@@ -95,11 +95,17 @@ public class AutoPayoutBackgroundService : BackgroundService
                 // ── Scenario 1: Client confirmed → release exactly at shift end ──
                 shouldPayout = currentEgyptTime >= shiftEnd;
             }
+            else if (contractDay.ArrivalTime.HasValue)
+            {
+                // ── Scenario 2: Provider arrived but client didn't confirm → auto-pay after 3 hours ──
+                var arrivalTimeEgypt = TimeZoneInfo.ConvertTimeFromUtc(contractDay.ArrivalTime.Value, egyptTimeZone);
+                var threeHoursAfterArrival = arrivalTimeEgypt.AddHours(3);
+                shouldPayout = currentEgyptTime >= threeHoursAfterArrival;
+            }
             else
             {
-                // ── Scenario 2: No confirmation → grace period ends at 23:59:59 Africa/Cairo on the same day ──
-                var gracePeriodEnd = contractDayEgyptLocal.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
-                shouldPayout = currentEgyptTime >= gracePeriodEnd;
+                // ── Scenario 3: No arrival yet → don't payout ──
+                shouldPayout = false;
             }
 
             if (!shouldPayout) continue;
