@@ -11,7 +11,6 @@ public class AutoPayoutBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(15);
-    private readonly TimeSpan _gracePeriod = TimeSpan.FromHours(3);
 
     public AutoPayoutBackgroundService(IServiceScopeFactory scopeFactory)
     {
@@ -97,8 +96,9 @@ public class AutoPayoutBackgroundService : BackgroundService
             }
             else
             {
-                // ── Scenario 2: No confirmation → 3-hour safety grace period ──
-                shouldPayout = currentEgyptTime >= shiftEnd.Add(_gracePeriod);
+                // ── Scenario 2: No confirmation → grace period ends at 23:59:59 Africa/Cairo on the same day ──
+                var gracePeriodEnd = contractDayEgyptLocal.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+                shouldPayout = currentEgyptTime >= gracePeriodEnd;
             }
 
             if (!shouldPayout) continue;
@@ -168,7 +168,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            var mode = contractDay.ClientConfirmed ? "immediate (client confirmed)" : "grace period (3h)";
+            var mode = contractDay.ClientConfirmed ? "immediate (client confirmed)" : "grace period (23:59:59 Egypt time)";
             Log.Information(
                 "Auto-payout [{Mode}] for Contract {ContractId}, Day {DayNumber}. Amount: {Amount}",
                 mode, contract.Id, contractDay.DayNumber, contract.DailySalary);
