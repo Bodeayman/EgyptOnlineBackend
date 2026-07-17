@@ -58,7 +58,15 @@ namespace EgyptOnline.Application.Services.JobRequest
             _context.JobRequests.Add(request);
             await _context.SaveChangesAsync();
 
-            // Fire notifications in the background — do NOT block the response on this.
+            // 1. Fetch user IDs on the main thread (fast and thread-safe)
+            var usersInGov = await _context.Users
+                .Where(u => u.Governorate == governorate &&
+                            u.City == city &&
+                            u.Id != clientUserId)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            // 2. Fire notifications in the background — do NOT block the response on this.
             // Notifications are best-effort side-effects; the client should not wait for them.
             var title = "طلب عمل جديد في محافظتك";
             var body = $"مطلوب {providerType} (مهارة: {skill}) في {city} بمعدل أجر {payRate} جنيه.";
@@ -67,13 +75,6 @@ namespace EgyptOnline.Application.Services.JobRequest
             {
                 try
                 {
-                    var usersInGov = await _context.Users
-                        .Where(u => u.Governorate == governorate &&
-                                    u.City == city &&
-                                    u.Id != clientUserId)
-                        .Select(u => u.Id)
-                        .ToListAsync();
-
                     // Fan out all notifications concurrently instead of sequentially
                     var tasks = usersInGov.Select(async userId =>
                     {
