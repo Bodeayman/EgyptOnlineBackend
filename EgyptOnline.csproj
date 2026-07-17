@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
      <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-       <DefaultItemExcludes>$(DefaultItemExcludes);EgyptOnline.Tests\**</DefaultItemExcludes>
+       <DefaultItemExcludes>$(DefaultItemExcludes);EgyptOnline.Tests\**;EgyptOnline.Tests.Unit\**;EgyptOnline.Tests.Integration\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
