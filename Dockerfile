@@ -6,14 +6,14 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies (allows layer caching)
-COPY ./*.csproj ./
-RUN dotnet restore
+COPY EgyptOnline.csproj ./
+RUN dotnet restore EgyptOnline.csproj
 
 # Copy everything else
 COPY . ./
 
 # Publish to /src/out
-RUN dotnet publish -c Release -o /src/out
+RUN dotnet publish EgyptOnline.csproj -c Release -o /src/out
 
 
 # ========================
