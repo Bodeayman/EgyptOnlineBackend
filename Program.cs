@@ -9,7 +9,6 @@ using Serilog;
 using Serilog.Events;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.FileProviders;
-using StackExchange.Redis;
 using EgyptOnline.Utilities;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
@@ -43,6 +42,7 @@ try
 
     // ---------- Services ----------
     builder.Services.AddControllers();
+    /*
     builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration["RedisSettings:Configuration"];
@@ -55,6 +55,8 @@ try
     {
         return ConnectionMultiplexer.Connect(builder.Configuration["RedisSettings:Configuration"]);
     });
+    */
+    builder.Services.AddMemoryCache();
     builder.Services.AddDistributedMemoryCache();
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -82,7 +84,12 @@ try
     builder.Services.AddSwaggerWithJwt();
 
     // SignalR & Chat
-    builder.Services.AddSignalR();
+    builder.Services.AddSignalR(options =>
+    {
+        options.KeepAliveInterval = TimeSpan.FromSeconds(30); // Send keepalive every 30 seconds
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // Client timeout after 60 seconds
+        options.HandshakeTimeout = TimeSpan.FromSeconds(15); // Handshake timeout 15 seconds
+    });
     // Use custom user id provider so SignalR maps our JWT `uid` claim to user identifiers
     builder.Services.AddSingleton<IUserIdProvider, EgyptOnline.Presentation.Hubs.UidUserIdProvider>();
     builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>

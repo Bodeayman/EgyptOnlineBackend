@@ -331,6 +331,7 @@ namespace EgyptOnline.Controllers
                     .Include(u => u.Subscription)
                     .Include(u => u.RefreshTokens)
                     .Include(u => u.FirebaseTokens)
+                    .Include(u => u.Wallet)
                     .FirstOrDefaultAsync(u => u.Id == userId);
 
                 if (user == null)
@@ -341,14 +342,20 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟" });
                 }
+
                 if (user.FirebaseTokens != null && user.FirebaseTokens.Any())
                 {
                     _context.FirebaseTokens.RemoveRange(user.FirebaseTokens);
-
                 }
+
                 if (user.RefreshTokens != null && user.RefreshTokens.Any())
                 {
                     _context.RefreshTokens.RemoveRange(user.RefreshTokens);
+                }
+
+                if (user.Wallet != null)
+                {
+                    _context.UserWallets.Remove(user.Wallet);
                 }
 
                 if (user.ServiceProvider != null)
@@ -357,7 +364,14 @@ namespace EgyptOnline.Controllers
                 if (user.Subscription != null)
                     _context.Subscriptions.Remove(user.Subscription);
 
+                await _context.SaveChangesAsync();
+
                 var result = await _userManager.DeleteAsync(user);
+
+                if (!result.Succeeded)
+                {
+                    return BadRequest(new { message = "Failed to delete user", errors = result.Errors.Select(e => e.Description) });
+                }
 
                 return Ok(new { message = "User deleted successfully" });
             }
@@ -1092,6 +1106,51 @@ namespace EgyptOnline.Controllers
         }
 
         /// <summary>
+        /// Admin sends a broadcast notification to all users.
+        /// POST /api/v1/Admin/broadcast-notification
+        /// </summary>
+        [HttpPost("broadcast-notification")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> BroadcastNotification([FromBody] BroadcastNotificationDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                // Get all users
+                var allUsers = await _context.Users.ToListAsync();
+
+                // Send notifications in background (non-blocking)
+                _ = Task.Run(async () =>
+                {
+                    foreach (var user in allUsers)
+                    {
+                        try
+                        {
+                            await _notificationService.SendNotificationToUser(
+                                user.Id,
+                                dto.Title,
+                                dto.Body,
+                                dto.Type
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, "Failed to send broadcast notification to user {UserId}", user.Id);
+                        }
+                    }
+                    Log.Information("Broadcast notification sent to {Count} users", allUsers.Count);
+                });
+
+                return Ok(new { message = "تم إرسال الإشعار بنجاح", recipientCount = allUsers.Count });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Admin resumes a suspended contract.
         /// POST /api/v1/Admin/contracts/{id}/resume
         /// </summary>
@@ -1288,5 +1347,18 @@ namespace EgyptOnline.Controllers
         /// Positive value = increase (charge client, add to provider frozen)
         /// </summary>
         public int? AdjustmentAmount { get; set; }
+    }
+
+    public class BroadcastNotificationDto
+    {
+        [Required]
+        [StringLength(100, MinimumLength = 3, ErrorMessage = "العنوان يجب أن يكون بين 3 و 100 حرف")]
+        public string Title { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(1000, MinimumLength = 10, ErrorMessage = "الرسالة يجب أن تكون بين 10 و 1000 حرف")]
+        public string Body { get; set; } = string.Empty;
+
+        public string Type { get; set; } = "general";
     }
 }

@@ -306,21 +306,33 @@ public class AutoPayoutBackgroundService : BackgroundService
             var clientWallet = await context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
             var remainingFrozenBalance = clientWallet?.FrozenBalance ?? 0;
 
-            // Return all remaining frozen money to client
-            if (remainingFrozenBalance > 0)
+            // Return all remaining frozen money to client (only if wallet exists)
+            if (remainingFrozenBalance > 0 && clientWallet != null)
             {
                 await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, remainingFrozenBalance);
                 Log.Information("Contract {ContractId} completed (incomplete). Returned {Amount} remaining frozen balance to client", contract.Id, remainingFrozenBalance);
             }
+            else if (remainingFrozenBalance > 0 && clientWallet == null)
+            {
+                Log.Warning("Contract {ContractId} completed (incomplete). Client has {Amount} frozen balance but no wallet exists. Skipping fund return.", contract.Id, remainingFrozenBalance);
+            }
 
-            // Release provider's penalty deposit back to free balance
+            // Release provider's penalty deposit back to free balance (only if wallet exists)
             if (contract.PenaltyAmount > 0)
             {
                 var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
                 if (providerUser != null)
                 {
-                    await walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
-                    Log.Information("Contract {ContractId} completed (incomplete). Provider's penalty of {Amount} released", contract.Id, contract.PenaltyAmount);
+                    var providerWallet = await context.UserWallets.FirstOrDefaultAsync(w => w.UserId == providerUser.Id);
+                    if (providerWallet != null)
+                    {
+                        await walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
+                        Log.Information("Contract {ContractId} completed (incomplete). Provider's penalty of {Amount} released", contract.Id, contract.PenaltyAmount);
+                    }
+                    else
+                    {
+                        Log.Warning("Contract {ContractId} completed (incomplete). Provider has penalty of {Amount} but no wallet exists. Skipping fund return.", contract.Id, contract.PenaltyAmount);
+                    }
                 }
             }
 
