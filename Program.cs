@@ -84,12 +84,7 @@ try
     builder.Services.AddSwaggerWithJwt();
 
     // SignalR & Chat
-    builder.Services.AddSignalR(options =>
-    {
-        options.KeepAliveInterval = TimeSpan.FromSeconds(30); // Send keepalive every 30 seconds
-        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // Client timeout after 60 seconds
-        options.HandshakeTimeout = TimeSpan.FromSeconds(15); // Handshake timeout 15 seconds
-    });
+    builder.Services.AddSignalR();
     // Use custom user id provider so SignalR maps our JWT `uid` claim to user identifiers
     builder.Services.AddSingleton<IUserIdProvider, EgyptOnline.Presentation.Hubs.UidUserIdProvider>();
     builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>

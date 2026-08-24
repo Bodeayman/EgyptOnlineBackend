@@ -384,31 +384,53 @@ namespace EgyptOnline.Controllers
                     .Include(rt => rt.User.Subscription)
                     .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
 
-                if (storedToken == null || storedToken.IsRevoked || storedToken.Expires < DateTime.UtcNow)
+                if (storedToken == null || storedToken.Expires < DateTime.UtcNow)
+                {
                     return Unauthorized(new
                     {
-                        message = "Refresh token is expired or revoked",
+                        message = "Refresh token is invalid or expired",
                         errorCode = UserErrors.RefreshTokenInvalid.ToString()
                     });
+                }
 
                 var user = storedToken.User;
                 if (user == null)
                     return Unauthorized("User not found");
 
-                // Allow refresh even if subscription expired - user can still access app but with limited functionality
-                // The new token will reflect current subscription status
-                // Critical operations will check DB via RequireSubscription attribute
-
-                // 3. Revoke **all previous valid tokens** to prevent replay/race attacks
-                var oldTokens = await _context.RefreshTokens
-                    .Where(rt => rt.UserId == user.Id && !rt.IsRevoked && rt.Expires > DateTime.UtcNow)
-                    .ToListAsync();
-
-                foreach (var oldToken in oldTokens)
+                // 3. Handle Token Rotation & Grace Window for Concurrent Requests
+                if (storedToken.IsRevoked)
                 {
-                    oldToken.IsRevoked = true;
-                    oldToken.Revoked = DateTime.UtcNow;
+                    // Grace Window (60 seconds): If token was revoked in the last 60 seconds (race condition / duplicate request),
+                    // return the latest active refresh token for this user instead of throwing 401.
+                    if (storedToken.Revoked.HasValue && storedToken.Revoked.Value > DateTime.UtcNow.AddSeconds(-60))
+                    {
+                        var activeToken = await _context.RefreshTokens
+                            .Where(rt => rt.UserId == user.Id && !rt.IsRevoked && rt.Expires > DateTime.UtcNow)
+                            .OrderByDescending(rt => rt.Created)
+                            .FirstOrDefaultAsync();
+
+                        if (activeToken != null)
+                        {
+                            var graceAccessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
+                            return Ok(new
+                            {
+                                AccessToken = graceAccessToken,
+                                RefreshToken = activeToken.Token,
+                                refreshTokenExpiry = activeToken.Expires
+                            });
+                        }
+                    }
+
+                    return Unauthorized(new
+                    {
+                        message = "Refresh token is expired or revoked",
+                        errorCode = UserErrors.RefreshTokenInvalid.ToString()
+                    });
                 }
+
+                // Revoke ONLY the presented token (multi-device isolated)
+                storedToken.IsRevoked = true;
+                storedToken.Revoked = DateTime.UtcNow;
 
                 // 4. Generate new tokens
                 var newAccessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);

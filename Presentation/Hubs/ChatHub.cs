@@ -42,6 +42,7 @@ namespace EgyptOnline.Presentation.Hubs
             var userId = Context.User?.FindFirst("uid")?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
+                // Fast connection - no database calls
                 var isFirstConnection = await _presenceService.UserConnected(userId, Context.ConnectionId);
                 if (isFirstConnection)
                 {
