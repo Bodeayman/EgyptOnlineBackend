@@ -1,5 +1,6 @@
 using EgyptOnline.Application.Services.Contract;
 using EgyptOnline.Domain.Models;
+using EgyptOnline.Domain.Models.Enums;
 using EgyptOnline.Models;
 using EgyptOnline.Utilities;
 using Microsoft.AspNetCore.Authorization;
@@ -8,13 +9,14 @@ using Microsoft.EntityFrameworkCore;
 using EgyptOnline.Data;
 using System.ComponentModel.DataAnnotations;
 using ContractModel = EgyptOnline.Models.Contract;
+using ContractDayModel = EgyptOnline.Domain.Models.ContractDay;
 
 namespace EgyptOnline.Controllers
 {
     [ApiController]
     [Route("api/v{version:apiVersion}/contracts")]
     [ApiVersion("1.0")]
-    [Authorize(Roles = Roles.User)]
+    [Authorize(Roles = $"{Roles.User},{Roles.Customer}")]
     public class ContractController : ControllerBase
     {
         private readonly ContractService _contractService;
@@ -72,6 +74,21 @@ namespace EgyptOnline.Controllers
                     startDate = TimeZoneInfo.ConvertTimeToUtc(tomorrowInEgypt, egyptTimeZone);
                 }
 
+                // Support explicit SelectedDates list for PerDay and Batch contract types
+                List<DateTime>? selectedDates = null;
+                if (dto.SelectedDates != null && dto.SelectedDates.Count > 0)
+                {
+                    selectedDates = dto.SelectedDates
+                        .Select(d => d.Kind == DateTimeKind.Utc ? d.Date : TimeZoneInfo.ConvertTimeToUtc(d, egyptTimeZone).Date)
+                        .OrderBy(d => d)
+                        .Distinct()
+                        .ToList();
+
+                    startDate = selectedDates.First();
+                }
+
+                var totalDays = selectedDates != null ? selectedDates.Count : dto.TotalDays;
+
                 var shiftStartTime = dto.ShiftStartTime.HasValue && dto.ShiftStartTime.Value != TimeSpan.Zero
                     ? dto.ShiftStartTime.Value
                     : TimeSpan.FromHours(5); // 5 AM default
@@ -87,10 +104,11 @@ namespace EgyptOnline.Controllers
                     StartDate = startDate,
                     ShiftStartTime = shiftStartTime,
                     ShiftEndTime = shiftEndTime,
-                    TotalDays = dto.TotalDays,
+                    TotalDays = totalDays,
                     DailySalary = (int)dto.DailySalary,
-                    TotalAmount = (int)(dto.DailySalary * dto.TotalDays),
+                    TotalAmount = (int)(dto.DailySalary * totalDays),
                     PenaltyAmount = (int)dto.PenaltyAmount,
+                    ContractType = dto.ContractType,
                     Governorate = dto.Governorate,
                     City = dto.City,
                     District = dto.District,
@@ -99,7 +117,19 @@ namespace EgyptOnline.Controllers
                     RestrictedTerms = dto.RestrictedTerms
                 };
 
-                var result = await _contractService.CreateContractAsync(contract);
+                // Convert DTO contract days to domain entities for Batch contracts
+                List<ContractDayModel>? contractDays = null;
+                if (dto.ContractDays != null && dto.ContractDays.Count > 0)
+                {
+                    contractDays = dto.ContractDays.Select(d => new ContractDayModel
+                    {
+                        DayNumber = d.DayNumber,
+                        Date = d.Date.Kind == DateTimeKind.Utc ? d.Date : TimeZoneInfo.ConvertTimeToUtc(d.Date, egyptTimeZone),
+                        BatchAmount = d.BatchAmount
+                    }).ToList();
+                }
+
+                var result = await _contractService.CreateContractAsync(contract, selectedDates, contractDays);
                 return Ok(new { message = "تم إنشاء العقد بنجاح وبانتظار موافقة مقدم الخدمة", data = result });
             }
             catch (InvalidOperationException ex)
@@ -117,6 +147,7 @@ namespace EgyptOnline.Controllers
         /// PUT /api/v1/contracts/{id}/accept
         /// </summary>
         [HttpPut("{id}/accept")]
+        [Authorize(Roles = Roles.User)]
         public async Task<IActionResult> Accept(int id)
         {
             try
@@ -150,6 +181,7 @@ namespace EgyptOnline.Controllers
         /// PUT /api/v1/contracts/{id}/reject
         /// </summary>
         [HttpPut("{id}/reject")]
+        [Authorize(Roles = Roles.User)]
         public async Task<IActionResult> Reject(int id)
         {
             try
@@ -183,6 +215,7 @@ namespace EgyptOnline.Controllers
         /// POST /api/v1/contracts/arrival
         /// </summary>
         [HttpPost("arrival")]
+        [Authorize(Roles = Roles.User)]
         public async Task<IActionResult> RegisterArrival([FromBody] RegisterArrivalDto dto)
         {
             try
@@ -371,9 +404,27 @@ namespace EgyptOnline.Controllers
         public string? Notes { get; set; }
         public string? RestrictedTerms { get; set; }
 
+        public ContractType ContractType { get; set; } = ContractType.PerDay;
+        public List<DateTime>? SelectedDates { get; set; }
+        public List<ContractDayDto>? ContractDays { get; set; }
+
         public DateTime? StartDate { get; set; }
         public TimeSpan? ShiftStartTime { get; set; }
         public TimeSpan? ShiftEndTime { get; set; }
+    }
+
+    public class ContractDayDto
+    {
+        [Required(ErrorMessage = "رقم اليوم مطلوب")]
+        [Range(1, int.MaxValue, ErrorMessage = "رقم اليوم يجب أن يكون 1 على الأقل")]
+        public int DayNumber { get; set; }
+
+        [Required(ErrorMessage = "تاريخ اليوم مطلوب")]
+        public DateTime Date { get; set; }
+
+        [Required(ErrorMessage = "مبلغ الدفعة مطلوب")]
+        [Range(1, int.MaxValue, ErrorMessage = "مبلغ الدفعة يجب أن يكون أكبر من صفر")]
+        public int BatchAmount { get; set; }
     }
 
     public class RegisterArrivalDto

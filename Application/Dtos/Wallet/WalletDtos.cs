@@ -68,4 +68,40 @@ namespace EgyptOnline.Dtos.Wallet
         [MaxLength(50)]
         public string WalletNumber { get; set; } = string.Empty;
     }
+
+    public class BalanceTransactionDto
+    {
+        public int Id { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string UserPhone { get; set; } = string.Empty;
+        public BalanceType BalanceType { get; set; }
+        public OperationType OperationType { get; set; }
+        public int Amount { get; set; }
+        public int BalanceBefore { get; set; }
+        public int BalanceAfter { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public int? ReferenceId { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class BalanceAuditQueryFilter
+    {
+        public string? UserId { get; set; }
+        public BalanceType? BalanceType { get; set; }
+        public OperationType? OperationType { get; set; }
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+    }
+
+    public class PagedBalanceTransactionsResponse
+    {
+        public List<BalanceTransactionDto> Items { get; set; } = new();
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+        public bool HasNextPage { get; set; }
+        public bool HasPreviousPage { get; set; }
+    }
 }

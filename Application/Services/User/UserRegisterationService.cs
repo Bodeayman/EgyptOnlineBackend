@@ -151,6 +151,104 @@ namespace EgyptOnline.Services
             }
         }
 
+        /// <summary>
+        /// Register a normal customer user without worker provider profiles.
+        /// </summary>
+        public async Task<UserRegisterationResult> RegisterCustomer(RegisterCustomerDto model)
+        {
+            try
+            {
+                // Generate unique username
+                string userName = Helper.GenerateUserName(model.FirstName, model.LastName ?? "");
+                while (await _context.Users.AnyAsync(u => u.UserName == userName))
+                    userName = Helper.GenerateUserName(model.FirstName, model.LastName ?? "");
+
+                // Check email if provided
+                if (!string.IsNullOrWhiteSpace(model.Email) && await _userManager.FindByEmailAsync(model.Email) != null)
+                {
+                    return new UserRegisterationResult
+                    {
+                        Result = IdentityResult.Failed(new IdentityError
+                        {
+                            Description = "The email has been used before.",
+                            Code = UserErrors.EmailAlreadyExists.ToString()
+                        })
+                    };
+                }
+
+                // Check phone number
+                var phone = $"+2{model.PhoneNumber}";
+                if (await _context.Users.AnyAsync(u => u.PhoneNumber == phone))
+                {
+                    return new UserRegisterationResult
+                    {
+                        Result = IdentityResult.Failed(new IdentityError
+                        {
+                            Description = "The phone number has been used before.",
+                            Code = UserErrors.PhoneNumberAlreadyExists.ToString()
+                        })
+                    };
+                }
+
+                // Create customer user
+                var user = new User
+                {
+                    UserName = userName,
+                    Email = string.IsNullOrWhiteSpace(model.Email) ? "" : model.Email,
+                    PhoneNumber = phone,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Governorate = model.Governorate,
+                    City = model.City,
+                    District = model.District,
+                    ReferrerUserName = model.ReferralUserName,
+                    ReferralRewardCount = 0
+                };
+
+                var createResult = await _userManager.CreateAsync(user, model.Password);
+                if (!createResult.Succeeded)
+                {
+                    return new UserRegisterationResult
+                    {
+                        Result = createResult,
+                        User = null
+                    };
+                }
+
+                // Add subscription
+                _userSubscription.AddSubscriptionForANewUser(user);
+
+                // Assign Customer role
+                await _userManager.AddToRoleAsync(user, Roles.Customer);
+
+                // Initialize wallet
+                var wallet = new UserWallet
+                {
+                    UserId = user.Id,
+                    FreeBalance = 0,
+                    FrozenBalance = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.UserWallets.Add(wallet);
+                await _context.SaveChangesAsync();
+
+                return new UserRegisterationResult
+                {
+                    Result = IdentityResult.Success,
+                    User = user
+                };
+            }
+            catch (Exception ex)
+            {
+                return new UserRegisterationResult
+                {
+                    Result = IdentityResult.Failed(new IdentityError { Description = ex.Message }),
+                    User = null
+                };
+            }
+        }
+
 
     }
 }

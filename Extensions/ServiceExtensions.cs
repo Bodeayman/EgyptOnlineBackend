@@ -52,6 +52,15 @@ namespace EgyptOnline.Extensions
             services.AddScoped<EgyptOnline.Application.Services.Complaint.ComplaintService>();
             services.AddScoped<EgyptOnline.Application.Services.JobRequest.JobRequestService>();
 
+            // ─── Rating Module ─────────────────────────────────────────────
+            services.AddScoped<EgyptOnline.Application.Services.Rating.RatingService>();
+
+            // ─── Post Module ─────────────────────────────────────────────
+            services.AddScoped<EgyptOnline.Application.Services.Post.PostService>();
+
+            // ─── Search Module ─────────────────────────────────────────────
+            services.AddScoped<EgyptOnline.Application.Services.Search.SearchService>();
+
             // ─── Background Services ──────────────────────────────────────────────
             // Auto-payout: releases daily wages at 5 PM Egypt time (UTC+3) if client hasn't acted
             services.AddHostedService<AutoPayoutBackgroundService>();

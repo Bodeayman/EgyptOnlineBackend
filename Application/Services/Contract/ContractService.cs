@@ -49,7 +49,7 @@ namespace EgyptOnline.Application.Services.Contract
 
             return cleaned;
         }
-        public async Task<ContractModel> CreateContractAsync(ContractModel contract)
+        public async Task<ContractModel> CreateContractAsync(ContractModel contract, List<DateTime>? selectedDates = null, List<ContractDayModel>? contractDays = null)
         {
             var phoneNumberNormalized = NormalizeEgyptianPhoneNumber(contract.ServiceProviderPhoneNumber);
             contract.ServiceProviderPhoneNumber = phoneNumberNormalized;
@@ -64,6 +64,38 @@ namespace EgyptOnline.Application.Services.Contract
             {
                 throw new InvalidOperationException("لا يمكن إنشاء عقد مع نفسك كمقدم خدمة.");
             }
+
+            // Validate and prepare contract based on type
+            switch (contract.ContractType)
+            {
+                case ContractType.PerDay:
+                    if (selectedDates == null || selectedDates.Count == 0)
+                        throw new InvalidOperationException("يجب تحديد تواريخ العمل لعقود الدفع اليومي");
+                    contract.TotalDays = selectedDates.Count;
+                    contract.StartDate = selectedDates.First();
+                    contract.TotalAmount = contract.DailySalary * contract.TotalDays;
+                    break;
+
+                case ContractType.Batch:
+                    if (contractDays == null || contractDays.Count == 0)
+                        throw new InvalidOperationException("يجب تحديد الدفعات لعقود الدفع الدفعي");
+                    var totalBatchAmount = contractDays.Sum(cd => cd.BatchAmount ?? 0);
+                    if (totalBatchAmount != contract.TotalAmount)
+                        throw new InvalidOperationException($"مجموع مبالغ الدفعات ({totalBatchAmount}) لا يساوي إجمالي العقد ({contract.TotalAmount})");
+                    contract.TotalDays = contractDays.Count;
+                    contract.StartDate = contractDays.OrderBy(cd => cd.Date).First().Date;
+                    break;
+
+                case ContractType.EndOfDays:
+                    // No ContractDay records for payment, single payment at end
+                    if (contract.TotalDays <= 0)
+                        throw new InvalidOperationException("عدد الأيام يجب أن يكون أكبر من صفر");
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"نوع العقد غير مدعوم: {contract.ContractType}");
+            }
+
             var totalRequired = contract.TotalAmount + contract.PenaltyAmount;
             var hasSufficientBalance = await _walletService.HasSufficientFreeBalanceAsync(contract.ClientUserId, totalRequired);
             if (!hasSufficientBalance)
@@ -81,28 +113,48 @@ namespace EgyptOnline.Application.Services.Contract
                 _context.Contracts.Add(contract);
                 await _context.SaveChangesAsync();
 
-                var contractDays = new List<ContractDayModel>();
-                for (int day = 1; day <= contract.TotalDays; day++)
+                // Create child records based on contract type
+                switch (contract.ContractType)
                 {
-                    var contractDay = new ContractDayModel
-                    {
-                        ContractId = contract.Id,
-                        DayNumber = day,
-                        Date = DateTime.SpecifyKind(contract.StartDate.AddDays(day - 1), DateTimeKind.Utc),
-                        ProviderArrived = false,
-                        Status = ContractDayStatus.Pending,
-                        IsProcessed = false
-                    };
-                    contractDays.Add(contractDay);
+                    case ContractType.PerDay:
+                        var perDayDays = new List<ContractDayModel>();
+                        for (int i = 0; i < selectedDates!.Count; i++)
+                        {
+                            perDayDays.Add(new ContractDayModel
+                            {
+                                ContractId = contract.Id,
+                                DayNumber = i + 1,
+                                Date = DateTime.SpecifyKind(selectedDates[i], DateTimeKind.Utc),
+                                ProviderArrived = false,
+                                Status = ContractDayStatus.Pending,
+                                IsProcessed = false
+                            });
+                        }
+                        _context.ContractDays.AddRange(perDayDays);
+                        break;
+
+                    case ContractType.Batch:
+                        // Batch contracts use ContractDay as payment milestones
+                        foreach (var batchDay in contractDays!.OrderBy(cd => cd.DayNumber))
+                        {
+                            batchDay.ContractId = contract.Id;
+                            batchDay.Status = ContractDayStatus.Pending;
+                            batchDay.IsProcessed = false;
+                        }
+                        _context.ContractDays.AddRange(contractDays);
+                        break;
+
+                    case ContractType.EndOfDays:
+                        // No ContractDay records for payment - single payment at contract end
+                        break;
                 }
 
-                _context.ContractDays.AddRange(contractDays);
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("Created 2-party contract {ContractId} for client {ClientId} and provider phone {ProviderPhone}. Total: {TotalAmount}",
-                    contract.Id, contract.ClientUserId, contract.ServiceProviderPhoneNumber, contract.TotalAmount);
+                _logger.LogInformation("Created 2-party contract {ContractId} ({ContractType}) for client {ClientId} and provider phone {ProviderPhone}. Total: {TotalAmount}",
+                    contract.Id, contract.ContractType, contract.ClientUserId, contract.ServiceProviderPhoneNumber, contract.TotalAmount);
 
                 // Send notification to service provider
                 await _notificationService.SendNotificationToUser(

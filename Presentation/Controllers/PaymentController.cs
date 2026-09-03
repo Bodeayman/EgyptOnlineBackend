@@ -190,10 +190,22 @@ namespace EgyptOnline.Controllers
                     {
                         try
                         {
-                            var payment = await _context.PaymentTransactions
-                                .Include(p => p.User)
-                                .ThenInclude(u => u.ServiceProvider)
-                                .FirstOrDefaultAsync(p => p.Id == paymentId);
+                            PaymentTransaction? payment = null;
+                            if (_context.Database.IsRelational())
+                            {
+                                payment = await _context.PaymentTransactions
+                                    .FromSqlInterpolated($"SELECT * FROM \"PaymentTransactions\" WHERE \"Id\" = {paymentId} FOR UPDATE")
+                                    .Include(p => p.User)
+                                        .ThenInclude(u => u.ServiceProvider)
+                                    .FirstOrDefaultAsync();
+                            }
+                            else
+                            {
+                                payment = await _context.PaymentTransactions
+                                    .Include(p => p.User)
+                                        .ThenInclude(u => u.ServiceProvider)
+                                    .FirstOrDefaultAsync(p => p.Id == paymentId);
+                            }
 
                             if (payment == null)
                             {

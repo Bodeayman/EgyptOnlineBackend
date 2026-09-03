@@ -34,6 +34,9 @@ namespace EgyptOnline.Models
         [Required]
         public int TotalAmount { get; set; }
 
+        // Contract Type / Payment Model
+        public ContractType ContractType { get; set; } = ContractType.PerDay;
+
         // Mandatory Penalty Field (defaults to 0 if not set)
         public int PenaltyAmount { get; set; } = 0;
 

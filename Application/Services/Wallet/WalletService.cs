@@ -4,6 +4,7 @@ using EgyptOnline.Models;
 using EgyptOnline.Services;
 using EgyptOnline.Infrastructure;
 using EgyptOnline.Domain.Models.Enums;
+using EgyptOnline.Dtos.Wallet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -923,6 +924,81 @@ namespace EgyptOnline.Application.Services.Wallet
                 adminId, userId, balanceType, oldValue, newValue, operation, amount, reason);
 
             return wallet;
+        }
+
+
+        public async Task<PagedBalanceTransactionsResponse> GetBalanceTransactionsAsync(
+            BalanceAuditQueryFilter filter,
+            int pageNumber = 1,
+            int pageSize = 20)
+        {
+            pageNumber = Math.Max(1, pageNumber);
+            pageSize = Math.Max(1, pageSize);
+
+            var query = _context.WalletTransactions
+                .Include(t => t.User)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.UserId))
+            {
+                query = query.Where(t => t.UserId == filter.UserId);
+            }
+
+            if (filter.BalanceType.HasValue)
+            {
+                query = query.Where(t => t.BalanceType == filter.BalanceType.Value);
+            }
+
+            if (filter.OperationType.HasValue)
+            {
+                query = query.Where(t => t.OperationType == filter.OperationType.Value);
+            }
+
+            if (filter.From.HasValue)
+            {
+                query = query.Where(t => t.CreatedAt >= filter.From.Value);
+            }
+
+            if (filter.To.HasValue)
+            {
+                query = query.Where(t => t.CreatedAt <= filter.To.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var transactions = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => new BalanceTransactionDto
+                {
+                    Id = t.Id,
+                    UserId = t.UserId,
+                    UserName = t.User != null ? t.User.FirstName + " " + t.User.LastName : string.Empty,
+                    UserPhone = t.User != null ? t.User.PhoneNumber : string.Empty,
+                    BalanceType = t.BalanceType,
+                    OperationType = t.OperationType,
+                    Amount = t.Amount,
+                    BalanceBefore = t.BalanceBefore,
+                    BalanceAfter = t.BalanceAfter,
+                    Description = t.Description,
+                    ReferenceId = t.ContractId,
+                    CreatedAt = t.CreatedAt
+                })
+                .ToListAsync();
+
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            return new PagedBalanceTransactionsResponse
+            {
+                Items = transactions,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                HasNextPage = pageNumber < totalPages,
+                HasPreviousPage = pageNumber > 1
+            };
         }
 
         #endregion

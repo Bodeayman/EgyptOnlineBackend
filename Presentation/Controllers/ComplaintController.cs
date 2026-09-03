@@ -13,7 +13,7 @@ namespace EgyptOnline.Presentation.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/complaints")]
     [ApiVersion("1.0")]
-    [Authorize(Roles = Roles.User)]
+    [Authorize(Roles = $"{Roles.User},{Roles.Customer}")]
     public class ComplaintController : ControllerBase
     {
         private readonly ComplaintService _service;

@@ -13,6 +13,9 @@ namespace EgyptOnline.Utilities
 
             if (!await roleManager.RoleExistsAsync(Roles.User))
                 await roleManager.CreateAsync(new IdentityRole(Roles.User));
+
+            if (!await roleManager.RoleExistsAsync(Roles.Customer))
+                await roleManager.CreateAsync(new IdentityRole(Roles.Customer));
         }
 
         public static async Task SeedAdmin(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)

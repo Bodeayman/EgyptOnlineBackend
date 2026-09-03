@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using EgyptOnline.Domain.Models.Enums;
 
 namespace EgyptOnline.Models
 {
@@ -39,5 +40,14 @@ namespace EgyptOnline.Models
 
         [Column(TypeName = "timestamptz")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Balance audit fields
+        public BalanceType BalanceType { get; set; }
+
+        public OperationType OperationType { get; set; }
+
+        public int BalanceBefore { get; set; }
+
+        public int BalanceAfter { get; set; }
     }
 }

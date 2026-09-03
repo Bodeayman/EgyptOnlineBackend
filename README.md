@@ -1,158 +1,222 @@
 # EgyptOnline — Backend Service
 
-Brief overview and design notes for the EgyptOnline backend (ASP.NET Core).
-**Project**: Backend API for EgyptOnline providing user registration, subscriptions, notifications, chat, presence, and background services.
+Backend API for EgyptOnline, a marketplace platform connecting service providers with clients in Egypt. Provides user registration, subscriptions, contracts, wallet management, KYC verification, job requests, real-time chat, notifications, and AI-powered assistance.
 
-**Tech stack**: ASP.NET Core, Entity Framework Core, SQL-based datastore (EF migrations present), Mongo (notifications), Docker, unit tests (xUnit), CI-friendly layout.
-**Controllers (typical responsibilities)**
-Note: controllers are located under `Presentation/` and wire into application services. Typical controllers you will find or want to add:
-- `AuthController` (login, token issuance)
-**Controllers & Endpoints**
+## Quick Start
 
-Below is a catalog of the API controllers and their endpoints (HTTP method + route) discovered in the codebase. Routes are prefixed with `api/v{version}/`.
+```bash
+# Build the project
+dotnet build EgyptOnline.csproj
 
-- `AuthController` (`api/v{version}/Auth`)
-  - POST `register` — multipart form registration for providers (file + data)
-  - POST `login` — username/email/phone + password login, returns tokens
-  - POST `add-firebase-token` — add FCM token for current user (authorized)
-  - POST `change-password` — change password for logged-in user (authorized)
-  - POST `refresh` — refresh access token using refresh token
-  - POST `logout` — revoke refresh token and remove FCM tokens
-  - POST `upload-profile-image` — upload profile image (authorized, subscription required)
+# Run locally
+dotnet run --project EgyptOnline.csproj
 
-- `ProfileController` (`api/v{version}/Profile`) — (authorized)
-  - GET `` — get current user profile
-  - GET `subscription-status` — get subscription object for current user
-  - PUT `` — update profile (RequireSubscription)
-  - POST `set-occupied` — mark user occupied until midnight (RequireSubscription)
-  - DELETE `remove-occupied` — remove occupation status (RequireSubscription)
-  - GET `occupation-status` — get current occupation flag
+# Run with Docker
+docker build -t egyptonline .
+docker run -p 8080:8080 egyptonline
 
-- `ChatController` (`api/v{version}/Chat`) — (authorized)
-  - GET `status/{userId}` — get online status for `userId`
-  - GET `online-users` — list currently online users
-  - GET `poll` — poll for new messages for authenticated user (`?sinceUtc=&pageSize=`)
-  - GET `history/{targetUserId}` — paginated conversation with a target user (`?pageNumber=&pageSize=`)
+# Run tests
+dotnet test
+```
 
-- `NotificationController` (`api/v{version}/Notification`) — (authorized)
-  - GET `my-notifications` — paginated notifications for authenticated user (`?pageNumber=&pageSize=`)
-  - PATCH `{id}/read` — mark a notification as read
-  - DELETE `{id}` — delete a single notification
-  - DELETE `all` — delete all notifications for authenticated user
+## Technology Stack
 
-- `PaymentController` (`api/v{version}/Payment`)
-  - POST `subscribe` — initiate subscription payment (query `paymentMethod`)
-  - POST/GET `webhook` — payment gateway webhook handler
-  - GET `status/{paymentId}` — get payment transaction status (authorized)
-  - POST `pay-mobile-wallet` — placeholder mobile wallet payment endpoint
+- **Framework**: ASP.NET Core 9.0
+- **Database**: PostgreSQL (primary) via Entity Framework Core 9.0
+- **Secondary Storage**: MongoDB for chat messages and notifications
+- **Real-time**: SignalR for chat and notification hubs
+- **Authentication**: JWT Bearer tokens with ASP.NET Core Identity
+- **Testing**: xUnit, FakeItEasy, EF Core InMemory
+- **Logging**: Serilog (console + file)
+- **Containerization**: Docker
+- **Payment**: Paymob, Google Play Billing
+- **External Services**: Firebase (FCM), SendGrid (email), Twilio (SMS), MinIO (CDN), Google Gemini (AI)
 
-- `AdminController` (`api/v{version}/Admin`)
-  - GET `users` — admin list/search users (authorized: Admin)
-  - GET `payments/{userId}` — get payments for a user (Admin)
-  - PUT `users/{userId}` — update user (Admin)
-  - DELETE `users/{userId}` — delete user and related artifacts (Admin)
-  - POST `login` — admin login (AllowAnonymous)
-  - POST `logout` — revoke token (Admin logout placeholder)
+## Repository Structure
 
-- `SearchController` (`api/v{version}/Search`) — (authorized)
-  - POST `workers` — search workers with filters (RequireSubscription)
-  - POST `companies` — search companies (RequireSubscription)
-  - POST `contractors` — search contractors (RequireSubscription)
-  - POST `marketplaces` — search marketplaces (RequireSubscription)
-  - POST `engineers` — search engineers (RequireSubscription)
-  - POST `assistants` — search assistants (RequireSubscription)
-  - POST `sculptors` — search sculptors (RequireSubscription)
-  - POST `providers` — return top providers (no subscription required)
+```
+EgyptOnline/
+├── Application/          # DTOs, application services, interfaces
+├── Domain/              # Domain models, attributes, middlewares
+├── Data/                # EF Core context and migrations
+├── Infrastructure/      # Concrete implementations of external services
+├── Presentation/        # Web layer (controllers, hubs)
+├── Extensions/          # Service registration and configuration
+├── Strategies/          # Strategy pattern implementations
+├── Utilities/          # Helper classes
+├── Migrations/         # EF Core database migrations
+├── EgyptOnline.Tests.Unit/      # Unit tests
+├── EgyptOnline.Tests.Integration/ # Integration tests
+└── docs/               # Additional documentation
+```
 
-- `OTPController` (`api/v{version}/OTP`)
-  - POST `request-otp` — send OTP to phone (AllowAnonymous)
-  - POST `change-password` — verify OTP and reset password (AllowAnonymous)
+## Configuration
 
-- `GooglePlayBillingController` (`api/v{version}/GooglePlayBilling`)
-  - POST `verify-subscription` — verify Google Play purchase and renew subscription (authorized)
+Required configuration in `appsettings.json`:
 
-Notes:
-- Many endpoints require authenticated users with the `User` role; admin endpoints require the `Admin` role.
-- `RequireSubscription` attribute marks operations that must check an active subscription in the database (fresh check) versus token-only checks that may be stale.
-- For precise request/response DTOs inspect the controller method signatures and DTOs under `Application/Dtos` and `Domain/Models`.
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "PostgreSQL connection string"
+  },
+  "Jwt": {
+    "Key": "JWT signing key",
+    "Issuer": "Issuer",
+    "Audience": "Audience"
+  },
+  "MongoDB": {
+    "ConnectionString": "MongoDB connection string"
+  }
+}
+```
 
-# EgyptOnline — Backend Service
+For development, copy `appsettings.Development.json` and add your local configuration values.
 
-Brief overview and design notes for the EgyptOnline backend (ASP.NET Core).
+## API Endpoints
 
-**Project**: Backend API for EgyptOnline providing user registration, subscriptions, notifications, chat, presence, and background services.
+All routes are prefixed with `api/v{version}/`.
 
-**Tech stack**: ASP.NET Core, Entity Framework Core, SQL-based datastore (EF migrations present), Mongo (notifications), Docker, unit tests (xUnit), CI-friendly layout.
+### Authentication (`/Auth`)
+- POST `register` — Provider registration with file upload
+- POST `login` — Login with username/email/phone + password
+- POST `refresh` — Refresh access token
+- POST `logout` — Revoke refresh token
+- POST `change-password` — Change password (authorized)
+- POST `add-firebase-token` — Add FCM token (authorized)
+- POST `upload-profile-image` — Upload profile image (authorized, subscription required)
 
-**Quick start**
-- Build: `dotnet build EgyptOnline.csproj`
-- Run locally: `dotnet run --project EgyptOnline.csproj`
-- With Docker: `docker build -t egyptonline .` then `docker run -p 5000:80 egyptonline`
+### Profile (`/Profile`)
+- GET `` — Get current user profile (authorized)
+- GET `subscription-status` — Get subscription status (authorized)
+- PUT `` — Update profile (authorized, subscription required)
+- POST `set-occupied` — Mark user occupied (authorized, subscription required)
+- DELETE `remove-occupied` — Remove occupation status (authorized, subscription required)
 
-**Repository layout (high level)**
-- `Application/` : DTOs, application services, interfaces.
-- `Domain/` : domain models, attributes, middlewares, core logic.
-- `Data/` : `ApplicationDBContext.cs`, EF Core factories, migrations.
-- `Infrastructure/` : concrete services (ChatService, EmailService, NotificationMongoService, OccupationService, PresenceService, Repositories).
-- `Presentation/` : web layer (API controllers, startup wiring), `Program.cs` and app configuration.
-- `Tests/` & `EgyptOnline.Tests/` : unit/integration tests.
+### Chat (`/Chat`)
+- GET `status/{userId}` — Get online status (authorized)
+- GET `online-users` — List online users (authorized)
+- GET `poll` — Poll for new messages (authorized)
+- GET `history/{targetUserId}` — Get conversation history (authorized)
 
-**Architecture overview**
-- Layered architecture (Presentation → Application → Domain → Infrastructure → Data). This keeps controllers thin and delegates business logic to services in `Application`/`Domain`.
-- Dependency inversion: interfaces in `Application` and implementations in `Infrastructure` are wired at startup (`ServiceExtensions.cs`).
-- Persistence: EF Core for the primary relational store (migrations available) and a secondary store (Mongo) for notification/presence data to enable flexible schemas and high-throughput writes.
+### Notifications (`/Notification`)
+- GET `my-notifications` — Get paginated notifications (authorized)
+- PATCH `{id}/read` — Mark notification as read (authorized)
+- DELETE `{id}` — Delete notification (authorized)
+- DELETE `all` — Delete all notifications (authorized)
 
-**Main components**
-- API / Controllers: entry points for HTTP clients; responsible for validation and delegating to application services.
-- Application services: orchestration layer implementing use-cases (registration, subscription, profile updates, notifications delivery).
-- Domain models: business rules and invariants.
-- Data access: EF Core `ApplicationDBContext` plus repository abstractions that keep queries testable.
-- Infrastructure services: third-party integrations and background helpers (email, chat, presence, occupation, notification persistence).
-- Background workers / HostedServices: scheduled or long-running processing (notification dispatch, presence reconciliation, billing tasks).
+### Payment (`/Payment`)
+- POST `subscribe` — Initiate subscription payment
+- POST `webhook` — Payment gateway webhook
+- GET `status/{paymentId}` — Get payment status (authorized)
 
-**Controllers (typical responsibilities)**
-Note: controllers are located under `Presentation/` and wire into application services. Typical controllers you will find or want to add:
-- `AuthController` (login, token issuance)
-- `UserController` (registration, profile management)
-- `SubscriptionController` (plans, subscription lifecycle)
-- `NotificationController` (push or in-app notification endpoints)
-- `ChatController` (chat endpoints or websockets integration)
-- `AdminController` (operations and diagnostics)
+### Search (`/Search`)
+- POST `workers` — Search workers (authorized, subscription required)
+- POST `companies` — Search companies (authorized, subscription required)
+- POST `contractors` — Search contractors (authorized, subscription required)
+- POST `marketplaces` — Search marketplaces (authorized, subscription required)
+- POST `engineers` — Search engineers (authorized, subscription required)
+- POST `assistants` — Search assistants (authorized, subscription required)
+- POST `sculptors` — Search sculptors (authorized, subscription required)
+- POST `providers` — Get top providers (no subscription required)
 
-Each controller should be thin: accept DTOs, validate, call application services, and return well-formed responses.
+### Admin (`/Admin`)
+- GET `users` — List/search users (Admin)
+- GET `payments/{userId}` — Get user payments (Admin)
+- PUT `users/{userId}` — Update user (Admin)
+- DELETE `users/{userId}` — Delete user (Admin)
+- POST `login` — Admin login
 
-**Advantages**
-- Clear separation of concerns: easier testing, maintainability, and onboarding.
-- EF Core + migrations: repeatable schema changes and local dev flow.
-- Polyglot persistence where appropriate: relational DB for transactional data, Mongo for high-throughput or flexible notification documents.
-- Modular infrastructure services: `ChatService`, `EmailService`, `NotificationMongoService` allow swapping implementations (e.g., external providers) without changing business logic.
-- Docker-friendly: `Dockerfile` and `docker-compose.yaml` support containerized deployment and consistent environments.
+### OTP (`/OTP`)
+- POST `request-otp` — Send OTP to phone
+- POST `change-password` — Verify OTP and reset password
 
-**Design trade-offs & rationale**
-- Two datastores (relational + Mongo):
-  - Pros: right tool per workload; notifications/presence scale independently and avoid locking relational DB.
-  - Cons: added operational complexity (two systems to maintain, backup, monitor, and secure).
-- Layered architecture vs. single monolith service classes:
-  - Pros: testability and clear boundaries; business rules live in domain/services.
-  - Cons: slightly more boilerplate and indirection for small features.
-- Using repository abstraction and DI:
-  - Pros: decouples EF from services, easier to mock for tests.
-  - Cons: potential for anemic abstractions if repository interfaces mirror EF too closely—prefer explicit query/service methods for clarity.
-- Background processing inside the same process vs separate worker service:
-  - Pros: easier deployment and fewer services to manage for small-scale deployments.
-  - Cons: heavy background workloads risk affecting API latency; consider offloading to a dedicated worker or serverless/job queue for scale.
+### Google Play Billing (`/GooglePlayBilling`)
+- POST `verify-subscription` — Verify Google Play purchase (authorized)
 
-**Operational notes**
-- Logging: use structured logs and the existing `Logs/` folder for local investigation; integrate with centralized logging (ELK/Azure Monitor) in production.
-- Observability: add request/response tracing and metrics (e.g., Prometheus, Application Insights).
-- Resilience: implement retries for external calls (email, chat gateways) and handle `429`/transient failures gracefully.
-- Security: protect secrets (do not commit `serviceAccountKey.json` for production); use managed identities or secure stores.
+## Architecture
 
-**Testing & CI**
-- Unit tests live under `EgyptOnline.Tests/` and `Tests/`. Run with `dotnet test` or the provided `run-tests.bat` scripts.
-- Add integration tests that run against in-memory or testcontainers for EF and a Mongo test instance.
+**Layered Architecture**: Presentation → Application → Domain → Infrastructure → Data
 
-**Deployment**
-- Dockerize and push images to registry; `docker-compose.yaml` and `Dockerfile` included for local and simple production setups.
-- For high scale, consider splitting API and background workers into separate containers and using Kubernetes or managed App Service / Container Apps.
+- **Presentation**: Controllers and SignalR hubs handle HTTP/WebSocket requests
+- **Application**: Business logic orchestration and use-cases
+- **Domain**: Core business entities, rules, and interfaces
+- **Infrastructure**: External service implementations (email, chat, payment, etc.)
+- **Data**: EF Core context for PostgreSQL, MongoDB client for document storage
 
+**Key Patterns**:
+- Dependency injection with interfaces in Application/Domain, implementations in Infrastructure
+- Repository pattern for data access abstraction
+- Strategy pattern for payment methods
+- Background services for automated tasks (payouts, contract completion)
+- SignalR for real-time features
+
+## Database
+
+### PostgreSQL (Primary)
+- User accounts, subscriptions, contracts, wallets, KYC, job requests
+- Managed via Entity Framework Core migrations
+- Migration files in `Migrations/` directory
+
+### MongoDB (Secondary)
+- Chat messages (EgyptOnlineChat.Messages collection)
+- Notifications for flexible schema and high-throughput writes
+
+## Background Services
+
+- **AutoPayoutBackgroundService**: Processes daily wage payouts at 5 PM Egypt time, expires stale contracts, completes incomplete contracts
+- **SubscriptionCheckerService**: Currently disabled (commented out in Program.cs)
+
+## Testing
+
+### Unit Tests
+- Located in `EgyptOnline.Tests.Unit/`
+- Uses xUnit and FakeItEasy for mocking
+- Run with: `dotnet test EgyptOnline.Tests.Unit/EgyptOnline.Tests.Unit.csproj`
+
+### Integration Tests
+- Located in `EgyptOnline.Tests.Integration/`
+- Uses real PostgreSQL via test fixtures
+- Run with: `dotnet test EgyptOnline.Tests.Integration/EgyptOnline.Tests.Integration.csproj`
+
+## Deployment
+
+### Docker
+- Multi-stage Dockerfile for optimized image size
+- Exposes port 8080
+- Run with: `docker-compose up -d`
+
+### Production Considerations
+- Use environment variables for sensitive configuration
+- Enable proper CORS policies for production domains
+- Configure centralized logging and monitoring
+- Review rate limiting for production traffic
+- Consider separating API and background workers for scale
+
+## Additional Documentation
+
+- **AGENTS.md**: Instructions for AI coding agents
+- **ADMIN_API.md**: Admin API endpoint documentation
+- **GooglePlayBillingFlow.md**: Google Play Billing integration guide
+- **docs/architecture.md**: Detailed architecture documentation
+- **docs/development.md**: Development workflow and conventions
+- **docs/testing.md**: Testing guidelines and practices
+- **docs/database.md**: Database schema and migration guide
+- **docs/api.md**: API documentation and conventions
+- **docs/deployment.md**: Deployment procedures and infrastructure
+- **docs/decisions.md**: Architectural decisions and rationale
+
+## Security Notes
+
+- Never commit secrets, API keys, or credentials to the repository
+- Use environment variables for production configuration
+- JWT tokens are used for authentication with configurable expiration
+- Rate limiting is applied to all API endpoints (30 req/min average)
+- Subscription validation middleware can be enabled via `RequireSubscription` attribute
+
+## Development Notes
+
+- Arabic character support in usernames (configured in Identity options)
+- Phone-based authentication (email is optional)
+- Idempotency keys for payment operations to prevent duplicate processing
+- All datetime fields in Egypt operations use Egypt Standard Time (UTC+2)
+- Logging to `Logs/` directory with daily rotation via Serilog

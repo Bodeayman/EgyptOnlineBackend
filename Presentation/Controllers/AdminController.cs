@@ -1,4 +1,5 @@
 using EgyptOnline.Dtos;
+using EgyptOnline.Dtos.Wallet;
 using EgyptOnline.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -726,6 +727,45 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
 
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Balance Audit
+        // ═══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Get balance transaction history for audit purposes.
+        /// GET /api/v1/Admin/balance-transactions?userId={userId}&balanceType={balanceType}&operationType={operationType}&from={from}&to={to}&pageNumber=1&pageSize=20
+        /// </summary>
+        [HttpGet("balance-transactions")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetBalanceTransactions(
+            [FromQuery] string? userId = null,
+            [FromQuery] BalanceType? balanceType = null,
+            [FromQuery] OperationType? operationType = null,
+            [FromQuery] DateTime? from = null,
+            [FromQuery] DateTime? to = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var filter = new BalanceAuditQueryFilter
+                {
+                    UserId = userId,
+                    BalanceType = balanceType,
+                    OperationType = operationType,
+                    From = from,
+                    To = to
+                };
+
+                var result = await _walletService.GetBalanceTransactionsAsync(filter, pageNumber, pageSize);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════════

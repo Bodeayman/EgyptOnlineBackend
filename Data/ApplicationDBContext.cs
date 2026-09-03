@@ -49,6 +49,9 @@ namespace EgyptOnline.Data
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
         public DbSet<JobRequest> JobRequests { get; set; }
         public DbSet<JobRequestInterest> JobRequestInterests { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
+        public DbSet<Post> Posts { get; set; }
+        public DbSet<PostPhoto> PostPhotos { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -181,6 +184,45 @@ namespace EgyptOnline.Data
                 entity.HasIndex(e => new { e.JobRequestId, e.ServiceProviderUserId }).IsUnique();
                 entity.HasOne(i => i.JobRequest).WithMany(r => r.Interests).HasForeignKey(i => i.JobRequestId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasOne(i => i.ServiceProviderUser).WithMany().HasForeignKey(i => i.ServiceProviderUserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ─── Rating Module Configuration ─────────────────────
+            modelBuilder.Entity<Rating>(entity =>
+            {
+                entity.ToTable("Ratings");
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.RatingValue);
+                entity.HasIndex(e => e.CreatedAt);
+                
+                entity.HasOne(r => r.User)
+                    .WithMany()
+                    .HasForeignKey(r => r.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ─── Post Module Configuration ─────────────────────
+            modelBuilder.Entity<Post>(entity =>
+            {
+                entity.ToTable("Posts");
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.CreatedAt);
+                
+                entity.HasOne(p => p.User)
+                    .WithMany()
+                    .HasForeignKey(p => p.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PostPhoto>(entity =>
+            {
+                entity.ToTable("PostPhotos");
+                entity.HasIndex(e => e.PostId);
+                entity.HasIndex(e => e.Order);
+                
+                entity.HasOne(ph => ph.Post)
+                    .WithMany(p => p.Photos)
+                    .HasForeignKey(ph => ph.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
 

@@ -1,4 +1,5 @@
 using EgyptOnline.Application.Services.Wallet;
+using EgyptOnline.Dtos.Wallet;
 using EgyptOnline.Domain.Models;
 using EgyptOnline.Domain.Models.Enums;
 using EgyptOnline.Infrastructure;
@@ -6,6 +7,7 @@ using EgyptOnline.Models;
 using EgyptOnline.Services;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 using Xunit;
 
 namespace EgyptOnline.Tests.Unit.Wallet;
@@ -222,6 +224,12 @@ public class WalletServiceTests : UnitTestBase
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         });
+        Context.KycSubmissions.Add(new KycSubmission
+        {
+            UserId = "recipient",
+            Status = "approved",
+            SubmittedAt = DateTime.UtcNow.AddDays(-3)
+        });
         await Context.SaveChangesAsync();
 
         var svc = BuildService();
@@ -240,7 +248,7 @@ public class WalletServiceTests : UnitTestBase
         await SeedUserWithApprovedKyc("sender-2", walletBalance: 800);
         var svc = BuildService();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => svc.TransferAsync("sender-2", "ghost-user-id", 100));
 
         // Sender balance must be untouched
@@ -375,5 +383,178 @@ public class WalletServiceTests : UnitTestBase
         Assert.Contains("رقم", ex.Message);
         var wallet = await svc.GetBalanceAsync("wr-invalid-phone");
         Assert.Equal(1000, wallet.FreeBalance); // unchanged
+    }
+
+    // ── Balance Audit Tests ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetBalanceTransactionsAsync_ReturnsAllTransactions_WhenNoFilterProvided()
+    {
+        // Arrange
+        await SeedUserWithApprovedKyc("audit-user-1", 1000);
+        await SeedUserWithApprovedKyc("audit-user-2", 2000);
+
+        var svc = BuildService();
+        await svc.DepositAsync("audit-user-1", 100);
+        await svc.WithdrawAsync("audit-user-2", 50);
+
+        // Act
+        var filter = new BalanceAuditQueryFilter();
+        var result = await svc.GetBalanceTransactionsAsync(filter, 1, 20);
+
+        // Assert
+        Assert.NotEmpty(result.Items);
+        Assert.Equal(2, result.TotalCount); // 2 transactions (1 deposit, 1 withdrawal)
+    }
+
+    [Fact]
+    public async Task GetBalanceTransactionsAsync_FiltersByUserId()
+    {
+        // Arrange
+        await SeedUserWithApprovedKyc("filter-user-1", 1000);
+        await SeedUserWithApprovedKyc("filter-user-2", 2000);
+
+        var svc = BuildService();
+        await svc.DepositAsync("filter-user-1", 100);
+        await svc.DepositAsync("filter-user-2", 200);
+
+        // Act
+        var filter = new BalanceAuditQueryFilter { UserId = "filter-user-1" };
+        var result = await svc.GetBalanceTransactionsAsync(filter, 1, 20);
+
+        // Assert
+        Assert.Single(result.Items);
+        Assert.Equal("filter-user-1", result.Items[0].UserId);
+        Assert.Equal(1, result.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetBalanceTransactionsAsync_FiltersByBalanceType()
+    {
+        // Arrange
+        await SeedUserWithApprovedKyc("baltype-user", 1000);
+
+        var svc = BuildService();
+        await svc.DepositAsync("baltype-user", 100); // Free balance
+        await svc.TransferFreeToFrozenAsync("baltype-user", 50); // Frozen balance
+
+        // Act
+        var filter = new BalanceAuditQueryFilter { BalanceType = BalanceType.Frozen };
+        var result = await svc.GetBalanceTransactionsAsync(filter, 1, 20);
+
+        // Assert
+        Assert.Single(result.Items);
+        Assert.Equal(BalanceType.Frozen, result.Items[0].BalanceType);
+    }
+
+    [Fact]
+    public async Task GetBalanceTransactionsAsync_FiltersByOperationType()
+    {
+        // Arrange
+        await SeedUserWithApprovedKyc("optype-user", 1000);
+
+        var svc = BuildService();
+        await svc.DepositAsync("optype-user", 100);
+        await svc.WithdrawAsync("optype-user", 50);
+
+        // Act
+        var filter = new BalanceAuditQueryFilter { OperationType = OperationType.Deposit };
+        var result = await svc.GetBalanceTransactionsAsync(filter, 1, 20);
+
+        // Assert
+        Assert.Single(result.Items);
+        Assert.Equal(OperationType.Deposit, result.Items[0].OperationType);
+    }
+
+    [Fact]
+    public async Task GetBalanceTransactionsAsync_FiltersByDateRange()
+    {
+        // Arrange
+        await SeedUserWithApprovedKyc("date-user", 1000);
+
+        var svc = BuildService();
+        await svc.DepositAsync("date-user", 100);
+
+        var fromDate = DateTime.UtcNow.AddMinutes(-5);
+        var toDate = DateTime.UtcNow.AddMinutes(5);
+
+        // Act
+        var filter = new BalanceAuditQueryFilter { From = fromDate, To = toDate };
+        var result = await svc.GetBalanceTransactionsAsync(filter, 1, 20);
+
+        // Assert
+        Assert.Single(result.Items);
+    }
+
+    [Fact]
+    public async Task GetBalanceTransactionsAsync_PaginationWorksCorrectly()
+    {
+        // Arrange
+        await SeedUserWithApprovedKyc("page-user", 1000);
+
+        var svc = BuildService();
+        for (int i = 0; i < 5; i++)
+        {
+            await svc.DepositAsync("page-user", 10);
+        }
+
+        // Act - page 1 with page size 2
+        var filter = new BalanceAuditQueryFilter { UserId = "page-user" };
+        var page1 = await svc.GetBalanceTransactionsAsync(filter, 1, 2);
+
+        // Assert
+        Assert.Equal(2, page1.Items.Count);
+        Assert.Equal(5, page1.TotalCount);
+        Assert.Equal(3, page1.TotalPages);
+        Assert.True(page1.HasNextPage);
+        Assert.False(page1.HasPreviousPage);
+
+        // Act - page 2
+        var page2 = await svc.GetBalanceTransactionsAsync(filter, 2, 2);
+
+        // Assert
+        Assert.Equal(2, page2.Items.Count);
+        Assert.True(page2.HasNextPage);
+        Assert.True(page2.HasPreviousPage);
+    }
+
+    [Fact]
+    public async Task GetBalanceTransactionsAsync_ReturnsBalanceBeforeAndAfter()
+    {
+        // Arrange
+        await SeedUserWithApprovedKyc("balance-track-user", 1000);
+
+        var svc = BuildService();
+        await svc.DepositAsync("balance-track-user", 100);
+
+        // Act
+        var filter = new BalanceAuditQueryFilter { UserId = "balance-track-user" };
+        var result = await svc.GetBalanceTransactionsAsync(filter, 1, 20);
+
+        // Assert
+        var transaction = result.Items.First();
+        Assert.Equal(1000, transaction.BalanceBefore);
+        Assert.Equal(1100, transaction.BalanceAfter);
+        Assert.Equal(100, transaction.Amount);
+    }
+
+    [Fact]
+    public async Task GetBalanceTransactionsAsync_IncludesUserData()
+    {
+        // Arrange
+        var user = await SeedUserWithApprovedKyc("userdata-user", 1000);
+
+        var svc = BuildService();
+        await svc.DepositAsync("userdata-user", 100);
+
+        // Act
+        var filter = new BalanceAuditQueryFilter { UserId = "userdata-user" };
+        var result = await svc.GetBalanceTransactionsAsync(filter, 1, 20);
+
+        // Assert
+        var transaction = result.Items.First();
+        Assert.Equal("userdata-user", transaction.UserId);
+        Assert.NotEmpty(transaction.UserName);
+        Assert.NotEmpty(transaction.UserPhone);
     }
 }

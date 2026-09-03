@@ -43,5 +43,8 @@ namespace EgyptOnline.Domain.Models
         public DateTime? DisputeReportedAt { get; set; }
 
         public string? DisputeReason { get; set; }
+
+        // For Batch contracts: payment amount for this milestone/day
+        public int? BatchAmount { get; set; }
     }
 }

@@ -28,6 +28,7 @@ public class AutoPayoutBackgroundService : BackgroundService
                 await ProcessAutoPayoutsAsync(stoppingToken);
                 await ExpireStaleContractsAsync(stoppingToken);
                 await CompleteIncompleteContractsAsync(stoppingToken);
+                await ProcessContractNotificationsAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -77,6 +78,22 @@ public class AutoPayoutBackgroundService : BackgroundService
             if (stoppingToken.IsCancellationRequested) break;
 
             if (contractDay.IsProcessed) continue;
+
+            // Batch contracts: process payout based on batch date, not arrival/confirmation
+            if (contract.ContractType == ContractType.Batch)
+            {
+                var batchTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+                var batchDayLocal = TimeZoneInfo.ConvertTimeFromUtc(contractDay.Date, batchTimeZone);
+
+                // Batch payout occurs at the scheduled batch date
+                if (currentEgyptTime >= batchDayLocal)
+                {
+                    await ProcessDayPayoutAsync(context, walletService, notificationService, contract, contractDay, currentEgyptTime);
+                }
+                continue;
+            }
+
+            // PerDay contracts: process based on arrival/confirmation
             if (!contractDay.ProviderArrived) continue;
             if (contractDay.Status == ContractDayStatus.AbsentDisputed) continue;
 
@@ -129,29 +146,62 @@ public class AutoPayoutBackgroundService : BackgroundService
             contractDay.IsProcessed = true;
             contractDay.ProcessedAt = DateTime.UtcNow;
 
-            // Transfer daily salary: client frozen → worker free
-            await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, contract.DailySalary);
-
             var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
-            if (providerUser != null)
-                await walletService.AddToFreeBalanceAsync(providerUser.Id, contract.DailySalary);
 
-            // Notify provider about the payout
-            try
+            // Execute daily money transfer for PerDay contracts
+            if (contract.ContractType == ContractType.PerDay)
             {
-                var clientUser = await context.Users.FindAsync(contract.ClientUserId);
-                var clientName = clientUser != null ? $"{clientUser.FirstName} {clientUser.LastName}" : "العميل";
+                // Transfer daily salary: client frozen → worker free
+                await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, contract.DailySalary);
 
-                await notificationService.SendNotificationToUser(
-                    providerUser.Id,
-                    "دفع يومي مستلم",
-                    $"تم استلام {contract.DailySalary} جنيه من {clientName} عن يوم {contractDay.DayNumber} من العقد #{contract.Id}",
-                    "wallet"
-                );
+                if (providerUser != null)
+                    await walletService.AddToFreeBalanceAsync(providerUser.Id, contract.DailySalary);
+
+                // Notify provider about the daily payout
+                try
+                {
+                    var clientUser = await context.Users.FindAsync(contract.ClientUserId);
+                    var clientName = clientUser != null ? $"{clientUser.FirstName} {clientUser.LastName}" : "العميل";
+
+                    await notificationService.SendNotificationToUser(
+                        providerUser.Id,
+                        "دفع يومي مستلم",
+                        $"تم استلام {contract.DailySalary} جنيه من {clientName} عن يوم {contractDay.DayNumber} من العقد #{contract.Id}",
+                        "wallet"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to send payout notification to provider {ProviderId}", providerUser?.Id);
+                }
             }
-            catch (Exception ex)
+
+            // Execute batch payment for Batch contracts
+            if (contract.ContractType == ContractType.Batch)
             {
-                Log.Warning(ex, "Failed to send payout notification to provider {ProviderId}", providerUser?.Id);
+                var batchAmount = contractDay.BatchAmount ?? contract.DailySalary;
+                await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, batchAmount);
+
+                if (providerUser != null)
+                    await walletService.AddToFreeBalanceAsync(providerUser.Id, batchAmount);
+
+                // Notify provider about the batch payout
+                try
+                {
+                    var clientUser = await context.Users.FindAsync(contract.ClientUserId);
+                    var clientName = clientUser != null ? $"{clientUser.FirstName} {clientUser.LastName}" : "العميل";
+
+                    await notificationService.SendNotificationToUser(
+                        providerUser.Id,
+                        "دفعة مستلمة",
+                        $"تم استلام {batchAmount} جنيه من {clientName} عن الدفعة رقم {contractDay.DayNumber} من العقد #{contract.Id}",
+                        "wallet"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to send batch payout notification to provider {ProviderId}", providerUser?.Id);
+                }
             }
 
             // Check if all days are now processed → complete the contract
@@ -161,6 +211,24 @@ public class AutoPayoutBackgroundService : BackgroundService
                 contract.Status = "completed";
                 contract.CompletedAt = DateTime.UtcNow;
 
+                if (contract.ContractType == ContractType.Batch && providerUser != null)
+                {
+                    // Batch contract: Pay out full TotalAmount to provider upon completion
+                    await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, contract.TotalAmount);
+                    await walletService.AddToFreeBalanceAsync(providerUser.Id, contract.TotalAmount);
+                }
+                else if (contract.ContractType == ContractType.EndOfDays && providerUser != null)
+                {
+                    // EndOfDays contract: Calculate earned amount for all worked/completed days
+                    var completedDaysCount = contract.ContractDays.Count(cd => cd.Status == ContractDayStatus.Completed);
+                    var earnedAmount = completedDaysCount * contract.DailySalary;
+                    if (earnedAmount > 0)
+                    {
+                        await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, earnedAmount);
+                        await walletService.AddToFreeBalanceAsync(providerUser.Id, earnedAmount);
+                    }
+                }
+
                 // Calculate remaining frozen balance for client (includes unused daily salary + client's penalty)
                 var clientWallet = await context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
                 var remainingFrozenBalance = clientWallet?.FrozenBalance ?? 0;
@@ -169,7 +237,7 @@ public class AutoPayoutBackgroundService : BackgroundService
                 if (remainingFrozenBalance > 0)
                 {
                     await walletService.TransferFrozenToFreeAsync(contract.ClientUserId, remainingFrozenBalance);
-                    Log.Information("Contract {ContractId} completed. Returned {Amount} remaining frozen balance to client", contract.Id, remainingFrozenBalance);
+                    Log.Information("Contract {ContractId} completed ({ContractType}). Returned {Amount} remaining frozen balance to client", contract.Id, contract.ContractType, remainingFrozenBalance);
                 }
 
                 // Release provider's penalty deposit back to free balance
@@ -179,7 +247,28 @@ public class AutoPayoutBackgroundService : BackgroundService
                     Log.Information("Contract {ContractId} completed. Provider's penalty of {Amount} released", contract.Id, contract.PenaltyAmount);
                 }
 
-                Log.Information("Contract {ContractId} completed. All day payouts processed, remaining funds and penalties released", contract.Id);
+                Log.Information("Contract {ContractId} completed. Payouts processed for type {ContractType}, remaining funds and penalties released", contract.Id, contract.ContractType);
+
+                // Send rating notification to client
+                try
+                {
+                    if (providerUser != null)
+                    {
+                        await notificationService.SendNotificationToUser(
+                            contract.ClientUserId,
+                            "انتهى العقد. يمكنك الآن تقييم مقدم الخدمة",
+                            $"انتهى العقد #{contract.Id}. يمكنك الآن تقييم مقدم الخدمة {providerUser.FirstName} {providerUser.LastName}",
+                            "rating",
+                            providerUser.Id,
+                            $"{providerUser.FirstName} {providerUser.LastName}"
+                        );
+                        Log.Information("Sent rating notification for completed Contract {ContractId}", contract.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to send rating notification for completed Contract {ContractId}", contract.Id);
+                }
             }
 
             await context.SaveChangesAsync();
@@ -187,8 +276,8 @@ public class AutoPayoutBackgroundService : BackgroundService
 
             var mode = contractDay.ClientConfirmed ? "immediate (client confirmed)" : "grace period (23:59:59 Egypt time)";
             Log.Information(
-                "Auto-payout [{Mode}] for Contract {ContractId}, Day {DayNumber}. Amount: {Amount}",
-                mode, contract.Id, contractDay.DayNumber, contract.DailySalary);
+                "Auto-payout [{Mode}] for Contract {ContractId} ({ContractType}), Day {DayNumber}.",
+                mode, contract.Id, contract.ContractType, contractDay.DayNumber);
         }
         catch (Exception ex)
         {
@@ -264,6 +353,7 @@ public class AutoPayoutBackgroundService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var walletService = scope.ServiceProvider.GetRequiredService<WalletService>();
+        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
         // Egypt local date today
         var egyptDate = DateTime.SpecifyKind(EgyptTimeHelper.NowInEgypt().Date, DateTimeKind.Utc);
@@ -278,13 +368,14 @@ public class AutoPayoutBackgroundService : BackgroundService
         foreach (var contract in incompleteContracts)
         {
             if (stoppingToken.IsCancellationRequested) break;
-            await CompleteContractAsync(context, walletService, contract);
+            await CompleteContractAsync(context, walletService, notificationService, contract);
         }
     }
 
     private async Task CompleteContractAsync(
         ApplicationDbContext context,
         WalletService walletService,
+        INotificationService notificationService,
         Contract contract)
     {
         using var transaction = await context.Database.BeginTransactionAsync();
@@ -299,8 +390,21 @@ public class AutoPayoutBackgroundService : BackgroundService
                 day.ProcessedAt = DateTime.UtcNow;
             }
 
-            contract.Status = "completed";
-            contract.CompletedAt = DateTime.UtcNow;
+            var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+
+            if (contract.ContractType == ContractType.EndOfDays && providerUser != null)
+            {
+                var completedDaysCount = contract.ContractDays.Count(cd => cd.Status == ContractDayStatus.Completed);
+                var earnedAmount = completedDaysCount * contract.DailySalary;
+                if (earnedAmount > 0)
+                {
+                    await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, earnedAmount);
+                    await walletService.AddToFreeBalanceAsync(providerUser.Id, earnedAmount);
+                }
+            }
+
+            // Batch contracts: No additional payout at completion since each batch is paid individually
+            // Contract simply completes when all batches are processed
 
             // Calculate remaining frozen balance for client (includes unused daily salary + client's penalty)
             var clientWallet = await context.UserWallets.FirstOrDefaultAsync(w => w.UserId == contract.ClientUserId);
@@ -318,26 +422,43 @@ public class AutoPayoutBackgroundService : BackgroundService
             }
 
             // Release provider's penalty deposit back to free balance (only if wallet exists)
-            if (contract.PenaltyAmount > 0)
+            if (contract.PenaltyAmount > 0 && providerUser != null)
             {
-                var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
-                if (providerUser != null)
+                var providerWallet = await context.UserWallets.FirstOrDefaultAsync(w => w.UserId == providerUser.Id);
+                if (providerWallet != null)
                 {
-                    var providerWallet = await context.UserWallets.FirstOrDefaultAsync(w => w.UserId == providerUser.Id);
-                    if (providerWallet != null)
-                    {
-                        await walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
-                        Log.Information("Contract {ContractId} completed (incomplete). Provider's penalty of {Amount} released", contract.Id, contract.PenaltyAmount);
-                    }
-                    else
-                    {
-                        Log.Warning("Contract {ContractId} completed (incomplete). Provider has penalty of {Amount} but no wallet exists. Skipping fund return.", contract.Id, contract.PenaltyAmount);
-                    }
+                    await walletService.TransferFrozenToFreeAsync(providerUser.Id, contract.PenaltyAmount);
+                    Log.Information("Contract {ContractId} completed (incomplete). Provider's penalty of {Amount} released", contract.Id, contract.PenaltyAmount);
+                }
+                else
+                {
+                    Log.Warning("Contract {ContractId} completed (incomplete). Provider has penalty of {Amount} but no wallet exists. Skipping fund return.", contract.Id, contract.PenaltyAmount);
                 }
             }
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            // Send rating notification to client
+            try
+            {
+                if (providerUser != null)
+                {
+                    await notificationService.SendNotificationToUser(
+                        contract.ClientUserId,
+                        "انتهى العقد. يمكنك الآن تقييم مقدم الخدمة",
+                        $"انتهى العقد #{contract.Id}. يمكنك الآن تقييم مقدم الخدمة {providerUser.FirstName} {providerUser.LastName}",
+                        "rating",
+                        providerUser.Id,
+                        $"{providerUser.FirstName} {providerUser.LastName}"
+                    );
+                    Log.Information("Sent rating notification for auto-completed Contract {ContractId}", contract.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to send rating notification for auto-completed Contract {ContractId}", contract.Id);
+            }
 
             Log.Information(
                 "Contract {ContractId} auto-completed (end date passed). {UnprocessedDays} days marked as completed without payout.",
@@ -347,6 +468,152 @@ public class AutoPayoutBackgroundService : BackgroundService
         {
             await transaction.RollbackAsync();
             Log.Error(ex, "Failed to auto-complete Contract {ContractId}", contract.Id);
+        }
+    }
+
+    // ── SCENARIO: Contract notifications ─────────────────────────────────────
+
+    private async Task ProcessContractNotificationsAsync(CancellationToken stoppingToken)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+        var currentEgyptTime = EgyptTimeHelper.NowInEgypt();
+        var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+
+        // Get active contracts that may need notifications
+        var activeContracts = await context.Contracts
+            .Include(c => c.ContractDays)
+            .Where(c => c.Status == "active")
+            .ToListAsync(stoppingToken);
+
+        foreach (var contract in activeContracts)
+        {
+            if (stoppingToken.IsCancellationRequested) break;
+
+            var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+            if (providerUser == null) continue;
+
+            // Batch contracts: 24h notification before each batch payment
+            if (contract.ContractType == ContractType.Batch)
+            {
+                foreach (var contractDay in contract.ContractDays)
+                {
+                    if (stoppingToken.IsCancellationRequested) break;
+                    if (contractDay.IsProcessed) continue;
+
+                    var contractDayEgyptLocal = TimeZoneInfo.ConvertTimeFromUtc(contractDay.Date, egyptTimeZone);
+                    var notificationTime = contractDayEgyptLocal.AddHours(-24);
+
+                    // Send 24h notification if we're within the notification window
+                    if (currentEgyptTime >= notificationTime && currentEgyptTime < contractDayEgyptLocal)
+                    {
+                        try
+                        {
+                            await notificationService.SendNotificationToUser(
+                                contract.ClientUserId,
+                                "سيتم تسليم الدفعة خلال 24 ساعة",
+                                $"سيتم تسليم دفعة {contractDay.BatchAmount ?? contract.DailySalary} جنيه عن الدفعة رقم {contractDay.DayNumber} من العقد #{contract.Id} خلال 24 ساعة",
+                                "contract",
+                                providerUser.Id,
+                                $"{providerUser.FirstName} {providerUser.LastName}"
+                            );
+                            Log.Information("Sent 24h Batch notification for Contract {ContractId}, Batch {BatchNumber}", contract.Id, contractDay.DayNumber);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warning(ex, "Failed to send 24h Batch notification for Contract {ContractId}, Batch {BatchNumber}", contract.Id, contractDay.DayNumber);
+                        }
+                    }
+                }
+            }
+
+            // EndOfDays contracts: 48h and 24h notifications before contract end
+            if (contract.ContractType == ContractType.EndOfDays)
+            {
+                var contractEndDate = contract.StartDate.AddDays(contract.TotalDays - 1);
+                var contractEndEgyptLocal = TimeZoneInfo.ConvertTimeFromUtc(contract.StartDate, egyptTimeZone).Date.AddDays(contract.TotalDays - 1);
+
+                var notification48hTime = contractEndEgyptLocal.AddHours(-48);
+                var notification24hTime = contractEndEgyptLocal.AddHours(-24);
+
+                // Send 48h notification
+                if (currentEgyptTime >= notification48hTime && currentEgyptTime < notification24hTime)
+                {
+                    try
+                    {
+                        await notificationService.SendNotificationToUser(
+                            contract.ClientUserId,
+                            "سينتهي العقد وتسليم المستحقات خلال 48 ساعة",
+                            $"سينتهي العقد #{contract.Id} وتسليم المستحقات خلال 48 ساعة",
+                            "contract",
+                            providerUser.Id,
+                            $"{providerUser.FirstName} {providerUser.LastName}"
+                        );
+                        Log.Information("Sent 48h EndOfDays notification for Contract {ContractId}", contract.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to send 48h EndOfDays notification for Contract {ContractId}", contract.Id);
+                    }
+                }
+
+                // Send 24h notification
+                if (currentEgyptTime >= notification24hTime && currentEgyptTime < contractEndEgyptLocal)
+                {
+                    try
+                    {
+                        await notificationService.SendNotificationToUser(
+                            contract.ClientUserId,
+                            "سينتهي العقد وتسليم المستحقات خلال 24 ساعة",
+                            $"سينتهي العقد #{contract.Id} وتسليم المستحقات خلال 24 ساعة",
+                            "contract",
+                            providerUser.Id,
+                            $"{providerUser.FirstName} {providerUser.LastName}"
+                        );
+                        Log.Information("Sent 24h EndOfDays notification for Contract {ContractId}", contract.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to send 24h EndOfDays notification for Contract {ContractId}", contract.Id);
+                    }
+                }
+            }
+        }
+
+        // Send rating notifications for recently completed contracts
+        var recentlyCompletedContracts = await context.Contracts
+            .Include(c => c.ContractDays)
+            .Where(c => c.Status == "completed" &&
+                        c.CompletedAt.HasValue &&
+                        c.CompletedAt.Value.AddHours(1) > DateTime.UtcNow &&
+                        c.CompletedAt.Value <= DateTime.UtcNow)
+            .ToListAsync(stoppingToken);
+
+        foreach (var contract in recentlyCompletedContracts)
+        {
+            if (stoppingToken.IsCancellationRequested) break;
+
+            var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
+            if (providerUser == null) continue;
+
+            try
+            {
+                await notificationService.SendNotificationToUser(
+                    contract.ClientUserId,
+                    "انتهى العقد. يمكنك الآن تقييم مقدم الخدمة",
+                    $"انتهى العقد #{contract.Id}. يمكنك الآن تقييم مقدم الخدمة {providerUser.FirstName} {providerUser.LastName}",
+                    "rating",
+                    providerUser.Id,
+                    $"{providerUser.FirstName} {providerUser.LastName}"
+                );
+                Log.Information("Sent rating notification for completed Contract {ContractId}", contract.Id);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to send rating notification for completed Contract {ContractId}", contract.Id);
+            }
         }
     }
 }

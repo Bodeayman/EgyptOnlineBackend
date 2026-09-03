@@ -33,6 +33,9 @@ namespace EgyptOnline.Migrations
                     b.Property<DateTime?>("ArrivalTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("BatchAmount")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("ClientConfirmed")
                         .HasColumnType("boolean");
 
@@ -196,6 +199,9 @@ namespace EgyptOnline.Migrations
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ContractType")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamptz");
@@ -621,6 +627,99 @@ namespace EgyptOnline.Migrations
                     b.ToTable("PaymentTransactions");
                 });
 
+            modelBuilder.Entity("EgyptOnline.Models.Post", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Posts", (string)null);
+                });
+
+            modelBuilder.Entity("EgyptOnline.Models.PostPhoto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PhotoUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Order");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("PostPhotos", (string)null);
+                });
+
+            modelBuilder.Entity("EgyptOnline.Models.Rating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("RatingValue")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("RatingValue");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Ratings", (string)null);
+                });
+
             modelBuilder.Entity("EgyptOnline.Models.ServicesProvider", b =>
                 {
                     b.Property<int>("Id")
@@ -826,6 +925,15 @@ namespace EgyptOnline.Migrations
                     b.Property<int>("Amount")
                         .HasColumnType("integer");
 
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BalanceBefore")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BalanceType")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("ContractId")
                         .HasColumnType("integer");
 
@@ -839,6 +947,9 @@ namespace EgyptOnline.Migrations
 
                     b.Property<string>("FromUserId")
                         .HasColumnType("text");
+
+                    b.Property<int>("OperationType")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ToUserId")
                         .HasColumnType("text");
@@ -1340,6 +1451,39 @@ namespace EgyptOnline.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EgyptOnline.Models.Post", b =>
+                {
+                    b.HasOne("EgyptOnline.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EgyptOnline.Models.PostPhoto", b =>
+                {
+                    b.HasOne("EgyptOnline.Models.Post", "Post")
+                        .WithMany("Photos")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("EgyptOnline.Models.Rating", b =>
+                {
+                    b.HasOne("EgyptOnline.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EgyptOnline.Models.ServicesProvider", b =>
                 {
                     b.HasOne("EgyptOnline.Models.User", "User")
@@ -1534,6 +1678,11 @@ namespace EgyptOnline.Migrations
             modelBuilder.Entity("EgyptOnline.Models.JobRequest", b =>
                 {
                     b.Navigation("Interests");
+                });
+
+            modelBuilder.Entity("EgyptOnline.Models.Post", b =>
+                {
+                    b.Navigation("Photos");
                 });
 
             modelBuilder.Entity("EgyptOnline.Models.User", b =>

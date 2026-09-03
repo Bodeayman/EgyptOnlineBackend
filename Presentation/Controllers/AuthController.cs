@@ -54,6 +54,61 @@ namespace EgyptOnline.Controllers
             _userManager = userManager;
             _strategyFactory = new ProviderRegistrationStrategyFactory();
         }
+
+        [AllowAnonymous]
+        [HttpPost("register/customer")]
+        public async Task<IActionResult> RegisterCustomer([FromBody] RegisterCustomerDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Validation failed",
+                    errorCode = "InvalidInput",
+                    errors
+                });
+            }
+
+            var phoneRegex = new Regex(@"^(010|011|012|015)\d{8}$");
+            if (!phoneRegex.IsMatch(model.PhoneNumber))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Validation failed",
+                    errorCode = "InvalidInput",
+                    errors = new
+                    {
+                        PhoneNumber = "Phone number must start with 010, 011, 012, or 015 and be 11 digits long"
+                    }
+                });
+            }
+
+            var registerResult = await _userRegisterationService.RegisterCustomer(model);
+            if (registerResult.Result != IdentityResult.Success)
+            {
+                return BadRequest(new
+                {
+                    message = registerResult.Result.Errors.First().Description,
+                    errorCode = registerResult.Result.Errors.First().Code
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Customer account created successfully",
+                userId = registerResult.User!.Id
+            });
+        }
+
         [AllowAnonymous]
         [HttpPost("register")]
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -287,13 +342,15 @@ namespace EgyptOnline.Controllers
 
                 await _context.SaveChangesAsync();
 
+                var responseRole = roles.Contains(Roles.Customer) ? Roles.Customer : Roles.User;
+
                 return Ok(new
                 {
                     message = "Login successful",
                     accessToken,
                     refreshToken = refreshTokenString,
                     refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
-                    role = "User"
+                    role = responseRole
                 });
 
             }
@@ -377,88 +434,113 @@ namespace EgyptOnline.Controllers
                 if (tokenType != TokensTypes.RefreshToken.ToString())
                     return Unauthorized(new { message = "Token is not a refresh token", errorCode = "InvalidToken" });
 
-                // 2. Find the stored token
-                var storedToken = await _context.RefreshTokens
-                    .Include(rt => rt.User)
-                        .ThenInclude(u => u.ServiceProvider)
-                    .Include(rt => rt.User.Subscription)
-                    .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
-
-                if (storedToken == null || storedToken.Expires < DateTime.UtcNow)
+                // 2. Atomic token validation + rotation with row locking
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    return Unauthorized(new
+                    // Lock the refresh token row to prevent concurrent rotations
+                    RefreshToken? storedToken = null;
+                    if (_context.Database.IsRelational())
                     {
-                        message = "Refresh token is invalid or expired",
-                        errorCode = UserErrors.RefreshTokenInvalid.ToString()
-                    });
-                }
-
-                var user = storedToken.User;
-                if (user == null)
-                    return Unauthorized("User not found");
-
-                // 3. Handle Token Rotation & Grace Window for Concurrent Requests
-                if (storedToken.IsRevoked)
-                {
-                    // Grace Window (60 seconds): If token was revoked in the last 60 seconds (race condition / duplicate request),
-                    // return the latest active refresh token for this user instead of throwing 401.
-                    if (storedToken.Revoked.HasValue && storedToken.Revoked.Value > DateTime.UtcNow.AddSeconds(-60))
-                    {
-                        var activeToken = await _context.RefreshTokens
-                            .Where(rt => rt.UserId == user.Id && !rt.IsRevoked && rt.Expires > DateTime.UtcNow)
-                            .OrderByDescending(rt => rt.Created)
+                        storedToken = await _context.RefreshTokens
+                            .FromSqlInterpolated($"SELECT * FROM \"RefreshTokens\" WHERE \"Token\" = {refreshRequest.RefreshToken} FOR UPDATE")
+                            .Include(rt => rt.User)
+                                .ThenInclude(u => u.ServiceProvider)
+                            .Include(rt => rt.User.Subscription)
                             .FirstOrDefaultAsync();
-
-                        if (activeToken != null)
-                        {
-                            var graceAccessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
-                            return Ok(new
-                            {
-                                AccessToken = graceAccessToken,
-                                RefreshToken = activeToken.Token,
-                                refreshTokenExpiry = activeToken.Expires
-                            });
-                        }
+                    }
+                    else
+                    {
+                        storedToken = await _context.RefreshTokens
+                            .Include(rt => rt.User)
+                                .ThenInclude(u => u.ServiceProvider)
+                            .Include(rt => rt.User.Subscription)
+                            .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
                     }
 
-                    return Unauthorized(new
+                    if (storedToken == null || storedToken.Expires < DateTime.UtcNow)
                     {
-                        message = "Refresh token is expired or revoked",
-                        errorCode = UserErrors.RefreshTokenInvalid.ToString()
+                        await transaction.RollbackAsync();
+                        return Unauthorized(new
+                        {
+                            message = "Refresh token is invalid or expired",
+                            errorCode = UserErrors.RefreshTokenInvalid.ToString()
+                        });
+                    }
+
+                    var user = storedToken.User;
+                    if (user == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return Unauthorized("User not found");
+                    }
+
+                    // 3. Handle Token Rotation & Grace Window for Concurrent Requests
+                    if (storedToken.IsRevoked)
+                    {
+                        // Grace Window (60 seconds): If token was revoked in the last 60 seconds (race condition / duplicate request),
+                        // return the latest active refresh token for this user instead of throwing 401.
+                        if (storedToken.Revoked.HasValue && storedToken.Revoked.Value > DateTime.UtcNow.AddSeconds(-60))
+                        {
+                            var activeToken = await _context.RefreshTokens
+                                .Where(rt => rt.UserId == user.Id && !rt.IsRevoked && rt.Expires > DateTime.UtcNow)
+                                .OrderByDescending(rt => rt.Created)
+                                .FirstOrDefaultAsync();
+
+                            if (activeToken != null)
+                            {
+                                var graceAccessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
+                                await transaction.CommitAsync();
+                                return Ok(new
+                                {
+                                    AccessToken = graceAccessToken,
+                                    RefreshToken = activeToken.Token,
+                                    refreshTokenExpiry = activeToken.Expires
+                                });
+                            }
+                        }
+
+                        await transaction.RollbackAsync();
+                        return Unauthorized(new
+                        {
+                            message = "Refresh token is expired or revoked",
+                            errorCode = UserErrors.RefreshTokenInvalid.ToString()
+                        });
+                    }
+
+                    // Revoke ONLY the presented token (multi-device isolated)
+                    storedToken.IsRevoked = true;
+                    storedToken.Revoked = DateTime.UtcNow;
+
+                    // 4. Generate new tokens
+                    var newAccessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
+                    var newRefreshTokenString = await _userService.GenerateJwtToken(user, TokensTypes.RefreshToken);
+
+                    var newRefreshToken = new RefreshToken
+                    {
+                        Token = newRefreshTokenString,
+                        UserId = user.Id,
+                        Expires = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
+                        Created = DateTime.UtcNow,
+                        IsRevoked = false
+                    };
+
+                    _context.RefreshTokens.Add(newRefreshToken);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new
+                    {
+                        AccessToken = newAccessToken,
+                        RefreshToken = newRefreshTokenString,
+                        refreshTokenExpiry = newRefreshToken.Expires,
                     });
                 }
-
-                // Revoke ONLY the presented token (multi-device isolated)
-                storedToken.IsRevoked = true;
-                storedToken.Revoked = DateTime.UtcNow;
-
-                // 4. Generate new tokens
-                var newAccessToken = await _userService.GenerateJwtToken(user, TokensTypes.AccessToken);
-                var newRefreshTokenString = await _userService.GenerateJwtToken(user, TokensTypes.RefreshToken);
-
-                var newRefreshToken = new RefreshToken
+                catch
                 {
-                    Token = newRefreshTokenString,
-                    UserId = user.Id,
-                    Expires = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
-                    Created = DateTime.UtcNow,
-                    IsRevoked = false
-                };
-
-                _context.RefreshTokens.Add(newRefreshToken);
-                await _context.SaveChangesAsync();
-
-                return Ok(new
-                {
-                    // Removed isExpired from refresh response per request: subscription state should not be returned here.
-                    // isExpired = !(user!.ServiceProvider.IsAvailable),
-
-                    AccessToken = newAccessToken,
-                    RefreshToken = newRefreshTokenString,
-                    refreshTokenExpiry = newRefreshToken.Expires,
-                    // Removed subscriptionExpiry from refresh response per request.
-                    // subscriptionExpiry = user.Subscription?.EndDate,
-                });
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
@@ -478,39 +560,54 @@ namespace EgyptOnline.Controllers
 
             try
             {
-                // Step 1: Find the refresh token in the database
-                var storedToken = await _context.RefreshTokens
-                    .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
+                // Step 1: Find and revoke the refresh token with row locking
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    RefreshToken? storedToken = null;
+                    if (_context.Database.IsRelational())
+                    {
+                        storedToken = await _context.RefreshTokens
+                            .FromSqlInterpolated($"SELECT * FROM \"RefreshTokens\" WHERE \"Token\" = {refreshRequest.RefreshToken} FOR UPDATE")
+                            .FirstOrDefaultAsync();
+                    }
+                    else
+                    {
+                        storedToken = await _context.RefreshTokens
+                            .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
+                    }
 
-                if (storedToken == null)
-                    return NotFound(new { message = "Refresh token not found" });
-                var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
-                // Step 2: Revoke the token
-                storedToken.IsRevoked = true;
-                storedToken.Revoked = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                    if (storedToken == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return NotFound(new { message = "Refresh token not found" });
+                    }
 
-                var fcmTokens = _context.FirebaseTokens
-                .Where(t => t.user.Id == userId || t.user.Id == storedToken.UserId)
-                .ToList();
+                    storedToken.IsRevoked = true;
+                    storedToken.Revoked = DateTime.UtcNow;
 
-                _context.FirebaseTokens.RemoveRange(fcmTokens);
-                await _context.SaveChangesAsync();
+                    var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+                    var fcmTokens = await _context.FirebaseTokens
+                        .Where(t => t.user.Id == userId || t.user.Id == storedToken.UserId)
+                        .ToListAsync();
 
-                // Step 3: Optionally, you can also clear other active tokens for this user
-                // var userTokens = _context.RefreshTokens.Where(t => t.UserId == storedToken.UserId && !t.IsRevoked);
-                // foreach(var token in userTokens) { token.IsRevoked = true; token.Revoked = DateTime.UtcNow; }
-                // await _context.SaveChangesAsync();
+                    _context.FirebaseTokens.RemoveRange(fcmTokens);
 
-                return Ok(new { message = "Logout successful, refresh token revoked" });
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new { message = "Logout successful, refresh token revoked" });
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
-                {
-                    message = "Error logging out",
-                    errorMessage = ex.Message
-                });
+                Console.WriteLine($"Error in logout: {ex.Message}");
+                return StatusCode(500, new { message = "Error processing logout", errorMessage = ex.Message });
             }
         }
 

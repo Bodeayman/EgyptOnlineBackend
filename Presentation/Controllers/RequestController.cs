@@ -11,7 +11,7 @@ namespace EgyptOnline.Presentation.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/requests")]
     [ApiVersion("1.0")]
-    [Authorize(Roles = Roles.User)]
+    [Authorize(Roles = $"{Roles.User},{Roles.Customer}")]
     public class RequestController : ControllerBase
     {
         private readonly JobRequestService _service;
@@ -134,6 +134,7 @@ namespace EgyptOnline.Presentation.Controllers
         /// GET /api/v1/Request/others?pageNumber=1&pageSize=20&governorate=...
         /// </summary>
         [HttpGet("others")]
+        [Authorize(Roles = Roles.User)]
         public async Task<IActionResult> GetOtherRequests(
             [FromQuery] string? governorate = null,
             [FromQuery] int pageNumber = 1,
@@ -158,6 +159,7 @@ namespace EgyptOnline.Presentation.Controllers
         /// PUT /api/v1/Request/{id}/interest
         /// </summary>
         [HttpPut("{id:int}/interest")]
+        [Authorize(Roles = Roles.User)]
         public async Task<IActionResult> SetInterest(int id, [FromBody] SetInterestDto dto)
         {
             if (!ModelState.IsValid)

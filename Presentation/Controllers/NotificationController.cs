@@ -8,7 +8,7 @@ namespace EgyptOnline.Presentation.Controllers
 {
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
-    [Authorize(Roles = Roles.User)]
+    [Authorize(Roles = $"{Roles.User},{Roles.Customer}")]
     public class NotificationController : ControllerBase
     {
         private readonly NotificationMongoService _notificationService;
