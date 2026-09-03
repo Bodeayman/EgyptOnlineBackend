@@ -6,6 +6,7 @@ using EgyptOnline.Infrastructure;
 using EgyptOnline.Models;
 using EgyptOnline.Services;
 using FakeItEasy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq;
 using Xunit;
@@ -525,13 +526,35 @@ public class WalletServiceTests : UnitTestBase
         await SeedUserWithApprovedKyc("balance-track-user", 1000);
 
         var svc = BuildService();
+        var walletBefore = await svc.GetBalanceAsync("balance-track-user");
+        Assert.Equal(1000, walletBefore.FreeBalance); // Verify initial state
+
+        // Clear context to ensure fresh read
+        Context.ChangeTracker.Clear();
+
         await svc.DepositAsync("balance-track-user", 100);
+
+        var walletAfter = await svc.GetBalanceAsync("balance-track-user");
+        Assert.Equal(1100, walletAfter.FreeBalance); // Verify balance was updated
+
+        // Check all transactions in the database
+        var allTransactions = await Context.WalletTransactions
+            .Where(t => t.UserId == "balance-track-user")
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        // DEBUG: Write out what we see
+        foreach (var t in allTransactions)
+        {
+            System.Console.WriteLine($"Transaction: Type={t.Type}, Amount={t.Amount}, BalanceBefore={t.BalanceBefore}, BalanceAfter={t.BalanceAfter}, BalanceType={t.BalanceType}, OperationType={t.OperationType}");
+        }
 
         // Act
         var filter = new BalanceAuditQueryFilter { UserId = "balance-track-user" };
         var result = await svc.GetBalanceTransactionsAsync(filter, 1, 20);
 
         // Assert
+        Assert.Single(result.Items);
         var transaction = result.Items.First();
         Assert.Equal(1000, transaction.BalanceBefore);
         Assert.Equal(1100, transaction.BalanceAfter);

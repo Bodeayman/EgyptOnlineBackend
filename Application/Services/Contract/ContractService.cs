@@ -69,11 +69,24 @@ namespace EgyptOnline.Application.Services.Contract
             switch (contract.ContractType)
             {
                 case ContractType.PerDay:
-                    if (selectedDates == null || selectedDates.Count == 0)
-                        throw new InvalidOperationException("يجب تحديد تواريخ العمل لعقود الدفع اليومي");
-                    contract.TotalDays = selectedDates.Count;
-                    contract.StartDate = selectedDates.First();
-                    contract.TotalAmount = contract.DailySalary * contract.TotalDays;
+                    if (selectedDates != null && selectedDates.Count > 0)
+                    {
+                        contract.TotalDays = selectedDates.Count;
+                        contract.StartDate = selectedDates.First();
+                        contract.TotalAmount = contract.DailySalary * contract.TotalDays;
+                    }
+                    else
+                    {
+                        if (contract.TotalDays <= 0)
+                            throw new InvalidOperationException("عدد الأيام يجب أن يكون أكبر من صفر");
+
+                        var startDate = contract.StartDate == default ? DateTime.UtcNow.Date : contract.StartDate.Date;
+                        selectedDates = Enumerable.Range(0, contract.TotalDays)
+                            .Select(i => startDate.AddDays(i))
+                            .ToList();
+                        contract.StartDate = startDate;
+                        contract.TotalAmount = contract.DailySalary * contract.TotalDays;
+                    }
                     break;
 
                 case ContractType.Batch:

@@ -82,6 +82,59 @@ namespace EgyptOnline.Application.Services.Wallet
             return wallet;
         }
 
+        public async Task<UserWallet> GetWalletWithLockAsync(string userId)
+        {
+            var existingTracked = _context.UserWallets.Local.FirstOrDefault(w => w.UserId == userId);
+            if (existingTracked != null)
+            {
+                _context.Entry(existingTracked).State = EntityState.Detached;
+            }
+
+            if (_context.Database.IsRelational())
+            {
+                var locked = await _context.UserWallets
+                    .FromSqlInterpolated($"SELECT * FROM \"UserWallets\" WHERE \"UserId\" = {userId} FOR UPDATE")
+                    .FirstOrDefaultAsync();
+
+                if (locked != null)
+                {
+                    // Sync EF original values to DB values so [ConcurrencyCheck] WHERE clause
+                    // in the UPDATE uses the locked row's actual values (not a stale snapshot).
+                    var entry = _context.Entry(locked);
+                    entry.OriginalValues.SetValues(entry.CurrentValues);
+                    return locked;
+                }
+            }
+
+            var wallet = await _context.UserWallets.FirstOrDefaultAsync(w => w.UserId == userId);
+            if (wallet == null)
+            {
+                wallet = new UserWallet
+                {
+                    UserId = userId,
+                    FreeBalance = 0,
+                    FrozenBalance = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.UserWallets.Add(wallet);
+                await _context.SaveChangesAsync();
+
+                if (_context.Database.IsRelational())
+                {
+                    _context.Entry(wallet).State = EntityState.Detached;
+                    var freshLocked = await _context.UserWallets
+                        .FromSqlInterpolated($"SELECT * FROM \"UserWallets\" WHERE \"UserId\" = {userId} FOR UPDATE")
+                        .FirstAsync();
+                    var entry = _context.Entry(freshLocked);
+                    entry.OriginalValues.SetValues(entry.CurrentValues);
+                    return freshLocked;
+                }
+            }
+
+            return wallet;
+        }
+
         public async Task<UserWallet> GetBalanceAsync(string userId)
         {
             return await GetWalletAsync(userId);
@@ -95,11 +148,14 @@ namespace EgyptOnline.Application.Services.Wallet
             // Check KYC
             await RequireApprovedKyc(userId);
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var isOuter = _context.Database.CurrentTransaction != null;
+            var transaction = isOuter ? null : await _context.Database.BeginTransactionAsync();
             try
             {
-                var wallet = await GetWalletAsync(userId);
+                var wallet = await GetWalletWithLockAsync(userId);
+                var balanceBefore = wallet.FreeBalance;
                 wallet.FreeBalance += amount;
+                var balanceAfter = wallet.FreeBalance;
                 wallet.UpdatedAt = DateTime.UtcNow;
 
                 _context.WalletTransactions.Add(new WalletTransaction
@@ -107,18 +163,30 @@ namespace EgyptOnline.Application.Services.Wallet
                     UserId = userId,
                     Type = "deposit",
                     Amount = amount,
-                    Description = "ايداع رصيد مباشر"
+                    Description = "ايداع رصيد مباشر",
+                    BalanceType = BalanceType.Free,
+                    OperationType = OperationType.Deposit,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceAfter,
+                    CreatedAt = DateTime.UtcNow
                 });
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                if (transaction != null)
+                    await transaction.CommitAsync();
 
                 return wallet;
             }
             catch
             {
-                await transaction.RollbackAsync();
+                if (transaction != null)
+                    await transaction.RollbackAsync();
                 throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                    await transaction.DisposeAsync();
             }
         }
 
@@ -130,15 +198,18 @@ namespace EgyptOnline.Application.Services.Wallet
             // Check KYC
             await RequireApprovedKyc(userId);
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var isOuter = _context.Database.CurrentTransaction != null;
+            var transaction = isOuter ? null : await _context.Database.BeginTransactionAsync();
             try
             {
-                var wallet = await GetWalletAsync(userId);
+                var wallet = await GetWalletWithLockAsync(userId);
 
                 if (wallet.FreeBalance < amount)
                     throw new InvalidOperationException("الرصيد غير كافي");
 
+                var balanceBefore = wallet.FreeBalance;
                 wallet.FreeBalance -= amount;
+                var balanceAfter = wallet.FreeBalance;
                 wallet.UpdatedAt = DateTime.UtcNow;
 
                 _context.WalletTransactions.Add(new WalletTransaction
@@ -146,18 +217,30 @@ namespace EgyptOnline.Application.Services.Wallet
                     UserId = userId,
                     Type = "withdraw",
                     Amount = amount,
-                    Description = "سحب رصيد مباشر"
+                    Description = "سحب رصيد مباشر",
+                    BalanceType = BalanceType.Free,
+                    OperationType = OperationType.Withdrawal,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceAfter,
+                    CreatedAt = DateTime.UtcNow
                 });
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                if (transaction != null)
+                    await transaction.CommitAsync();
 
                 return wallet;
             }
             catch
             {
-                await transaction.RollbackAsync();
+                if (transaction != null)
+                    await transaction.RollbackAsync();
                 throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                    await transaction.DisposeAsync();
             }
         }
 
@@ -177,19 +260,30 @@ namespace EgyptOnline.Application.Services.Wallet
             if (!toUserExists)
                 throw new InvalidOperationException("المستلم غير موجود");
 
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var isOuter = _context.Database.CurrentTransaction != null;
+            var transaction = isOuter ? null : await _context.Database.BeginTransactionAsync();
             try
             {
-                var fromWallet = await GetWalletAsync(fromUserId);
-                var toWallet = await GetWalletAsync(toUserId);
+                var firstId = string.CompareOrdinal(fromUserId, toUserId) < 0 ? fromUserId : toUserId;
+                var secondId = string.CompareOrdinal(fromUserId, toUserId) < 0 ? toUserId : fromUserId;
+
+                var firstWallet = await GetWalletWithLockAsync(firstId);
+                var secondWallet = await GetWalletWithLockAsync(secondId);
+
+                var fromWallet = fromUserId == firstId ? firstWallet : secondWallet;
+                var toWallet = toUserId == firstId ? firstWallet : secondWallet;
 
                 if (fromWallet.FreeBalance < amount)
                     throw new InvalidOperationException("الرصيد غير كافي");
 
+                var fromBefore = fromWallet.FreeBalance;
                 fromWallet.FreeBalance -= amount;
+                var fromAfter = fromWallet.FreeBalance;
                 fromWallet.UpdatedAt = DateTime.UtcNow;
+
+                var toBefore = toWallet.FreeBalance;
                 toWallet.FreeBalance += amount;
+                var toAfter = toWallet.FreeBalance;
                 toWallet.UpdatedAt = DateTime.UtcNow;
 
                 _context.WalletTransactions.AddRange(
@@ -200,7 +294,12 @@ namespace EgyptOnline.Application.Services.Wallet
                         Amount = amount,
                         Description = "تحويل صادر",
                         FromUserId = fromUserId,
-                        ToUserId = toUserId
+                        ToUserId = toUserId,
+                        BalanceType = BalanceType.Free,
+                        OperationType = OperationType.Transfer,
+                        BalanceBefore = fromBefore,
+                        BalanceAfter = fromAfter,
+                        CreatedAt = DateTime.UtcNow
                     },
                     new WalletTransaction
                     {
@@ -209,19 +308,31 @@ namespace EgyptOnline.Application.Services.Wallet
                         Amount = amount,
                         Description = "تحويل وارد",
                         FromUserId = fromUserId,
-                        ToUserId = toUserId
+                        ToUserId = toUserId,
+                        BalanceType = BalanceType.Free,
+                        OperationType = OperationType.Transfer,
+                        BalanceBefore = toBefore,
+                        BalanceAfter = toAfter,
+                        CreatedAt = DateTime.UtcNow
                     }
                 );
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                if (transaction != null)
+                    await transaction.CommitAsync();
 
                 return (fromWallet, toWallet);
             }
             catch
             {
-                await transaction.RollbackAsync();
+                if (transaction != null)
+                    await transaction.RollbackAsync();
                 throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                    await transaction.DisposeAsync();
             }
         }
 
@@ -393,8 +504,10 @@ namespace EgyptOnline.Application.Services.Wallet
 
                 if (status == "approved")
                 {
-                    var wallet = await GetWalletAsync(request.UserId);
+                    var wallet = await GetWalletWithLockAsync(request.UserId);
+                    var balanceBefore = wallet.FreeBalance;
                     wallet.FreeBalance += request.Amount;
+                    var balanceAfter = wallet.FreeBalance;
                     wallet.UpdatedAt = DateTime.UtcNow;
 
                     _context.WalletTransactions.Add(new WalletTransaction
@@ -402,7 +515,12 @@ namespace EgyptOnline.Application.Services.Wallet
                         UserId = request.UserId,
                         Type = "deposit",
                         Amount = request.Amount,
-                        Description = $"إيداع رصيد - طلب #{request.Id}"
+                        Description = $"إيداع رصيد - طلب #{request.Id}",
+                        BalanceType = BalanceType.Free,
+                        OperationType = OperationType.Deposit,
+                        BalanceBefore = balanceBefore,
+                        BalanceAfter = balanceAfter,
+                        CreatedAt = DateTime.UtcNow
                     });
 
                     // Send success notification using Firebase
@@ -450,7 +568,7 @@ namespace EgyptOnline.Application.Services.Wallet
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var wallet = await GetWalletAsync(userId);
+                var wallet = await GetWalletWithLockAsync(userId);
                 if (wallet.FreeBalance < amount)
                     throw new InvalidOperationException("الرصيد غير كافي لطلب السحب");
 
@@ -588,13 +706,19 @@ namespace EgyptOnline.Application.Services.Wallet
 
                 if (status == "approved")
                 {
+                    var wallet = await GetWalletWithLockAsync(request.UserId);
                     // Money was already deducted on request creation, so we just log the transaction
                     _context.WalletTransactions.Add(new WalletTransaction
                     {
                         UserId = request.UserId,
                         Type = "withdraw",
                         Amount = request.Amount,
-                        Description = $"سحب رصيد - طلب #{request.Id}"
+                        Description = $"سحب رصيد - طلب #{request.Id}",
+                        BalanceType = BalanceType.Free,
+                        OperationType = OperationType.Withdrawal,
+                        BalanceBefore = wallet.FreeBalance + request.Amount,
+                        BalanceAfter = wallet.FreeBalance,
+                        CreatedAt = DateTime.UtcNow
                     });
 
                     // Send success notification using Firebase
@@ -605,9 +729,24 @@ namespace EgyptOnline.Application.Services.Wallet
                     request.RejectionReason = rejectionReason;
 
                     // Refund the locked money back to user's wallet
-                    var wallet = await GetWalletAsync(request.UserId);
+                    var wallet = await GetWalletWithLockAsync(request.UserId);
+                    var balanceBefore = wallet.FreeBalance;
                     wallet.FreeBalance += request.Amount;
+                    var balanceAfter = wallet.FreeBalance;
                     wallet.UpdatedAt = DateTime.UtcNow;
+
+                    _context.WalletTransactions.Add(new WalletTransaction
+                    {
+                        UserId = request.UserId,
+                        Type = "refund",
+                        Amount = request.Amount,
+                        Description = $"استرداد رصيد - طلب سحب مرفوض #{request.Id}",
+                        BalanceType = BalanceType.Free,
+                        OperationType = OperationType.Refund,
+                        BalanceBefore = balanceBefore,
+                        BalanceAfter = balanceAfter,
+                        CreatedAt = DateTime.UtcNow
+                    });
 
                     // Send reject notification using Firebase
                     await SafeNotify(request.UserId, "رفض طلب السحب", $"تم رفض معاملة السحب اللي بـ {request.Amount} جنيه. السبب: {rejectionReason ?? "غير محدد"}");
@@ -705,144 +844,374 @@ namespace EgyptOnline.Application.Services.Wallet
 
         public async Task TransferFreeToFrozenAsync(string userId, int amount)
         {
-            var wallet = await GetWalletByUserIdAsync(userId);
-
-            if (wallet.FreeBalance < amount)
+            var isOuter = _context.Database.CurrentTransaction != null;
+            var transaction = isOuter ? null : await _context.Database.BeginTransactionAsync();
+            try
             {
-                throw new InvalidOperationException($"الرصيد المتاح غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FreeBalance}");
+                var wallet = await GetWalletWithLockAsync(userId);
+
+                if (wallet.FreeBalance < amount)
+                {
+                    throw new InvalidOperationException($"الرصيد المتاح غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FreeBalance}");
+                }
+
+                var balanceBefore = wallet.FrozenBalance;
+                wallet.FreeBalance -= amount;
+                wallet.FrozenBalance += amount;
+                var balanceAfter = wallet.FrozenBalance;
+                wallet.UpdatedAt = DateTime.UtcNow;
+
+                _context.WalletTransactions.Add(new WalletTransaction
+                {
+                    UserId = userId,
+                    Type = "freeze",
+                    Amount = amount,
+                    Description = "تجميد رصيد",
+                    BalanceType = BalanceType.Frozen,
+                    OperationType = OperationType.Freeze,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceAfter,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+                if (transaction != null)
+                    await transaction.CommitAsync();
+
+                _logger.LogInformation("Transferred {Amount} from free to frozen for user {UserId}", amount, userId);
             }
-
-            wallet.FreeBalance -= amount;
-            wallet.FrozenBalance += amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Transferred {Amount} from free to frozen for user {UserId}", amount, userId);
+            catch
+            {
+                if (transaction != null)
+                    await transaction.RollbackAsync();
+                throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                    await transaction.DisposeAsync();
+            }
         }
 
         public async Task TransferFrozenToFreeAsync(string userId, int amount)
         {
-            var wallet = await GetWalletByUserIdAsync(userId);
-
-            if (wallet.FrozenBalance < amount)
+            var isOuter = _context.Database.CurrentTransaction != null;
+            var transaction = isOuter ? null : await _context.Database.BeginTransactionAsync();
+            try
             {
-                throw new InvalidOperationException($"الرصيد المجمد غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FrozenBalance}");
+                var wallet = await GetWalletWithLockAsync(userId);
+
+                if (wallet.FrozenBalance < amount)
+                {
+                    throw new InvalidOperationException($"الرصيد المجمد غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FrozenBalance}");
+                }
+
+                var balanceBefore = wallet.FrozenBalance;
+                wallet.FrozenBalance -= amount;
+                wallet.FreeBalance += amount;
+                var balanceAfter = wallet.FrozenBalance;
+                wallet.UpdatedAt = DateTime.UtcNow;
+
+                _context.WalletTransactions.Add(new WalletTransaction
+                {
+                    UserId = userId,
+                    Type = "unfreeze",
+                    Amount = amount,
+                    Description = "فك تجميد رصيد",
+                    BalanceType = BalanceType.Frozen,
+                    OperationType = OperationType.Unfreeze,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceAfter,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+                if (transaction != null)
+                    await transaction.CommitAsync();
+
+                _logger.LogInformation("Transferred {Amount} from frozen to free for user {UserId}", amount, userId);
             }
-
-            wallet.FrozenBalance -= amount;
-            wallet.FreeBalance += amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Transferred {Amount} from frozen to free for user {UserId}", amount, userId);
+            catch
+            {
+                if (transaction != null)
+                    await transaction.RollbackAsync();
+                throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                    await transaction.DisposeAsync();
+            }
         }
 
         public async Task TransferFreeBetweenUsersAsync(string fromUserId, string toUserId, int amount)
         {
-            var fromWallet = await GetWalletByUserIdAsync(fromUserId);
-            var toWallet = await GetWalletByUserIdAsync(toUserId);
-
-            if (fromWallet.FreeBalance < amount)
-            {
-                throw new InvalidOperationException($"الرصيد المتاح للمرسل غير كافٍ. المطلوب: {amount}، المتاح: {fromWallet.FreeBalance}");
-            }
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var isOuter = _context.Database.CurrentTransaction != null;
+            var transaction = isOuter ? null : await _context.Database.BeginTransactionAsync();
             try
             {
+                var firstId = string.CompareOrdinal(fromUserId, toUserId) < 0 ? fromUserId : toUserId;
+                var secondId = string.CompareOrdinal(fromUserId, toUserId) < 0 ? toUserId : fromUserId;
+
+                var firstWallet = await GetWalletWithLockAsync(firstId);
+                var secondWallet = await GetWalletWithLockAsync(secondId);
+
+                var fromWallet = fromUserId == firstId ? firstWallet : secondWallet;
+                var toWallet = toUserId == firstId ? firstWallet : secondWallet;
+
+                if (fromWallet.FreeBalance < amount)
+                {
+                    throw new InvalidOperationException($"الرصيد المتاح للمرسل غير كافٍ. المطلوب: {amount}، المتاح: {fromWallet.FreeBalance}");
+                }
+
+                var fromBefore = fromWallet.FreeBalance;
                 fromWallet.FreeBalance -= amount;
+                var fromAfter = fromWallet.FreeBalance;
                 fromWallet.UpdatedAt = DateTime.UtcNow;
 
+                var toBefore = toWallet.FreeBalance;
                 toWallet.FreeBalance += amount;
+                var toAfter = toWallet.FreeBalance;
                 toWallet.UpdatedAt = DateTime.UtcNow;
 
+                _context.WalletTransactions.AddRange(
+                    new WalletTransaction
+                    {
+                        UserId = fromUserId,
+                        Type = "transfer_out",
+                        Amount = amount,
+                        Description = "تحويل صادر",
+                        FromUserId = fromUserId,
+                        ToUserId = toUserId,
+                        BalanceType = BalanceType.Free,
+                        OperationType = OperationType.Transfer,
+                        BalanceBefore = fromBefore,
+                        BalanceAfter = fromAfter,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    new WalletTransaction
+                    {
+                        UserId = toUserId,
+                        Type = "transfer_in",
+                        Amount = amount,
+                        Description = "تحويل وارد",
+                        FromUserId = fromUserId,
+                        ToUserId = toUserId,
+                        BalanceType = BalanceType.Free,
+                        OperationType = OperationType.Transfer,
+                        BalanceBefore = toBefore,
+                        BalanceAfter = toAfter,
+                        CreatedAt = DateTime.UtcNow
+                    }
+                );
+
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                if (transaction != null)
+                    await transaction.CommitAsync();
 
                 _logger.LogInformation("Transferred {Amount} free balance from {FromUserId} to {ToUserId}", amount, fromUserId, toUserId);
             }
             catch
             {
-                await transaction.RollbackAsync();
+                if (transaction != null)
+                    await transaction.RollbackAsync();
                 throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                    await transaction.DisposeAsync();
             }
         }
 
         public async Task TransferFrozenBetweenUsersAsync(string fromUserId, string toUserId, int amount)
         {
-            var fromWallet = await GetWalletByUserIdAsync(fromUserId);
-            var toWallet = await GetWalletByUserIdAsync(toUserId);
-
-            if (fromWallet.FrozenBalance < amount)
-            {
-                throw new InvalidOperationException($"الرصيد المجمد للمرسل غير كافٍ. المطلوب: {amount}، المتاح: {fromWallet.FrozenBalance}");
-            }
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var isOuter = _context.Database.CurrentTransaction != null;
+            var transaction = isOuter ? null : await _context.Database.BeginTransactionAsync();
             try
             {
+                var firstId = string.CompareOrdinal(fromUserId, toUserId) < 0 ? fromUserId : toUserId;
+                var secondId = string.CompareOrdinal(fromUserId, toUserId) < 0 ? toUserId : fromUserId;
+
+                var firstWallet = await GetWalletWithLockAsync(firstId);
+                var secondWallet = await GetWalletWithLockAsync(secondId);
+
+                var fromWallet = fromUserId == firstId ? firstWallet : secondWallet;
+                var toWallet = toUserId == firstId ? firstWallet : secondWallet;
+
+                if (fromWallet.FrozenBalance < amount)
+                {
+                    throw new InvalidOperationException($"الرصيد المجمد للمرسل غير كافٍ. المطلوب: {amount}، المتاح: {fromWallet.FrozenBalance}");
+                }
+
+                var fromBefore = fromWallet.FrozenBalance;
                 fromWallet.FrozenBalance -= amount;
+                var fromAfter = fromWallet.FrozenBalance;
                 fromWallet.UpdatedAt = DateTime.UtcNow;
 
+                var toBefore = toWallet.FrozenBalance;
                 toWallet.FrozenBalance += amount;
+                var toAfter = toWallet.FrozenBalance;
                 toWallet.UpdatedAt = DateTime.UtcNow;
 
+                _context.WalletTransactions.AddRange(
+                    new WalletTransaction
+                    {
+                        UserId = fromUserId,
+                        Type = "transfer_out",
+                        Amount = amount,
+                        Description = "تحويل رصيد مجمد صادر",
+                        FromUserId = fromUserId,
+                        ToUserId = toUserId,
+                        BalanceType = BalanceType.Frozen,
+                        OperationType = OperationType.Transfer,
+                        BalanceBefore = fromBefore,
+                        BalanceAfter = fromAfter,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    new WalletTransaction
+                    {
+                        UserId = toUserId,
+                        Type = "transfer_in",
+                        Amount = amount,
+                        Description = "تحويل رصيد مجمد وارد",
+                        FromUserId = fromUserId,
+                        ToUserId = toUserId,
+                        BalanceType = BalanceType.Frozen,
+                        OperationType = OperationType.Transfer,
+                        BalanceBefore = toBefore,
+                        BalanceAfter = toAfter,
+                        CreatedAt = DateTime.UtcNow
+                    }
+                );
+
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                if (transaction != null)
+                    await transaction.CommitAsync();
 
                 _logger.LogInformation("Transferred {Amount} frozen balance from {FromUserId} to {ToUserId}", amount, fromUserId, toUserId);
             }
             catch
             {
-                await transaction.RollbackAsync();
+                if (transaction != null)
+                    await transaction.RollbackAsync();
                 throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                    await transaction.DisposeAsync();
             }
         }
 
         public async Task AddToFreeBalanceAsync(string userId, int amount)
         {
-            var wallet = await GetWalletByUserIdAsync(userId);
+            var wallet = await GetWalletWithLockAsync(userId);
+            var balanceBefore = wallet.FreeBalance;
             wallet.FreeBalance += amount;
+            var balanceAfter = wallet.FreeBalance;
             wallet.UpdatedAt = DateTime.UtcNow;
+
+            _context.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = userId,
+                Type = "deposit",
+                Amount = amount,
+                Description = "إضافة رصيد متاح بواسطة المسؤول",
+                BalanceType = BalanceType.Free,
+                OperationType = OperationType.Adjustment,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = balanceAfter,
+                CreatedAt = DateTime.UtcNow
+            });
+
             await _context.SaveChangesAsync();
             _logger.LogInformation("Added {Amount} to free balance for user {UserId}", amount, userId);
         }
 
         public async Task SubtractFromFreeBalanceAsync(string userId, int amount)
         {
-            var wallet = await GetWalletByUserIdAsync(userId);
+            var wallet = await GetWalletWithLockAsync(userId);
 
             if (wallet.FreeBalance < amount)
             {
                 throw new InvalidOperationException($"الرصيد المتاح غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FreeBalance}");
             }
 
+            var balanceBefore = wallet.FreeBalance;
             wallet.FreeBalance -= amount;
+            var balanceAfter = wallet.FreeBalance;
             wallet.UpdatedAt = DateTime.UtcNow;
+
+            _context.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = userId,
+                Type = "withdraw",
+                Amount = amount,
+                Description = "خصم رصيد متاح بواسطة المسؤول",
+                BalanceType = BalanceType.Free,
+                OperationType = OperationType.Adjustment,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = balanceAfter,
+                CreatedAt = DateTime.UtcNow
+            });
+
             await _context.SaveChangesAsync();
             _logger.LogInformation("Subtracted {Amount} from free balance for user {UserId}", amount, userId);
         }
 
         public async Task AddToFrozenBalanceAsync(string userId, int amount)
         {
-            var wallet = await GetWalletByUserIdAsync(userId);
+            var wallet = await GetWalletWithLockAsync(userId);
+            var balanceBefore = wallet.FrozenBalance;
             wallet.FrozenBalance += amount;
+            var balanceAfter = wallet.FrozenBalance;
             wallet.UpdatedAt = DateTime.UtcNow;
+
+            _context.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = userId,
+                Type = "freeze",
+                Amount = amount,
+                Description = "إضافة رصيد مجمد بواسطة المسؤول",
+                BalanceType = BalanceType.Frozen,
+                OperationType = OperationType.Adjustment,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = balanceAfter,
+                CreatedAt = DateTime.UtcNow
+            });
+
             await _context.SaveChangesAsync();
             _logger.LogInformation("Added {Amount} to frozen balance for user {UserId}", amount, userId);
         }
 
         public async Task SubtractFromFrozenBalanceAsync(string userId, int amount)
         {
-            var wallet = await GetWalletByUserIdAsync(userId);
+            var wallet = await GetWalletWithLockAsync(userId);
 
             if (wallet.FrozenBalance < amount)
             {
                 throw new InvalidOperationException($"الرصيد المجمد غير كافٍ. المطلوب: {amount}، المتاح: {wallet.FrozenBalance}");
             }
 
+            var balanceBefore = wallet.FrozenBalance;
             wallet.FrozenBalance -= amount;
+            var balanceAfter = wallet.FrozenBalance;
             wallet.UpdatedAt = DateTime.UtcNow;
+
+            _context.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = userId,
+                Type = "unfreeze",
+                Amount = amount,
+                Description = "خصم رصيد مجمد بواسطة المسؤول",
+                BalanceType = BalanceType.Frozen,
+                OperationType = OperationType.Adjustment,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = balanceAfter,
+                CreatedAt = DateTime.UtcNow
+            });
+
             await _context.SaveChangesAsync();
             _logger.LogInformation("Subtracted {Amount} from frozen balance for user {UserId}", amount, userId);
         }
@@ -866,9 +1235,23 @@ namespace EgyptOnline.Application.Services.Wallet
         public async Task AdminDepositAsync(string phoneNumber, int amount, string reference)
         {
             var wallet = await GetWalletByPhoneNumberAsync(phoneNumber);
-
+            var balanceBefore = wallet.FreeBalance;
             wallet.FreeBalance += amount;
+            var balanceAfter = wallet.FreeBalance;
             wallet.UpdatedAt = DateTime.UtcNow;
+
+            _context.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = wallet.UserId,
+                Type = "deposit",
+                Amount = amount,
+                Description = $"إيداع بواسطة المسؤول. المرجع: {reference}",
+                BalanceType = BalanceType.Free,
+                OperationType = OperationType.Deposit,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = balanceAfter,
+                CreatedAt = DateTime.UtcNow
+            });
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Admin deposit of {Amount} to phone {PhoneNumber}. Reference: {Reference}", amount, phoneNumber, reference);
@@ -882,15 +1265,30 @@ namespace EgyptOnline.Application.Services.Wallet
 
         public async Task AdminCompleteWithdrawalAsync(string userId, int amount, string reference)
         {
-            var wallet = await GetWalletByUserIdAsync(userId);
+            var wallet = await GetWalletWithLockAsync(userId);
 
             if (wallet.FreeBalance < amount)
             {
                 throw new InvalidOperationException($"الرصيد المتاح غير كافٍ للسحب. المطلوب: {amount}، المتاح: {wallet.FreeBalance}");
             }
 
+            var balanceBefore = wallet.FreeBalance;
             wallet.FreeBalance -= amount;
+            var balanceAfter = wallet.FreeBalance;
             wallet.UpdatedAt = DateTime.UtcNow;
+
+            _context.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = userId,
+                Type = "withdraw",
+                Amount = amount,
+                Description = $"سحب بواسطة المسؤول. المرجع: {reference}",
+                BalanceType = BalanceType.Free,
+                OperationType = OperationType.Withdrawal,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = balanceAfter,
+                CreatedAt = DateTime.UtcNow
+            });
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Admin completed withdrawal of {Amount} for user {UserId}. Reference: {Reference}", amount, userId, reference);
@@ -898,7 +1296,7 @@ namespace EgyptOnline.Application.Services.Wallet
 
         public async Task<UserWallet> OverrideUserBalanceAsync(string userId, string balanceType, int amount, string operation, string reason, string adminId)
         {
-            var wallet = await GetWalletByUserIdAsync(userId);
+            var wallet = await GetWalletWithLockAsync(userId);
 
             int oldValue = balanceType == "free" ? wallet.FreeBalance : wallet.FrozenBalance;
             int newValue = operation == "add" ? oldValue + amount : oldValue - amount;
@@ -908,6 +1306,7 @@ namespace EgyptOnline.Application.Services.Wallet
                 throw new InvalidOperationException($"لا يمكن خصم {amount} من رصيد {balanceType}. الحالي: {oldValue}");
             }
 
+            var bType = balanceType == "free" ? BalanceType.Free : BalanceType.Frozen;
             if (balanceType == "free")
             {
                 wallet.FreeBalance = newValue;
@@ -918,6 +1317,19 @@ namespace EgyptOnline.Application.Services.Wallet
             }
 
             wallet.UpdatedAt = DateTime.UtcNow;
+
+            _context.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = userId,
+                Type = operation == "add" ? "deposit" : "withdraw",
+                Amount = amount,
+                Description = $"تعديل يدوي بواسطة المسؤول ({reason})",
+                BalanceType = bType,
+                OperationType = OperationType.Adjustment,
+                BalanceBefore = oldValue,
+                BalanceAfter = newValue,
+                CreatedAt = DateTime.UtcNow
+            });
 
             await _context.SaveChangesAsync();
             _logger.LogWarning("Admin {AdminId} override for user {UserId}. {BalanceType}: {OldValue} -> {NewValue} ({Operation} {Amount}). Reason: {Reason}",
