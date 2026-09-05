@@ -25,6 +25,7 @@ namespace EgyptOnline.Presentation.Controllers
         /// Submit a new rating
         /// POST /api/v1/Rating
         /// {
+        ///   "targetUserId": "string",
         ///   "rating": 5,
         ///   "description": "Great service!"
         /// }
@@ -47,6 +48,10 @@ namespace EgyptOnline.Presentation.Controllers
             {
                 var result = await _ratingService.SubmitRatingAsync(userId, dto);
                 return Ok(result);
+            }
+            catch (ArgumentException ex) when (ex.ParamName == nameof(dto.TargetUserId))
+            {
+                return BadRequest(new { message = "Target user does not exist", errorCode = "UserNotFound" });
             }
             catch (Exception ex)
             {

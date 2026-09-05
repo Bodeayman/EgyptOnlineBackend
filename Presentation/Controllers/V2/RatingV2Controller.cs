@@ -57,6 +57,10 @@ namespace EgyptOnline.Presentation.Controllers.V2
                 var result = await _ratingService.SubmitRatingAsync(userId, dto);
                 return CreatedAtAction(nameof(GetRatingById), new { id = result.Id }, result);
             }
+            catch (ArgumentException ex) when (ex.ParamName == nameof(dto.TargetUserId))
+            {
+                return BadRequest(new { message = "Target user does not exist", errorCode = "UserNotFound" });
+            }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "An error occurred while submitting the rating", error = ex.Message });

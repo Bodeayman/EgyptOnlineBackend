@@ -1,7 +1,9 @@
 using EgyptOnline.Domain.Interfaces;
-using EgyptOnline.Infrastructure; // IEmailService
 using EgyptOnline.Infrastructure;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using System;
 using System.Threading.Tasks;
 
@@ -10,20 +12,20 @@ namespace EgyptOnline.Services
     public class OtpService : IOTPService
     {
         private readonly IDistributedCache _cache;
-        private readonly IEmailService _emailService;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly Random _rng = new Random();
 
-        public OtpService(IDistributedCache cache, IEmailService emailService)
+        public OtpService(IDistributedCache cache, IServiceScopeFactory scopeFactory)
         {
             _cache = cache;
-            _emailService = emailService;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task SendOtpAsync(string key, bool isRegister)
         {
             var otp = _rng.Next(100000, 999999).ToString();
 
-            // Store OTP in cache
+            // Store OTP in cache (synchronous, must complete before returning)
             await _cache.SetStringAsync(
                 $"otp:{key}",
                 otp,
@@ -32,16 +34,25 @@ namespace EgyptOnline.Services
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
                 });
 
-            // Extract email from key (key format: "email:phone")
-            var email = key.Split(':')[0];
+            // Extract phone number from key (key format: "email:phone" or just "phone")
+            var phoneNumber = key.Contains(':') ? key.Split(':')[1] : key;
 
-            // Send OTP via email
-            await _emailService.SendEmailAsync(
-                email,
-                "Your OTP Code",
-                $"Your OTP code is: {otp}. It expires in 5 minutes.");
+            // Trigger background SMS sending (fire-and-forget)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var smsService = scope.ServiceProvider.GetRequiredService<ISmsService>();
+                    await smsService.SendOtpSmsAsync(phoneNumber, otp);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Background SMS sending failed for {PhoneNumber}", phoneNumber);
+                }
+            });
 
-            Console.WriteLine($"[OTP] {otp} sent to {email}");
+            Log.Information("OTP generated and SMS sending triggered for {Key}", key);
         }
 
         public async Task<bool> ValidateOtpAsync(string key, string otp)

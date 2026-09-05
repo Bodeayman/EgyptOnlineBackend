@@ -8,6 +8,12 @@ namespace EgyptOnline.Dtos
     public class CreateRatingDto
     {
         /// <summary>
+        /// ID of the user/provider being rated
+        /// </summary>
+        [Required(ErrorMessage = "Target user ID is required")]
+        public string TargetUserId { get; set; } = string.Empty;
+
+        /// <summary>
         /// Rating value from 1 to 5, inclusive
         /// </summary>
         [Required]

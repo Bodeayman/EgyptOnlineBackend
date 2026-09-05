@@ -23,6 +23,7 @@ public class RatingServiceTests : UnitTestBase
     {
         // Arrange
         var userId = "test-user-id";
+        var targetUserId = "target-user-id";
         var user = new User
         {
             Id = userId,
@@ -32,11 +33,22 @@ public class RatingServiceTests : UnitTestBase
             Governorate = "Cairo",
             City = "Cairo"
         };
+        var targetUser = new User
+        {
+            Id = targetUserId,
+            FirstName = "Jane",
+            LastName = "Smith",
+            UserName = "janesmith",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
         Context.Users.Add(user);
+        Context.Users.Add(targetUser);
         await Context.SaveChangesAsync();
 
         var dto = new CreateRatingDto
         {
+            TargetUserId = targetUserId,
             Rating = 5,
             Description = "Great service!"
         };
@@ -50,13 +62,16 @@ public class RatingServiceTests : UnitTestBase
         Assert.Equal("Great service!", result.Description);
         Assert.Equal("John", result.User.FirstName);
         Assert.Equal("Doe", result.User.LastName);
+        Assert.Equal("Jane", result.TargetUser.FirstName);
+        Assert.Equal("Smith", result.TargetUser.LastName);
     }
 
     [Fact]
-    public async Task SubmitRatingAsync_ShouldAccept_EmptyDescription()
+    public async Task SubmitRatingAsync_ShouldReject_InvalidTargetUserId()
     {
         // Arrange
         var userId = "test-user-id";
+        var invalidTargetUserId = "nonexistent-user-id";
         var user = new User
         {
             Id = userId,
@@ -71,6 +86,46 @@ public class RatingServiceTests : UnitTestBase
 
         var dto = new CreateRatingDto
         {
+            TargetUserId = invalidTargetUserId,
+            Rating = 5,
+            Description = "Great service!"
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _ratingService.SubmitRatingAsync(userId, dto));
+    }
+
+    [Fact]
+    public async Task SubmitRatingAsync_ShouldAccept_EmptyDescription()
+    {
+        // Arrange
+        var userId = "test-user-id";
+        var targetUserId = "target-user-id";
+        var user = new User
+        {
+            Id = userId,
+            FirstName = "John",
+            LastName = "Doe",
+            UserName = "johndoe",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        var targetUser = new User
+        {
+            Id = targetUserId,
+            FirstName = "Jane",
+            LastName = "Smith",
+            UserName = "janesmith",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        Context.Users.Add(user);
+        Context.Users.Add(targetUser);
+        await Context.SaveChangesAsync();
+
+        var dto = new CreateRatingDto
+        {
+            TargetUserId = targetUserId,
             Rating = 4,
             Description = null
         };
@@ -123,9 +178,9 @@ public class RatingServiceTests : UnitTestBase
         Context.Users.Add(user);
 
         Context.Ratings.AddRange(
-            new RatingEntity { UserId = userId, RatingValue = 5, CreatedAt = DateTime.UtcNow },
-            new RatingEntity { UserId = userId, RatingValue = 3, CreatedAt = DateTime.UtcNow },
-            new RatingEntity { UserId = userId, RatingValue = 4, CreatedAt = DateTime.UtcNow }
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 5, CreatedAt = DateTime.UtcNow },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 3, CreatedAt = DateTime.UtcNow },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 4, CreatedAt = DateTime.UtcNow }
         );
         await Context.SaveChangesAsync();
 
@@ -156,12 +211,12 @@ public class RatingServiceTests : UnitTestBase
         Context.Users.Add(user);
 
         Context.Ratings.AddRange(
-            new RatingEntity { UserId = userId, RatingValue = 5, CreatedAt = DateTime.UtcNow },
-            new RatingEntity { UserId = userId, RatingValue = 5, CreatedAt = DateTime.UtcNow },
-            new RatingEntity { UserId = userId, RatingValue = 4, CreatedAt = DateTime.UtcNow },
-            new RatingEntity { UserId = userId, RatingValue = 3, CreatedAt = DateTime.UtcNow },
-            new RatingEntity { UserId = userId, RatingValue = 2, CreatedAt = DateTime.UtcNow },
-            new RatingEntity { UserId = userId, RatingValue = 1, CreatedAt = DateTime.UtcNow }
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 5, CreatedAt = DateTime.UtcNow },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 5, CreatedAt = DateTime.UtcNow },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 4, CreatedAt = DateTime.UtcNow },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 3, CreatedAt = DateTime.UtcNow },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 2, CreatedAt = DateTime.UtcNow },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 1, CreatedAt = DateTime.UtcNow }
         );
         await Context.SaveChangesAsync();
 
@@ -194,9 +249,9 @@ public class RatingServiceTests : UnitTestBase
 
         var baseTime = DateTime.UtcNow;
         Context.Ratings.AddRange(
-            new RatingEntity { UserId = userId, RatingValue = 3, CreatedAt = baseTime.AddHours(-2) },
-            new RatingEntity { UserId = userId, RatingValue = 5, CreatedAt = baseTime.AddHours(-1) },
-            new RatingEntity { UserId = userId, RatingValue = 4, CreatedAt = baseTime }
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 3, CreatedAt = baseTime.AddHours(-2) },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 5, CreatedAt = baseTime.AddHours(-1) },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 4, CreatedAt = baseTime }
         );
         await Context.SaveChangesAsync();
 
@@ -228,9 +283,9 @@ public class RatingServiceTests : UnitTestBase
 
         var baseTime = DateTime.UtcNow;
         Context.Ratings.AddRange(
-            new RatingEntity { UserId = userId, RatingValue = 3, CreatedAt = baseTime.AddHours(-2) },
-            new RatingEntity { UserId = userId, RatingValue = 5, CreatedAt = baseTime.AddHours(-1) },
-            new RatingEntity { UserId = userId, RatingValue = 4, CreatedAt = baseTime }
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 3, CreatedAt = baseTime.AddHours(-2) },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 5, CreatedAt = baseTime.AddHours(-1) },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 4, CreatedAt = baseTime }
         );
         await Context.SaveChangesAsync();
 
@@ -262,9 +317,9 @@ public class RatingServiceTests : UnitTestBase
 
         var baseTime = DateTime.UtcNow;
         Context.Ratings.AddRange(
-            new RatingEntity { UserId = userId, RatingValue = 3, CreatedAt = baseTime.AddHours(-2) },
-            new RatingEntity { UserId = userId, RatingValue = 5, CreatedAt = baseTime.AddHours(-1) },
-            new RatingEntity { UserId = userId, RatingValue = 4, CreatedAt = baseTime }
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 3, CreatedAt = baseTime.AddHours(-2) },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 5, CreatedAt = baseTime.AddHours(-1) },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 4, CreatedAt = baseTime }
         );
         await Context.SaveChangesAsync();
 
@@ -296,9 +351,9 @@ public class RatingServiceTests : UnitTestBase
 
         var baseTime = DateTime.UtcNow;
         Context.Ratings.AddRange(
-            new RatingEntity { UserId = userId, RatingValue = 3, CreatedAt = baseTime.AddHours(-2) },
-            new RatingEntity { UserId = userId, RatingValue = 5, CreatedAt = baseTime.AddHours(-1) },
-            new RatingEntity { UserId = userId, RatingValue = 4, CreatedAt = baseTime }
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 3, CreatedAt = baseTime.AddHours(-2) },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 5, CreatedAt = baseTime.AddHours(-1) },
+            new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 4, CreatedAt = baseTime }
         );
         await Context.SaveChangesAsync();
 
@@ -543,7 +598,7 @@ public class RatingServiceTests : UnitTestBase
             SecurityStamp = Guid.NewGuid().ToString()
         };
         Context.Users.Add(user);
-        var rating = new RatingEntity { UserId = userId, RatingValue = 4, Description = "Very good service" };
+        var rating = new RatingEntity { UserId = userId, TargetUserId = userId, RatingValue = 4, Description = "Very good service" };
         Context.Ratings.Add(rating);
         await Context.SaveChangesAsync();
 
@@ -565,10 +620,26 @@ public class RatingServiceTests : UnitTestBase
 public class CreateRatingDtoValidationTests
 {
     [Fact]
+    public void TargetUserId_Missing_ShouldBeInvalid()
+    {
+        // Arrange
+        var dto = new CreateRatingDto { Rating = 3 };
+        var context = new ValidationContext(dto);
+        var results = new List<ValidationResult>();
+
+        // Act
+        var isValid = Validator.TryValidateObject(dto, context, results, true);
+
+        // Assert
+        Assert.False(isValid);
+        Assert.Contains(results, r => r.ErrorMessage?.Contains("Target user ID is required") == true);
+    }
+
+    [Fact]
     public void Rating_Below1_ShouldBeInvalid()
     {
         // Arrange
-        var dto = new CreateRatingDto { Rating = 0 };
+        var dto = new CreateRatingDto { TargetUserId = "test", Rating = 0 };
         var context = new ValidationContext(dto);
         var results = new List<ValidationResult>();
 
@@ -584,7 +655,7 @@ public class CreateRatingDtoValidationTests
     public void Rating_Above5_ShouldBeInvalid()
     {
         // Arrange
-        var dto = new CreateRatingDto { Rating = 6 };
+        var dto = new CreateRatingDto { TargetUserId = "test", Rating = 6 };
         var context = new ValidationContext(dto);
         var results = new List<ValidationResult>();
 
@@ -600,7 +671,7 @@ public class CreateRatingDtoValidationTests
     public void Rating_WithinRange_ShouldBeValid()
     {
         // Arrange
-        var dto = new CreateRatingDto { Rating = 3 };
+        var dto = new CreateRatingDto { TargetUserId = "test", Rating = 3 };
         var context = new ValidationContext(dto);
         var results = new List<ValidationResult>();
 
@@ -617,6 +688,7 @@ public class CreateRatingDtoValidationTests
         // Arrange
         var dto = new CreateRatingDto
         {
+            TargetUserId = "test",
             Rating = 5,
             Description = new string('a', 501)
         };
@@ -637,6 +709,7 @@ public class CreateRatingDtoValidationTests
         // Arrange
         var dto = new CreateRatingDto
         {
+            TargetUserId = "test",
             Rating = 5,
             Description = new string('a', 500)
         };
@@ -656,6 +729,7 @@ public class CreateRatingDtoValidationTests
         // Arrange
         var dto = new CreateRatingDto
         {
+            TargetUserId = "test",
             Rating = 5,
             Description = null
         };
@@ -675,6 +749,7 @@ public class CreateRatingDtoValidationTests
         // Arrange
         var dto = new CreateRatingDto
         {
+            TargetUserId = "test",
             Rating = 5,
             Description = ""
         };

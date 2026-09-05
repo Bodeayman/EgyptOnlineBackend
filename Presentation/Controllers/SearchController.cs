@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 namespace EgyptOnline.Controllers
 {
     [ApiController]
-    [Route("api/v{version:apiVersion}/[controller]")]
+    [Route("api/v{version:apiVersion}")]
     [ApiVersion("1.0")]
     [Authorize(Roles = Roles.User)]
     public class SearchController : ControllerBase

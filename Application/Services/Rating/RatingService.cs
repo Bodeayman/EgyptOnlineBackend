@@ -23,9 +23,17 @@ namespace EgyptOnline.Application.Services.Rating
         /// </summary>
         public async Task<RatingResponseDto> SubmitRatingAsync(string userId, CreateRatingDto dto)
         {
+            // Validate that the target user exists
+            var targetUser = await _context.Users.FindAsync(dto.TargetUserId);
+            if (targetUser == null)
+            {
+                throw new ArgumentException("Target user does not exist", nameof(dto.TargetUserId));
+            }
+
             var rating = new RatingEntity
             {
                 UserId = userId,
+                TargetUserId = dto.TargetUserId,
                 RatingValue = dto.Rating,
                 Description = dto.Description,
                 CreatedAt = DateTime.UtcNow
@@ -37,6 +45,7 @@ namespace EgyptOnline.Application.Services.Rating
             // Reload with user data
             var savedRating = await _context.Ratings
                 .Include(r => r.User)
+                .Include(r => r.TargetUser)
                 .FirstAsync(r => r.Id == rating.Id);
 
             return MapToResponseDto(savedRating);
@@ -160,6 +169,12 @@ namespace EgyptOnline.Application.Services.Rating
                     FirstName = rating.User?.FirstName,
                     LastName = rating.User?.LastName,
                     ImageUrl = rating.User?.ImageUrl
+                },
+                TargetUser = new RatingUserDto
+                {
+                    FirstName = rating.TargetUser?.FirstName,
+                    LastName = rating.TargetUser?.LastName,
+                    ImageUrl = rating.TargetUser?.ImageUrl
                 }
             };
         }

@@ -9,11 +9,16 @@ namespace EgyptOnline.Dtos
         public int Rating { get; set; }
         public string? Description { get; set; }
         public DateTime CreatedAt { get; set; }
-        
+
         /// <summary>
         /// Information about the user who submitted the rating
         /// </summary>
         public RatingUserDto User { get; set; } = null!;
+
+        /// <summary>
+        /// Information about the user/provider being rated
+        /// </summary>
+        public RatingUserDto TargetUser { get; set; } = null!;
     }
 
     /// <summary>

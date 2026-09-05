@@ -2,18 +2,16 @@ using EgyptOnline.Data;
 using FakeItEasy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace EgyptOnline.Tests.Unit;
-
-/// <summary>
-/// Base class for all unit tests.
-/// - Uses in-memory EF Core database (isolated per test).
-/// - Exposes FakeItEasy helpers and a pre-wired UserManager fake.
-/// </summary>
+namespace EgyptOnline.Tests.Unit
+{
 public abstract class UnitTestBase : IDisposable
 {
     protected readonly ApplicationDbContext Context;
     protected readonly UserManager<EgyptOnline.Models.User> UserManagerFake;
+    protected readonly IDistributedCache Cache;
 
     protected UnitTestBase()
     {
@@ -24,7 +22,11 @@ public abstract class UnitTestBase : IDisposable
 
         Context = new ApplicationDbContext(options);
 
-        // Build a fully faked UserManager – avoids the awkward 9-arg constructor.
+        var services = new ServiceCollection();
+        services.AddDistributedMemoryCache();
+        var serviceProvider = services.BuildServiceProvider();
+        Cache = serviceProvider.GetRequiredService<IDistributedCache>();
+
         var store = A.Fake<IUserStore<EgyptOnline.Models.User>>();
         UserManagerFake = A.Fake<UserManager<EgyptOnline.Models.User>>(
             x => x.WithArgumentsForConstructor(new object[]
@@ -34,5 +36,9 @@ public abstract class UnitTestBase : IDisposable
             }));
     }
 
-    public void Dispose() => Context.Dispose();
+    public void Dispose()
+    {
+        Context.Dispose();
+    }
+}
 }

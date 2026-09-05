@@ -41,7 +41,7 @@ namespace EgyptOnline.Extensions
 
             services.AddScoped<UserPointService>();
             services.AddSingleton<IEmailService, EmailService>();
-
+            services.AddScoped<ISmsService, SmsService>();
 
             services.AddScoped<IOTPService, OtpService>();
 

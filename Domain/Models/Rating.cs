@@ -21,6 +21,15 @@ namespace EgyptOnline.Models
         public User? User { get; set; }
 
         /// <summary>
+        /// The user/provider being rated
+        /// </summary>
+        [Required]
+        public string TargetUserId { get; set; } = string.Empty;
+
+        [ForeignKey(nameof(TargetUserId))]
+        public User? TargetUser { get; set; }
+
+        /// <summary>
         /// Rating value from 1 to 5
         /// </summary>
         [Required]
