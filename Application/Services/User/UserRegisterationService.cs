@@ -120,7 +120,12 @@ namespace EgyptOnline.Services
                         };
                     } */
                 }
-                await _userManager.AddToRoleAsync(user, Roles.User);
+
+                var isCustomer = !string.IsNullOrWhiteSpace(model.ProviderType) &&
+                                 model.ProviderType.Equals("Customer", StringComparison.OrdinalIgnoreCase);
+
+                var roleToAssign = isCustomer ? Roles.Customer : Roles.User;
+                await _userManager.AddToRoleAsync(user, roleToAssign);
 
                 // Ensure user has a digital wallet (without a number)
                 var wallet = new UserWallet

@@ -113,7 +113,7 @@ namespace EgyptOnline.Controllers
         [HttpPost("register")]
         [ApiExplorerSettings(IgnoreApi = true)]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Register([FromForm] RegisterWorkerDto model, [FromForm] IFormFile imageFile)
+        public async Task<IActionResult> Register([FromForm] RegisterWorkerDto model, [FromForm] IFormFile? imageFile)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -134,7 +134,11 @@ namespace EgyptOnline.Controllers
                         }
                     });
                 }
-                if (imageFile == null)
+
+                var isCustomer = !string.IsNullOrWhiteSpace(model.ProviderType) &&
+                                 model.ProviderType.Equals("Customer", StringComparison.OrdinalIgnoreCase);
+
+                if (!isCustomer && imageFile == null)
                 {
                     return BadRequest(new
                     {
@@ -160,7 +164,7 @@ namespace EgyptOnline.Controllers
                     });
                 }
 
-                if (model.Pay < 100 &&
+                if (!isCustomer && model.Pay < 100 &&
                  !model.ProviderType!.Equals("marketplace", StringComparison.CurrentCultureIgnoreCase) &&
                  !model.ProviderType.Equals("company", StringComparison.CurrentCultureIgnoreCase) &&
                  !model.ProviderType.Equals("engineer", StringComparison.CurrentCultureIgnoreCase) &&
@@ -183,6 +187,21 @@ namespace EgyptOnline.Controllers
                         errorCode = UserRegisterationResult.Result.Errors.First().Code
                     });
 
+                }
+
+                if (isCustomer)
+                {
+                    if (imageFile != null)
+                    {
+                        await _userImageService.UploadUserImageAsync(UserRegisterationResult.User!, imageFile);
+                    }
+
+                    await transaction.CommitAsync();
+                    return Ok(new
+                    {
+                        message = "Customer account created successfully",
+                        userId = UserRegisterationResult.User!.Id
+                    });
                 }
 
                 if (model.ProviderType == null)
@@ -211,25 +230,27 @@ namespace EgyptOnline.Controllers
                 await _context.SaveChangesAsync();
                 string? imageUrl = null;
 
-                imageUrl = await _userImageService.UploadUserImageAsync(UserRegisterationResult.User, imageFile);
-                if (imageUrl == null)
+                if (imageFile != null)
                 {
-                    await transaction.RollbackAsync();
-                    return StatusCode(500, new
+                    imageUrl = await _userImageService.UploadUserImageAsync(UserRegisterationResult.User!, imageFile);
+                    if (imageUrl == null)
                     {
-                        message = "Error uploading profile image",
-                        errorCode = UserErrors.GeneralError.ToString()
-                    });
+                        await transaction.RollbackAsync();
+                        return StatusCode(500, new
+                        {
+                            message = "Error uploading profile image",
+                            errorCode = UserErrors.GeneralError.ToString()
+                        });
+                    }
                 }
 
                 // Transaction is done here
                 await transaction.CommitAsync();
 
-                // await Login(new LoginWorkerDto { Email = model.Email, Password = model.Password });
                 return Ok(new
                 {
                     message = $"The Service Provider which is {model.ProviderType} is Created Successfully",
-                    expiryDate = UserRegisterationResult.User.Subscription!.EndDate
+                    expiryDate = UserRegisterationResult.User!.Subscription!.EndDate
                 });
 
 

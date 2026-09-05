@@ -10,7 +10,7 @@ namespace EgyptOnline.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiVersion("1.0")]
-    [Authorize(Roles = Roles.User)]
+    [Authorize(Roles = $"{Roles.User},{Roles.Customer}")]
     public class KycController : ControllerBase
     {
         private readonly KycService _kycService;

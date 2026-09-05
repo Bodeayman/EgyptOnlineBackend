@@ -34,6 +34,9 @@ namespace EgyptOnline.Dtos
 
     public string? Bio { get; set; }
 
+    /// <summary>
+    /// Type of provider/user: Worker, Contractor, Company, Marketplace, Engineer, Assistant, Sculptor, or Customer
+    /// </summary>
     public string? ProviderType { get; set; } = "Worker";
 
     // Worker,Assistant attirbute

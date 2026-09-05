@@ -6,7 +6,6 @@ using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
 using EgyptOnline.Models;
 using EgyptOnline.Presentation.Controllers;
-using EgyptOnline.Presentation.Controllers.V2;
 using EgyptOnline.Services;
 using EgyptOnline.Utilities;
 using FakeItEasy;
@@ -55,6 +54,38 @@ namespace EgyptOnline.Tests.Unit.Auth
                 _otpServiceFake,
                 Context,
                 _userImageService);
+        }
+
+        [Fact]
+        public async Task RegisterUser_WithProviderTypeCustomer_AssignsCustomerRole_AndCreatesNoWorkerProfile()
+        {
+            var dto = new RegisterWorkerDto
+            {
+                FirstName = "Omar",
+                LastName = "Customer",
+                PhoneNumber = "01099887766",
+                Password = "Password123!",
+                Governorate = "Cairo",
+                City = "Cairo",
+                ProviderType = "Customer"
+            };
+
+            var result = await _userRegistrationService.RegisterUser(dto);
+
+            Assert.Equal(IdentityResult.Success, result.Result);
+            Assert.NotNull(result.User);
+
+            // User should have wallet initialized
+            var wallet = await Context.UserWallets.FirstOrDefaultAsync(w => w.UserId == result.User!.Id);
+            Assert.NotNull(wallet);
+            Assert.Equal(0, wallet.FreeBalance);
+
+            // User should NOT have any ServicesProvider row attached
+            var provider = await Context.ServiceProviders.FirstOrDefaultAsync(p => p.UserId == result.User!.Id);
+            Assert.Null(provider);
+
+            // User should have Customer role
+            A.CallTo(() => UserManagerFake.AddToRoleAsync(result.User!, Roles.Customer)).MustHaveHappenedOnceExactly();
         }
 
         [Fact]
@@ -210,10 +241,11 @@ namespace EgyptOnline.Tests.Unit.Auth
             Assert.NotNull(adminAuth);
             Assert.Equal(Roles.Admin, adminAuth.Roles);
 
-            // 3. CustomerController must be accessible ONLY to Customer
-            var customerAuth = typeof(CustomerController).GetCustomAttribute<AuthorizeAttribute>();
-            Assert.NotNull(customerAuth);
-            Assert.Equal(Roles.Customer, customerAuth.Roles);
+            // 3. KycController allows both Customer and User
+            var kycAuth = typeof(KycController).GetCustomAttribute<AuthorizeAttribute>();
+            Assert.NotNull(kycAuth);
+            Assert.Contains(Roles.Customer, kycAuth.Roles);
+            Assert.Contains(Roles.User, kycAuth.Roles);
 
             // 4. ContractController class level allows both User and Customer
             var contractAuth = typeof(ContractController).GetCustomAttribute<AuthorizeAttribute>();
