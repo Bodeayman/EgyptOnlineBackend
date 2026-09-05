@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EgyptOnline.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260905184008_AddTargetUserIdToRating")]
-    partial class AddTargetUserIdToRating
+    [Migration("20260905202640_RecreateRatingTable")]
+    partial class RecreateRatingTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

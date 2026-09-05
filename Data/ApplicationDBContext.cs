@@ -191,12 +191,18 @@ namespace EgyptOnline.Data
             {
                 entity.ToTable("Ratings");
                 entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.TargetUserId);
                 entity.HasIndex(e => e.RatingValue);
                 entity.HasIndex(e => e.CreatedAt);
-                
+
                 entity.HasOne(r => r.User)
                     .WithMany()
                     .HasForeignKey(r => r.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.TargetUser)
+                    .WithMany()
+                    .HasForeignKey(r => r.TargetUserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
