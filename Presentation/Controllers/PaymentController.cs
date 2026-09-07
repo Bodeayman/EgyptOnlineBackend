@@ -60,23 +60,22 @@ namespace EgyptOnline.Controllers
                 // Validate payment method
                 if (!IsValidPaymentMethod(paymentMethod))
                 {
-                    return BadRequest(new { message = "Invalid payment method. Supported: CreditCard, MobileWallet" });
+                    return BadRequest(new { message = "طريقة الدفع غير صالحة. المدعوم: CreditCard أو MobileWallet", errorCode = "INVALID_PAYMENT_METHOD" });
                 }
 
                 string userId = _userService.GetUserID(User);
                 if (userId == null)
                 {
-                    return Unauthorized(new { message = "You should sign in again" });
+                    return Unauthorized(new { message = "يرجى تسجيل الدخول مجدداً", errorCode = "UNAUTHORIZED" });
                 }
 
-                // Get user with service provider
                 User user = await _context.Users
                     .Include(u => u.ServiceProvider)
                     .FirstOrDefaultAsync(p => p.Id == userId);
 
                 if (user == null)
                 {
-                    return BadRequest(new { message = "The user is not found" });
+                    return BadRequest(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
                 }
 
                 // Check if user already has active subscription
@@ -125,7 +124,7 @@ namespace EgyptOnline.Controllers
 
                 return Ok(new
                 {
-                    message = "Payment session created successfully",
+                    message = "تم إنشاء جلسة الدفع بنجاح",
                     paymentLink = paymentLink,
                     paymentId = payment.Id,
                     amount = payment.Amount,
@@ -135,7 +134,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while processing the payment request.", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ أثناء معالجة طلب الدفع", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -182,7 +181,7 @@ namespace EgyptOnline.Controllers
 
                 int paymentId = 0;
                 if (!(!string.IsNullOrEmpty(merchantOrderId) && int.TryParse(merchantOrderId, out paymentId)))
-                    return BadRequest(new { message = "Invalid merchant_order_id format" });
+                    return BadRequest(new { message = "صيغة معرف الطلب غير صحيحة", errorCode = "INVALID_ORDER_ID" });
 
                 if (success)
                 {
@@ -210,7 +209,7 @@ namespace EgyptOnline.Controllers
                             if (payment == null)
                             {
                                 await transaction.RollbackAsync();
-                                return BadRequest(new { message = "Payment record not found" });
+                                return BadRequest(new { message = "سجل الدفع غير موجود", errorCode = "PAYMENT_NOT_FOUND" });
                             }
 
                             if (payment.Status == PaymentStatus.Success)
@@ -218,7 +217,7 @@ namespace EgyptOnline.Controllers
                                 await transaction.RollbackAsync();
                                 return Ok(new
                                 {
-                                    message = "Payment already processed",
+                                    message = "تمت معالجة عملية الدفع مسبقاً",
                                     paymentId = payment.Id,
                                     status = payment.Status.ToString()
                                 });
@@ -238,7 +237,7 @@ namespace EgyptOnline.Controllers
                                 payment.ProcessedAt = DateTime.UtcNow;
                                 await _context.SaveChangesAsync();
                                 await transaction.RollbackAsync();
-                                return BadRequest(new { message = "User not found for this payment" });
+                                return BadRequest(new { message = "المستخدم المرتبط بعملية الدفع غير موجود", errorCode = "USER_NOT_FOUND" });
                             }
 
                             await _userSubscriptionService.RenewSubscription(UserFound);
@@ -251,7 +250,7 @@ namespace EgyptOnline.Controllers
 
                             return Ok(new
                             {
-                                message = "Subscription Renewed Successfully",
+                                message = "تم تجديد الاشتراك بنجاح",
                                 userId = UserFound.Id,
                                 paymentId = payment.Id,
                                 status = payment.Status.ToString(),
@@ -275,12 +274,12 @@ namespace EgyptOnline.Controllers
                         payment.ProcessedAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
                     }
-                    return BadRequest(new { message = "Payment failed: " + message, paymentId });
+                    return BadRequest(new { message = "فشلت عملية الدفع", errorCode = "PAYMENT_FAILED", paymentId });
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while processing the webhook.", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ أثناء معالجة بيانات الدفع", errorCode = "INTERNAL_ERROR" });
             }
         }
         /// <summary>
@@ -297,7 +296,7 @@ namespace EgyptOnline.Controllers
 
                 if (payment == null)
                 {
-                    return NotFound(new { message = "Payment not found", paymentId });
+                    return NotFound(new { message = "عملية الدفع غير موجودة", errorCode = "PAYMENT_NOT_FOUND", paymentId });
                 }
 
                 return Ok(new
@@ -314,7 +313,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Error fetching payment status", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ أثناء جلب حالة الدفع", errorCode = "INTERNAL_ERROR" });
             }
         }
 

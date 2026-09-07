@@ -17,7 +17,7 @@ namespace EgyptOnline.Models
         [Column(TypeName = "timestamptz")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Note: IsActive now uses DateTime (UTC)
+        // Note: IsActive compares Egypt calendar date (stored as UTC midnight) against current time
         public bool IsActive => EndDate > DateTime.UtcNow;
 
 

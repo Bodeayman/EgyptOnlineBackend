@@ -35,8 +35,8 @@ namespace EgyptOnline.Presentation.Controllers.V2
             {
                 return BadRequest(new
                 {
-                    message = "Validation failed",
-                    errorCode = "InvalidInput",
+                    message = "فشل التحقق من صحة البيانات",
+                    errorCode = "INVALID_INPUT",
                     errors = ModelState
                         .Where(x => x.Value!.Errors.Count > 0)
                         .ToDictionary(
@@ -49,7 +49,7 @@ namespace EgyptOnline.Presentation.Controllers.V2
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User ID not found in token", errorCode = "Unauthorized" });
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             try
@@ -59,11 +59,11 @@ namespace EgyptOnline.Presentation.Controllers.V2
             }
             catch (ArgumentException ex) when (ex.ParamName == nameof(dto.TargetUserId))
             {
-                return BadRequest(new { message = "Target user does not exist", errorCode = "UserNotFound" });
+                return BadRequest(new { message = "المستخدم المستهدف غير موجود", errorCode = "USER_NOT_FOUND" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while submitting the rating", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -81,7 +81,7 @@ namespace EgyptOnline.Presentation.Controllers.V2
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving ratings", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -97,13 +97,13 @@ namespace EgyptOnline.Presentation.Controllers.V2
                 var result = await _ratingService.GetRatingByIdAsync(id);
                 if (result == null)
                 {
-                    return NotFound(new { message = $"Rating with ID {id} not found", errorCode = "NotFound" });
+                    return NotFound(new { message = $"التقييم بالمعرف {id} غير موجود", errorCode = "RATING_NOT_FOUND" });
                 }
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving the rating", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
     }

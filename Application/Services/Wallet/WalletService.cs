@@ -44,21 +44,7 @@ namespace EgyptOnline.Application.Services.Wallet
         }
 
         private string NormalizeEgyptianPhoneNumber(string phoneNumber)
-        {
-            if (string.IsNullOrWhiteSpace(phoneNumber))
-                return phoneNumber;
-
-            // Remove spaces and dashes
-            var cleaned = phoneNumber.Replace(" ", "").Replace("-", "");
-
-            // If it doesn't already start with +20, add it
-            if (!cleaned.StartsWith("+20"))
-            {
-                cleaned = "+2" + cleaned;
-            }
-
-            return cleaned;
-        }
+            => EgyptOnline.Utilities.Helper.NormalizePhoneNumber(phoneNumber);
 
         /// <summary>
         /// Get wallet for the user. Self-heals by creating a digital wallet if missing.

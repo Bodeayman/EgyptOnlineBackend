@@ -40,13 +40,15 @@ namespace EgyptOnline.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
             }
 
             string userId = _userService.GetUserID(User);
             if (userId == null)
             {
-                return Unauthorized(new { message = "You should sign in again" });
+                return Unauthorized(new { message = "يرجى تسجيل الدخول مجدداً", errorCode = "UNAUTHORIZED" });
             }
 
             var user = await _context.Users
@@ -55,7 +57,7 @@ namespace EgyptOnline.Controllers
 
             if (user == null)
             {
-                return BadRequest(new { message = "The user is not found" });
+                return BadRequest(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
             }
 
             // Here you must verify the purchase token with Google Play Developer API
@@ -67,7 +69,8 @@ namespace EgyptOnline.Controllers
             {
                 return BadRequest(new
                 {
-                    message = "Google Play subscription is not valid",
+                    message = "اشتراك Google Play غير صالح",
+                    errorCode = "GOOGLE_PLAY_VERIFICATION_FAILED",
                     reason = verificationResult.FailureReason
                 });
             }
@@ -104,7 +107,8 @@ namespace EgyptOnline.Controllers
 
                     return StatusCode(500, new
                     {
-                        message = "Subscription could not be renewed after successful Google Play verification"
+                        message = "تعذّر تجديد الاشتراك بعد التحقق الناجح من Google Play",
+                        errorCode = "SUBSCRIPTION_RENEWAL_FAILED"
                     });
                 }
 
@@ -116,7 +120,7 @@ namespace EgyptOnline.Controllers
 
                 return Ok(new
                 {
-                    message = "Subscription renewed successfully via Google Play",
+                    message = "تم تجديد الاشتراك بنجاح عبر Google Play",
                     userId = user.Id,
                     paymentId = payment.Id,
                     status = payment.Status.ToString(),
@@ -128,8 +132,8 @@ namespace EgyptOnline.Controllers
                 await transaction.RollbackAsync();
                 return StatusCode(500, new
                 {
-                    message = "An error occurred while verifying the Google Play subscription.",
-                    error = ex.Message
+                    message = "حدث خطأ أثناء التحقق من اشتراك Google Play",
+                    errorCode = "INTERNAL_ERROR"
                 });
             }
         }

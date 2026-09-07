@@ -40,15 +40,15 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors = ModelState });
 
-                // Set default values for Egypt time (UTC+2)
-                var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
-                var nowInEgypt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptTimeZone);
-                var tomorrowInEgypt = nowInEgypt.Date.AddDays(1);
+                // Use EgyptTimeHelper for consistent Egypt timezone handling
+                var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo");
+                var todayInEgypt = EgyptTimeHelper.TodayInEgypt();
+                var tomorrowInEgypt = todayInEgypt.AddDays(1);
 
                 // Use provided values or defaults
                 DateTime startDate;
@@ -71,7 +71,7 @@ namespace EgyptOnline.Controllers
                 }
                 else
                 {
-                    startDate = TimeZoneInfo.ConvertTimeToUtc(tomorrowInEgypt, egyptTimeZone);
+                    startDate = EgyptTimeHelper.ToUtc(tomorrowInEgypt.ToDateTime(TimeOnly.MinValue));
                 }
 
                 // Support explicit SelectedDates list for PerDay and Batch contract types
@@ -134,11 +134,11 @@ namespace EgyptOnline.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -153,26 +153,26 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var contract = await _contractService.ProviderAcceptContractAsync(id, userId);
                 return Ok(new { message = "تم قبول العقد وتفعيله", data = contract });
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message });
+                return StatusCode(403, new { message = ex.Message, errorCode = "FORBIDDEN" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -187,26 +187,26 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var contract = await _contractService.ProviderRejectContractAsync(id, userId);
                 return Ok(new { message = "تم رفض العقد وإرجاع الرصيد للعميل", data = contract });
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message });
+                return StatusCode(403, new { message = ex.Message, errorCode = "FORBIDDEN" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -221,29 +221,29 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors = ModelState });
 
                 var contract = await _contractService.RegisterArrivalAsync(dto.ContractId, dto.DayNumber, userId);
                 return Ok(new { message = "تم تسجيل الوصول وإشعار العميل", data = contract });
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message });
+                return StatusCode(403, new { message = ex.Message, errorCode = "FORBIDDEN" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -257,29 +257,29 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors = ModelState });
 
                 var contractDay = await _contractService.ClientConfirmAttendanceAsync(dto.ContractId, dto.DayNumber, userId);
                 return Ok(new { message = "تم تأكيد الحضور لليوم بنجاح وسيتم الصرف عند نهاية الشيفت اليومي", data = contractDay });
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message });
+                return StatusCode(403, new { message = ex.Message, errorCode = "FORBIDDEN" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -293,29 +293,29 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors = ModelState });
 
                 var contract = await _contractService.ReportDisputeAsync(dto.ContractId, dto.DayNumber, dto.Reason, userId);
                 return Ok(new { message = "تم الإبلاغ عن المشكلة وتجميد العقد وإحالته للأدمن", data = contract });
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message });
+                return StatusCode(403, new { message = ex.Message, errorCode = "FORBIDDEN" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -332,7 +332,7 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var includeDays = include?.Contains("Days", StringComparison.OrdinalIgnoreCase) == true;
                 var contracts = await _contractService.GetContractsByUserIdAsync(userId, null, pageNumber, pageSize, includeDays);
@@ -340,7 +340,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -354,21 +354,21 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var includeDays = include?.Contains("Days", StringComparison.OrdinalIgnoreCase) == true;
                 var contract = await _contractService.GetContractByIdAsync(id, userId, includeDays);
-                if (contract == null) return NotFound(new { message = "العقد غير موجود" });
+                if (contract == null) return NotFound(new { message = "العقد غير موجود", errorCode = "CONTRACT_NOT_FOUND" });
 
                 return Ok(new { data = contract });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message });
+                return StatusCode(403, new { message = ex.Message, errorCode = "FORBIDDEN" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
     }

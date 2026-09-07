@@ -45,7 +45,7 @@ namespace EgyptOnline.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
 
                 if (userId == null)
-                    return Unauthorized();
+                    return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var user = await _context.Users
                     .Include(u => u.ServiceProvider)
@@ -53,17 +53,13 @@ namespace EgyptOnline.Controllers
                     .FirstOrDefaultAsync(u => u.Id == userId);
 
                 if (user == null)
-                    return NotFound();
-
-                // Check subscription from token (may be stale, but acceptable for viewing own profile)
-                // No DB hit needed - subscription status available in token claim
-                // Client can check subscription_expires claim from token if needed
+                    return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
 
                 return Ok(user.ToShowProfileDto());
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -79,13 +75,13 @@ namespace EgyptOnline.Controllers
                     u.Id
                 }).FirstOrDefaultAsync(u => u.Id == userId);
                 if (user == null)
-                    return NotFound();
+                    return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
 
                 return Ok(user.Subscription);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
         //Update the location and availability and skills of the worker
@@ -99,12 +95,15 @@ namespace EgyptOnline.Controllers
                 /* Authentication Stage Check*/
                 if (!ModelState.IsValid)
                 {
-                    return BadRequest(ModelState);
+                    var errors = ModelState
+                        .Where(x => x.Value!.Errors.Count > 0)
+                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
                 }
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
                 {
-                    return Unauthorized(new { message = "User ID not found in token" });
+                    return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
                 }
                 var user = await _context.Users
                     .Include(u => u.ServiceProvider)
@@ -113,7 +112,7 @@ namespace EgyptOnline.Controllers
 
                 if (user == null)
                 {
-                    return NotFound(new { message = "User not found" });
+                    return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
                 }
 
                 // Subscription check is handled by [RequireSubscription] attribute
@@ -144,7 +143,7 @@ namespace EgyptOnline.Controllers
 
                 if (user == null || user.ServiceProvider == null)
                 {
-                    return NotFound(new { message = "The Service Provider related to this user is not found" });
+                    return NotFound(new { message = "لم يتم العثور على مقدم الخدمة المرتبط بهذا المستخدم", errorCode = "PROVIDER_NOT_FOUND" });
                 }
 
                 // Update Bio safely
@@ -157,7 +156,7 @@ namespace EgyptOnline.Controllers
                 {
                     case "Worker":
                         var worker = await _context.Workers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
-                        if (worker == null) return BadRequest(new { message = "Worker not found" });
+                        if (worker == null) return BadRequest(new { message = "لم يتم العثور على بيانات العامل", errorCode = "PROVIDER_NOT_FOUND" });
 
                         if (model.Pay >= 0)
                             worker.ServicePricePerDay = model.Pay;
@@ -170,23 +169,23 @@ namespace EgyptOnline.Controllers
 
                     case "Contractor":
                         var contractor = await _context.Contractors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
-                        if (contractor == null) return BadRequest(new { message = "Contractor not found" });
+                        if (contractor == null) return BadRequest(new { message = "لم يتم العثور على بيانات المقاول", errorCode = "PROVIDER_NOT_FOUND" });
 
                         break;
 
                     case "Company":
                         var company = await _context.Companies.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
-                        if (company == null) return BadRequest(new { message = "Company not found" });
+                        if (company == null) return BadRequest(new { message = "لم يتم العثور على بيانات الشركة", errorCode = "PROVIDER_NOT_FOUND" });
                         break;
 
                     case "Marketplace":
                         var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
-                        if (marketPlace == null) return BadRequest(new { message = "Marketplace not found" });
+                        if (marketPlace == null) return BadRequest(new { message = "لم يتم العثور على بيانات المعرض", errorCode = "PROVIDER_NOT_FOUND" });
                         break;
 
                     case "Engineer":
                         var engineer = await _context.Engineers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
-                        if (engineer == null) return BadRequest(new { message = "Engineer details not found" });
+                        if (engineer == null) return BadRequest(new { message = "لم يتم العثور على بيانات المهندس", errorCode = "PROVIDER_NOT_FOUND" });
 
 
                         // Ensure DerivedSpec is NOT NULL
@@ -195,7 +194,7 @@ namespace EgyptOnline.Controllers
 
                     case "Assistant":
                         var assistant = await _context.Assistants.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
-                        if (assistant == null) return BadRequest(new { message = "Assistant not found" });
+                        if (assistant == null) return BadRequest(new { message = "لم يتم العثور على بيانات المساعد", errorCode = "PROVIDER_NOT_FOUND" });
 
                         if (model.Pay >= 0)
                             assistant.ServicePricePerDay = model.Pay;
@@ -208,7 +207,7 @@ namespace EgyptOnline.Controllers
 
                     case "Sculptor":
                         var sculptor = await _context.Sculptors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
-                        if (sculptor == null) return BadRequest(new { message = "Sculptor not found" });
+                        if (sculptor == null) return BadRequest(new { message = "لم يتم العثور على بيانات النحات", errorCode = "PROVIDER_NOT_FOUND" });
 
                         if (model.Pay >= 0)
                             sculptor.ServicePricePerDay = model.Pay;
@@ -218,7 +217,7 @@ namespace EgyptOnline.Controllers
                         break;
 
                     default:
-                        return BadRequest(new { message = "Put a correct ServiceProvider Name" });
+                        return BadRequest(new { message = "نوع مقدم الخدمة غير صحيح", errorCode = "INVALID_PROVIDER_TYPE" });
                 }
 
                 // Save changes safely
@@ -227,12 +226,12 @@ namespace EgyptOnline.Controllers
                 await transaction.CommitAsync();
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "Your Profile has been updated Successfully" });
+                return Ok(new { message = "تم تحديث ملفك الشخصي بنجاح" });
 
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -247,20 +246,20 @@ namespace EgyptOnline.Controllers
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
-                    return Unauthorized();
+                    return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var expirationTime = await _occupationService.SetUserOccupiedAsync(userId);
 
                 return Ok(new
                 {
-                    message = "You have been marked as occupied until midnight",
+                    message = "تم تحديد حالتك كمشغول حتى منتصف الليل",
                     expiresAt = expirationTime,
                     isOccupied = true
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -275,19 +274,19 @@ namespace EgyptOnline.Controllers
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
-                    return Unauthorized();
+                    return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 await _occupationService.RemoveUserOccupiedAsync(userId);
 
                 return Ok(new
                 {
-                    message = "You have been marked as available",
+                    message = "تم تحديد حالتك كمتاح",
                     isOccupied = false
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -301,7 +300,7 @@ namespace EgyptOnline.Controllers
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (userId == null)
-                    return Unauthorized();
+                    return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var isOccupied = await _occupationService.IsUserOccupiedAsync(userId);
 
@@ -309,7 +308,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
     }

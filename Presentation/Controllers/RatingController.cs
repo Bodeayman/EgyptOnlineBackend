@@ -35,13 +35,16 @@ namespace EgyptOnline.Presentation.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                var errors = ModelState
+                    .Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
             }
 
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized();
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             try
@@ -51,11 +54,11 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (ArgumentException ex) when (ex.ParamName == nameof(dto.TargetUserId))
             {
-                return BadRequest(new { message = "Target user does not exist", errorCode = "UserNotFound" });
+                return BadRequest(new { message = "المستخدم المستهدف غير موجود", errorCode = "USER_NOT_FOUND" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while submitting the rating", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -73,7 +76,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving ratings", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
     }

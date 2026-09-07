@@ -43,7 +43,7 @@ namespace EgyptOnline.Presentation.Controllers
                 return BadRequest(ModelState);
 
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
 
             try
@@ -67,7 +67,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -82,7 +82,7 @@ namespace EgyptOnline.Presentation.Controllers
             [FromQuery] int pageSize = Constants.PAGE_SIZE)
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
@@ -92,7 +92,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -107,7 +107,7 @@ namespace EgyptOnline.Presentation.Controllers
             [FromQuery] int pageSize = Constants.PAGE_SIZE)
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
@@ -116,7 +116,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (UnauthorizedAccessException)
             {
@@ -124,7 +124,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -141,7 +141,7 @@ namespace EgyptOnline.Presentation.Controllers
             [FromQuery] int pageSize = Constants.PAGE_SIZE)
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
@@ -150,7 +150,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -166,7 +166,7 @@ namespace EgyptOnline.Presentation.Controllers
                 return BadRequest(ModelState);
 
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
@@ -176,15 +176,15 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -196,7 +196,7 @@ namespace EgyptOnline.Presentation.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
@@ -205,11 +205,11 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -221,7 +221,7 @@ namespace EgyptOnline.Presentation.Controllers
         public async Task<IActionResult> Cancel(int id)
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
@@ -230,15 +230,15 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -250,7 +250,7 @@ namespace EgyptOnline.Presentation.Controllers
         public async Task<IActionResult> Complete(int id)
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
@@ -259,15 +259,15 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
     }

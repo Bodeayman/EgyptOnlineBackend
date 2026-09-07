@@ -358,7 +358,7 @@ namespace EgyptOnline.Migrations
 
                     b.HasIndex("userId");
 
-                    b.ToTable("FirebaseTokens");
+                    b.ToTable("FirebaseTokens", (string)null);
                 });
 
             modelBuilder.Entity("EgyptOnline.Models.FundMovementLog", b =>
@@ -624,7 +624,7 @@ namespace EgyptOnline.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PaymentTransactions");
+                    b.ToTable("PaymentTransactions", (string)null);
                 });
 
             modelBuilder.Entity("EgyptOnline.Models.Post", b =>
@@ -787,7 +787,7 @@ namespace EgyptOnline.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Subscriptions");
+                    b.ToTable("Subscriptions", (string)null);
                 });
 
             modelBuilder.Entity("EgyptOnline.Models.User", b =>
@@ -1205,7 +1205,7 @@ namespace EgyptOnline.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("EgyptOnline.Models.Assistant", b =>

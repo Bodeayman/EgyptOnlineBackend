@@ -82,7 +82,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             // Batch contracts: process payout based on batch date, not arrival/confirmation
             if (contract.ContractType == ContractType.Batch)
             {
-                var batchTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+                var batchTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo");
                 var batchDayLocal = TimeZoneInfo.ConvertTimeFromUtc(contractDay.Date, batchTimeZone);
 
                 // Batch payout occurs at the scheduled batch date
@@ -98,7 +98,7 @@ public class AutoPayoutBackgroundService : BackgroundService
             if (contractDay.Status == ContractDayStatus.AbsentDisputed) continue;
 
             // Convert contract day date (UTC) to Egypt local time for shift calculations
-            var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+            var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo");
             var contractDayEgyptLocal = TimeZoneInfo.ConvertTimeFromUtc(contractDay.Date, egyptTimeZone);
 
             // Shift times are stored as TimeSpan representing Egypt local time
@@ -295,11 +295,11 @@ public class AutoPayoutBackgroundService : BackgroundService
         var walletService = scope.ServiceProvider.GetRequiredService<WalletService>();
 
         // Egypt local date today
-        var egyptDate = DateTime.SpecifyKind(EgyptTimeHelper.NowInEgypt().Date, DateTimeKind.Utc);
+        var egyptToday = EgyptTimeHelper.TodayInEgypt();
 
-        // Any pending contract whose start date is now in the past
+        // Any pending contract whose start date is now in the past (compare Egypt dates)
         var staleContracts = await context.Contracts
-            .Where(c => c.Status == "pending" && c.StartDate.Date < egyptDate)
+            .Where(c => c.Status == "pending" && EgyptTimeHelper.ToEgyptDate(c.StartDate) < egyptToday)
             .ToListAsync(stoppingToken);
 
         foreach (var contract in staleContracts)
@@ -356,13 +356,13 @@ public class AutoPayoutBackgroundService : BackgroundService
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
         // Egypt local date today
-        var egyptDate = DateTime.SpecifyKind(EgyptTimeHelper.NowInEgypt().Date, DateTimeKind.Utc);
+        var egyptToday = EgyptTimeHelper.TodayInEgypt();
 
-        // Find active contracts where end date has passed
+        // Find active contracts where end date has passed (compare Egypt dates)
         var incompleteContracts = await context.Contracts
             .Include(c => c.ContractDays)
             .Where(c => c.Status == "active" &&
-                        c.StartDate.AddDays(c.TotalDays - 1).Date < egyptDate)
+                        EgyptTimeHelper.ToEgyptDate(c.StartDate.AddDays(c.TotalDays - 1)) < egyptToday)
             .ToListAsync(stoppingToken);
 
         foreach (var contract in incompleteContracts)
@@ -480,7 +480,7 @@ public class AutoPayoutBackgroundService : BackgroundService
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
         var currentEgyptTime = EgyptTimeHelper.NowInEgypt();
-        var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+        var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo");
 
         // Get active contracts that may need notifications
         var activeContracts = await context.Contracts

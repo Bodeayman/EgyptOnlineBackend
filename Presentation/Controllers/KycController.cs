@@ -31,25 +31,25 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "Validation failed", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors = ModelState });
 
                 // Validate Front Image
                 var frontPath = await ValidateAndUploadImageAsync(dto.FrontImage, $"kyc_front_{userId}");
                 if (string.IsNullOrEmpty(frontPath))
-                    return BadRequest(new { message = "فشل رفع صورة وجه البطاقة" });
+                    return BadRequest(new { message = "فشل رفع صورة وجه البطاقة", errorCode = "IMAGE_UPLOAD_FAILED" });
 
                 // Validate Back Image
                 var backPath = await ValidateAndUploadImageAsync(dto.BackImage, $"kyc_back_{userId}");
                 if (string.IsNullOrEmpty(backPath))
-                    return BadRequest(new { message = "فشل رفع صورة ظهر البطاقة" });
+                    return BadRequest(new { message = "فشل رفع صورة ظهر البطاقة", errorCode = "IMAGE_UPLOAD_FAILED" });
 
                 // Validate Selfie Image
                 var selfiePath = await ValidateAndUploadImageAsync(dto.SelfieImage, $"kyc_selfie_{userId}");
                 if (string.IsNullOrEmpty(selfiePath))
-                    return BadRequest(new { message = "فشل رفع الصورة الشخصية (سيلفي)" });
+                    return BadRequest(new { message = "فشل رفع الصورة الشخصية (سيلفي)", errorCode = "IMAGE_UPLOAD_FAILED" });
 
                 var submission = await _kycService.SubmitKycAsync(userId, frontPath, backPath, selfiePath);
 
@@ -66,11 +66,11 @@ namespace EgyptOnline.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -105,7 +105,7 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var kyc = await _kycService.GetLatestKycAsync(userId);
                 if (kyc == null)
@@ -135,7 +135,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
     }

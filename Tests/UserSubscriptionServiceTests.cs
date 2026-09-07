@@ -40,12 +40,12 @@ namespace EgyptOnline.Tests
                 City="Cairo",
                 ServiceProvider = new Worker { UserId = "user1", Skill = "Test", WorkerType = WorkerTypes.PerDay, ProviderType = "Worker" }
             };
-            var subscription = new Subscription 
-            { 
-                UserId = "user1", 
-                User = user, 
-                StartDate = DateTime.Now.AddMonths(-1), 
-                EndDate = DateTime.Now 
+            var subscription = new Subscription
+            {
+                UserId = "user1",
+                User = user,
+                StartDate = DateTime.Now.AddMonths(-1),
+                EndDate = DateTime.Now
             };
 
             _context.Users.Add(user);
@@ -77,12 +77,12 @@ namespace EgyptOnline.Tests
                 City="Cairo",
                 ServiceProvider = new Worker { UserId = "user2", Skill = "Test", WorkerType = WorkerTypes.PerDay, ProviderType = "Worker" }
             };
-            var subscription = new Subscription 
-            { 
-                UserId = "user2", 
-                User = user, 
-                StartDate = DateTime.Now.AddMonths(-1), 
-                EndDate = DateTime.Now 
+            var subscription = new Subscription
+            {
+                UserId = "user2",
+                User = user,
+                StartDate = DateTime.Now.AddMonths(-1),
+                EndDate = DateTime.Now
             };
 
             _context.Users.Add(user);

@@ -27,70 +27,61 @@ namespace EgyptOnline.Presentation.Controllers
             var currentUserId = User.FindFirst("uid")?.Value;
             if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized();
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             var notifications = await _notificationService.GetUserNotificationsAsync(currentUserId, pageNumber, pageSize);
             return Ok(notifications);
         }
 
-        /// <summary>
-        /// Mark a notification as read
-        /// </summary>
         [HttpPatch("{id}/read")]
         public async Task<IActionResult> MarkAsRead(string id)
         {
             var currentUserId = User.FindFirst("uid")?.Value;
             if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized();
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             var success = await _notificationService.MarkAsReadAsync(id, currentUserId);
             if (!success)
             {
-                return NotFound(new { message = "Notification not found or you don't have permission" });
+                return NotFound(new { message = "الإشعار غير موجود أو ليس لديك صلاحية الوصول إليه", errorCode = "NOTIFICATION_NOT_FOUND" });
             }
 
             var notification = await _notificationService.GetNotificationByIdAsync(id, currentUserId);
             return Ok(notification);
         }
 
-        /// <summary>
-        /// Delete a single notification
-        /// </summary>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNotification(string id)
         {
             var currentUserId = User.FindFirst("uid")?.Value;
             if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized();
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             var success = await _notificationService.DeleteNotificationAsync(id, currentUserId);
             if (!success)
             {
-                return NotFound(new { message = "Notification not found or you don't have permission" });
+                return NotFound(new { message = "الإشعار غير موجود أو ليس لديك صلاحية الوصول إليه", errorCode = "NOTIFICATION_NOT_FOUND" });
             }
 
             return NoContent();
         }
 
-        /// <summary>
-        /// Delete all notifications for the authenticated user
-        /// </summary>
         [HttpDelete("all")]
         public async Task<IActionResult> DeleteAllNotifications()
         {
             var currentUserId = User.FindFirst("uid")?.Value;
             if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized();
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             var deletedCount = await _notificationService.DeleteAllUserNotificationsAsync(currentUserId);
-            return Ok(new { message = $"Deleted {deletedCount} notification(s)", deletedCount });
+            return Ok(new { message = $"تم حذف {deletedCount} إشعار/إشعارات", deletedCount });
         }
     }
 }

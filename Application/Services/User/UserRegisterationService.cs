@@ -51,7 +51,7 @@ namespace EgyptOnline.Services
                 }
 
                 // Check phone
-                var phone = $"+2{model.PhoneNumber}";
+                var phone = EgyptOnline.Utilities.Helper.NormalizePhoneNumber(model.PhoneNumber);
                 if (await _context.Users.AnyAsync(u => u.PhoneNumber == phone))
                 {
                     return new UserRegisterationResult
@@ -182,7 +182,7 @@ namespace EgyptOnline.Services
                 }
 
                 // Check phone number
-                var phone = $"+2{model.PhoneNumber}";
+                var phone = EgyptOnline.Utilities.Helper.NormalizePhoneNumber(model.PhoneNumber);
                 if (await _context.Users.AnyAsync(u => u.PhoneNumber == phone))
                 {
                     return new UserRegisterationResult

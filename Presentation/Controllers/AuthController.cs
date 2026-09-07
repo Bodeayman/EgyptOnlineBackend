@@ -70,9 +70,8 @@ namespace EgyptOnline.Controllers
 
                 return BadRequest(new
                 {
-                    success = false,
-                    message = "Validation failed",
-                    errorCode = "InvalidInput",
+                    message = "فشل التحقق من صحة البيانات",
+                    errorCode = "INVALID_INPUT",
                     errors
                 });
             }
@@ -82,12 +81,11 @@ namespace EgyptOnline.Controllers
             {
                 return BadRequest(new
                 {
-                    success = false,
-                    message = "Validation failed",
-                    errorCode = "InvalidInput",
+                    message = "رقم الهاتف يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقماً",
+                    errorCode = UserErrors.InvalidPhoneNumber.ToString(),
                     errors = new
                     {
-                        PhoneNumber = "Phone number must start with 010, 011, 012, or 015 and be 11 digits long"
+                        PhoneNumber = "رقم الهاتف يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقماً"
                     }
                 });
             }
@@ -104,7 +102,7 @@ namespace EgyptOnline.Controllers
 
             return Ok(new
             {
-                message = "Customer account created successfully",
+                message = "تم إنشاء حساب العميل بنجاح",
                 userId = registerResult.User!.Id
             });
         }
@@ -125,12 +123,11 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(new
                     {
-                        success = false,
-                        message = "Validation failed",
-                        errorCode = "InvalidInput",
+                        message = "رقم الهاتف يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقماً",
+                        errorCode = UserErrors.InvalidPhoneNumber.ToString(),
                         errors = new
                         {
-                            PhoneNumber = "Phone number must start with 010, 011, 012, or 015 and be 11 digits long"
+                            PhoneNumber = "رقم الهاتف يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقماً"
                         }
                     });
                 }
@@ -142,7 +139,7 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(new
                     {
-                        message = "Please upload a profile image.",
+                        message = "يرجى رفع صورة الملف الشخصي",
                         errorCode = UserErrors.ImageIsNull.ToString()
                     });
                 }
@@ -158,9 +155,9 @@ namespace EgyptOnline.Controllers
 
                     return BadRequest(new
                     {
-                        success = false,
-                        message = "Validation failed",
-                        errorCode = "InvalidInput"
+                        message = "فشل التحقق من صحة البيانات",
+                        errorCode = UserErrors.InvalidInput.ToString(),
+                        errors
                     });
                 }
 
@@ -173,7 +170,7 @@ namespace EgyptOnline.Controllers
                 {
                     return BadRequest(new
                     {
-                        message = "The Pay/Service Price must be at least 100 EGP",
+                        message = "يجب أن يكون الأجر/سعر الخدمة 100 جنيه على الأقل",
                         errorCode = UserErrors.InvalidPaymentValue.ToString()
                     });
                 }
@@ -183,7 +180,7 @@ namespace EgyptOnline.Controllers
                     await transaction.RollbackAsync();
                     return StatusCode(500, new
                     {
-                        message = UserRegisterationResult.Result.Errors.First().Description,
+                        message = "حدث خطأ أثناء إنشاء الحساب",
                         errorCode = UserRegisterationResult.Result.Errors.First().Code
                     });
 
@@ -199,28 +196,28 @@ namespace EgyptOnline.Controllers
                     await transaction.CommitAsync();
                     return Ok(new
                     {
-                        message = "Customer account created successfully",
+                        message = "تم إنشاء حساب العميل بنجاح",
                         userId = UserRegisterationResult.User!.Id
                     });
                 }
 
                 if (model.ProviderType == null)
                 {
-                    return BadRequest(new { message = "Please Provide the Type Of Service" });
+                    return BadRequest(new { message = "يرجى تحديد نوع الخدمة", errorCode = UserErrors.InvalidInput.ToString() });
                 }
 
                 // Get the appropriate strategy for this provider type
                 var strategy = _strategyFactory.GetStrategy(model.ProviderType);
                 if (strategy == null)
                 {
-                    return BadRequest(new { message = "Please Provide the Type Of Service" });
+                    return BadRequest(new { message = "يرجى تحديد نوع الخدمة", errorCode = UserErrors.InvalidInput.ToString() });
                 }
 
                 // Validate provider-specific requirements
                 var validationError = strategy.Validate(model);
                 if (validationError != null)
                 {
-                    return BadRequest(new { message = validationError });
+                    return BadRequest(new { message = validationError, errorCode = UserErrors.InvalidInput.ToString() });
                 }
 
                 // Create the appropriate provider using the strategy
@@ -238,7 +235,7 @@ namespace EgyptOnline.Controllers
                         await transaction.RollbackAsync();
                         return StatusCode(500, new
                         {
-                            message = "Error uploading profile image",
+                            message = "حدث خطأ أثناء رفع صورة الملف الشخصي",
                             errorCode = UserErrors.GeneralError.ToString()
                         });
                     }
@@ -249,7 +246,7 @@ namespace EgyptOnline.Controllers
 
                 return Ok(new
                 {
-                    message = $"The Service Provider which is {model.ProviderType} is Created Successfully",
+                    message = $"تم إنشاء حساب مقدم الخدمة ({model.ProviderType}) بنجاح",
                     expiryDate = UserRegisterationResult.User!.Subscription!.EndDate
                 });
 
@@ -261,7 +258,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return StatusCode(500, new { message = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = UserErrors.GeneralError.ToString() });
             }
         }
         [AllowAnonymous]
@@ -271,7 +268,7 @@ namespace EgyptOnline.Controllers
             try
             {
                 if (string.IsNullOrWhiteSpace(model.Email))
-                    return BadRequest(new { message = "Phone number or email is required", errorCode = UserErrors.InvalidInput.ToString() });
+                    return BadRequest(new { message = "رقم الهاتف أو البريد الإلكتروني مطلوب", errorCode = UserErrors.InvalidInput.ToString() });
 
                 var input = model.Email.Trim();
                 User user;
@@ -284,33 +281,33 @@ namespace EgyptOnline.Controllers
                         .FirstOrDefaultAsync(u => u.Email == input);
                     if (user == null)
                     {
-                        return BadRequest(new { message = "This User is not found", errorCode = UserErrors.UserIsNotFound.ToString() });
+                        return BadRequest(new { message = "هذا المستخدم غير موجود", errorCode = UserErrors.UserIsNotFound.ToString() });
                     }
                 }
                 //Egyptain Server
                 else if (Helper.IsPhone(input))
                 {
 
-                    string phoneNumber = $"+20{input.Substring(1)}";
+                    string phoneNumber = EgyptOnline.Utilities.Helper.NormalizePhoneNumber(input);
                     user = await _context.Users
                         .Include(u => u.Subscription)
                         .Include(u => u.ServiceProvider)
                         .FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
                     if (user == null)
                     {
-                        return BadRequest(new { message = "This User is not found", errorCode = UserErrors.UserIsNotFound.ToString() });
+                        return BadRequest(new { message = "هذا المستخدم غير موجود", errorCode = UserErrors.UserIsNotFound.ToString() });
 
                     }
                 }
 
                 else
                 {
-                    return BadRequest(new { message = "Invalid email or phone format" });
+                    return BadRequest(new { message = "صيغة البريد الإلكتروني أو الهاتف غير صحيحة", errorCode = UserErrors.InvalidInput.ToString() });
                 }
                 // Check user existence and password
                 Console.WriteLine(user.Id);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
-                    return NotFound(new { message = "The Email/Phone or password is incorrect", errorCode = UserErrors.EmailOrPasswordInCorrect.ToString() });
+                    return NotFound(new { message = "البريد الإلكتروني/الهاتف أو كلمة المرور غير صحيحة", errorCode = UserErrors.EmailOrPasswordInCorrect.ToString() });
                 var roles = await _userManager.GetRolesAsync(user);
 
                 // Generate access token for all authenticated principals
@@ -321,7 +318,7 @@ namespace EgyptOnline.Controllers
                 {
                     return Ok(new
                     {
-                        message = "Login successful",
+                        message = "تم تسجيل الدخول بنجاح",
                         accessToken,
                         role = Roles.Admin
                     });
@@ -333,7 +330,7 @@ namespace EgyptOnline.Controllers
                 {
                     if (!Enum.TryParse<UsersTypes>(user.ServiceProvider.ProviderType, out userRole))
                     {
-                        return StatusCode(500, new { message = "Error while fetching the user role" });
+                        return StatusCode(500, new { message = "حدث خطأ أثناء جلب دور المستخدم", errorCode = UserErrors.GeneralError.ToString() });
                     }
                 }
 
@@ -367,7 +364,7 @@ namespace EgyptOnline.Controllers
 
                 return Ok(new
                 {
-                    message = "Login successful",
+                    message = "تم تسجيل الدخول بنجاح",
                     accessToken,
                     refreshToken = refreshTokenString,
                     refreshTokenExpiry = DateTime.UtcNow.AddDays(TokenPeriod.REFRESH_TOKEN_DAYS),
@@ -377,7 +374,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = UserErrors.GeneralError.ToString() });
             }
         }
 
@@ -392,7 +389,7 @@ namespace EgyptOnline.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized();
+                    return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 }
                 var user = await _context.Users
@@ -412,9 +409,9 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = UserErrors.GeneralError.ToString() });
             }
-            return Ok(new { message = "Firebase token added successfully" });
+            return Ok(new { message = "تم إضافة رمز Firebase بنجاح" });
         }
 
         // This password is for logged in user
@@ -425,35 +422,35 @@ namespace EgyptOnline.Controllers
             var user = await _userManager.GetUserAsync(User); // logged-in user
             if (user == null)
             {
-                return BadRequest(new { message = "User is not found" });
+                return BadRequest(new { message = "المستخدم غير موجود", errorCode = UserErrors.UserIsNotFound.ToString() });
             }
             if (!await _userManager.CheckPasswordAsync(user, model.CurrentPassword))
-                return BadRequest(new { message = "Current password is incorrect" });
+                return BadRequest(new { message = "كلمة المرور الحالية غير صحيحة", errorCode = UserErrors.PasswordInvalid.ToString() });
 
             var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
 
             if (!result.Succeeded)
-                return BadRequest(result.Errors);
+                return BadRequest(new { message = result.Errors.First().Description, errorCode = result.Errors.First().Code });
 
-            return Ok(new { message = "Password changed successfully" });
+            return Ok(new { message = "تم تغيير كلمة المرور بنجاح" });
         }
         [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest refreshRequest)
         {
             if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
-                return BadRequest("Refresh token is required");
+                return BadRequest(new { message = "رمز التحديث مطلوب", errorCode = UserErrors.InvalidInput.ToString() });
 
             try
             {
                 // 1. Validate the token itself
                 var principal = _userService.ValidateRefreshToken(refreshRequest.RefreshToken);
                 if (principal == null)
-                    return Unauthorized(new { message = "Invalid refresh token", errorCode = "InvalidToken" });
+                    return Unauthorized(new { message = "رمز التحديث غير صالح", errorCode = UserErrors.RefreshTokenInvalid.ToString() });
 
                 var tokenType = principal.Claims.FirstOrDefault(c => c.Type == "token_type")?.Value;
                 if (tokenType != TokensTypes.RefreshToken.ToString())
-                    return Unauthorized(new { message = "Token is not a refresh token", errorCode = "InvalidToken" });
+                    return Unauthorized(new { message = "الرمز المقدم ليس رمز تحديث", errorCode = UserErrors.RefreshTokenInvalid.ToString() });
 
                 // 2. Atomic token validation + rotation with row locking
                 using var transaction = await _context.Database.BeginTransactionAsync();
@@ -484,7 +481,7 @@ namespace EgyptOnline.Controllers
                         await transaction.RollbackAsync();
                         return Unauthorized(new
                         {
-                            message = "Refresh token is invalid or expired",
+                            message = "رمز التحديث غير صالح أو منتهي الصلاحية",
                             errorCode = UserErrors.RefreshTokenInvalid.ToString()
                         });
                     }
@@ -493,7 +490,7 @@ namespace EgyptOnline.Controllers
                     if (user == null)
                     {
                         await transaction.RollbackAsync();
-                        return Unauthorized("User not found");
+                        return Unauthorized(new { message = "المستخدم غير موجود", errorCode = UserErrors.UserIsNotFound.ToString() });
                     }
 
                     // 3. Handle Token Rotation & Grace Window for Concurrent Requests
@@ -524,7 +521,7 @@ namespace EgyptOnline.Controllers
                         await transaction.RollbackAsync();
                         return Unauthorized(new
                         {
-                            message = "Refresh token is expired or revoked",
+                            message = "رمز التحديث منتهي الصلاحية أو تم إلغاؤه",
                             errorCode = UserErrors.RefreshTokenInvalid.ToString()
                         });
                     }
@@ -566,7 +563,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in refresh: {ex.Message}");
-                return StatusCode(500, new { message = "Error processing refresh token", errorMessage = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ أثناء معالجة رمز التحديث", errorCode = UserErrors.GeneralError.ToString() });
             }
         }
 
@@ -577,7 +574,7 @@ namespace EgyptOnline.Controllers
         public async Task<IActionResult> Logout([FromBody] RefreshRequest refreshRequest)
         {
             if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
-                return BadRequest("Refresh token is required");
+                return BadRequest(new { message = "رمز التحديث مطلوب", errorCode = UserErrors.InvalidInput.ToString() });
 
             try
             {
@@ -601,7 +598,7 @@ namespace EgyptOnline.Controllers
                     if (storedToken == null)
                     {
                         await transaction.RollbackAsync();
-                        return NotFound(new { message = "Refresh token not found" });
+                        return NotFound(new { message = "رمز التحديث غير موجود", errorCode = UserErrors.RefreshTokenInvalid.ToString() });
                     }
 
                     storedToken.IsRevoked = true;
@@ -617,7 +614,7 @@ namespace EgyptOnline.Controllers
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    return Ok(new { message = "Logout successful, refresh token revoked" });
+                    return Ok(new { message = "تم تسجيل الخروج بنجاح وإلغاء رمز التحديث" });
                 }
                 catch
                 {
@@ -628,7 +625,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in logout: {ex.Message}");
-                return StatusCode(500, new { message = "Error processing logout", errorMessage = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ أثناء معالجة تسجيل الخروج", errorCode = UserErrors.GeneralError.ToString() });
             }
         }
 
@@ -644,25 +641,25 @@ namespace EgyptOnline.Controllers
                 // Get authenticated user ID
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
                 if (string.IsNullOrEmpty(userId))
-                    return Unauthorized();
+                    return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                if (user == null) return NotFound();
+                if (user == null) return NotFound(new { message = "المستخدم غير موجود", errorCode = UserErrors.UserIsNotFound.ToString() });
 
                 try
                 {
                     var imageUrl = await _userImageService.UploadUserImageAsync(user, file);
-                    return Ok(new { Message = "Profile image uploaded successfully", ImageUrl = imageUrl });
+                    return Ok(new { message = "تم رفع صورة الملف الشخصي بنجاح", imageUrl });
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    return BadRequest(new { Message = ex.Message });
+                    return BadRequest(new { message = "فشل رفع صورة الملف الشخصي", errorCode = UserErrors.GeneralError.ToString() });
                 }
 
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error: " + ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = UserErrors.GeneralError.ToString() });
             }
         }
     }

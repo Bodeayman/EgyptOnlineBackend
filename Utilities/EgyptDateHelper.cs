@@ -3,7 +3,7 @@
 public static class EgyptTimeHelper
 {
     private static readonly TimeZoneInfo EgyptZone =
-        TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+        TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo");
 
     // ==================== DateTime Methods ====================
 
@@ -27,7 +27,7 @@ public static class EgyptTimeHelper
     public static DateTime NowInEgypt()
     {
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, EgyptZone);
-        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc);
+        return DateTime.SpecifyKind(localTime, DateTimeKind.Unspecified);
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ public static class EgyptTimeHelper
             throw new ArgumentException("DateTime must be in UTC", nameof(utcDateTime));
         }
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, EgyptZone);
-        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc);
+        return DateTime.SpecifyKind(localTime, DateTimeKind.Unspecified);
     }
 
     /// <summary>

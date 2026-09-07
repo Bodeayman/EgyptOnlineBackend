@@ -44,10 +44,14 @@ namespace EgyptOnline.Presentation.Controllers
         public async Task<IActionResult> FileComplaint([FromBody] FileComplaintDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
@@ -70,56 +74,47 @@ namespace EgyptOnline.Presentation.Controllers
                     }
                 });
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message, errorCode = "FORBIDDEN" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
         }
         */
 
         /*
-        /// <summary>
-        /// Get all complaints I have filed.
-        /// GET /api/v1/Complaint/my?pageNumber=1&pageSize=20
-        /// </summary>
         [HttpGet("my")]
         public async Task<IActionResult> GetMyComplaints(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
                 var complaints = await _service.GetMyComplaintsAsync(userId, pageNumber, pageSize);
                 return Ok(new { data = complaints, pageNumber, pageSize });
             }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
         }
 
-        /// <summary>
-        /// Get a single complaint by ID.
-        /// GET /api/v1/Complaint/{id}
-        /// </summary>
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
             try
             {
                 var complaint = await _service.GetByIdAsync(id);
-                if (complaint == null) return NotFound(new { message = "الشكوى غير موجودة" });
+                if (complaint == null) return NotFound(new { message = "الشكوى غير موجودة", errorCode = "COMPLAINT_NOT_FOUND" });
 
-                // Only the reporter can view their complaint (admin has its own endpoint)
                 if (complaint.ReporterUserId != userId)
-                    return StatusCode(403, new { message = "ليس لديك صلاحية عرض هذه الشكوى" });
+                    return StatusCode(403, new { message = "ليس لديك صلاحية عرض هذه الشكوى", errorCode = "FORBIDDEN" });
 
                 return Ok(new { data = complaint });
             }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
         }
         */
     }

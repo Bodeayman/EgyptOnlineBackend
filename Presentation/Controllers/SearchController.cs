@@ -420,7 +420,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SearchWorkers failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -467,7 +467,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SearchCompanies failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -514,7 +514,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SearchContractors failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -561,7 +561,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SearchMarketPlaces failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -608,7 +608,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SearchEngineers failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -655,7 +655,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SearchAssistants failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -702,7 +702,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SearchSculptors failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -729,7 +729,7 @@ namespace EgyptOnline.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "ReturnFirstProviders failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 

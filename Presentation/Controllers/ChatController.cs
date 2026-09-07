@@ -44,7 +44,7 @@ namespace EgyptOnline.Presentation.Controllers
             var currentUserId = User.FindFirst("uid")?.Value;
             if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized();
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             var messages = await _chatService.GetNewMessagesAsync(currentUserId, sinceUtc, pageSize);
@@ -57,7 +57,7 @@ namespace EgyptOnline.Presentation.Controllers
             var currentUserId = User.FindFirst("uid")?.Value;
             if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized();
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             var messages = await _chatService.GetConversationAsync(currentUserId, targetUserId, pageNumber, pageSize);

@@ -31,11 +31,9 @@ public class SubscriptionCheckerService : BackgroundService
                                     .ToListAsync(stoppingToken);
                 Console.WriteLine($"Checking {users.Count} users at {DateTime.UtcNow}");
 
-                var now = DateTime.UtcNow;
-
                 foreach (var user in users)
                 {
-                    if (user.Subscription.EndDate < now)
+                    if (user.Subscription.EndDate < DateTime.UtcNow)
                     {
                         // SUBSCRIPTION VALIDATION DISABLED
                         // Re-enable by uncommenting the block below

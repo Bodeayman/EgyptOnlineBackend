@@ -36,8 +36,8 @@ namespace EgyptOnline.Presentation.Controllers.V2
             {
                 return BadRequest(new
                 {
-                    message = "Validation failed",
-                    errorCode = "InvalidInput",
+                    message = "فشل التحقق من صحة البيانات",
+                    errorCode = "INVALID_INPUT",
                     errors = ModelState
                         .Where(x => x.Value!.Errors.Count > 0)
                         .ToDictionary(
@@ -50,7 +50,7 @@ namespace EgyptOnline.Presentation.Controllers.V2
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User ID not found in token", errorCode = "Unauthorized" });
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             try
@@ -60,11 +60,11 @@ namespace EgyptOnline.Presentation.Controllers.V2
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message, errorCode = "InvalidInput" });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_INPUT" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while creating the post", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -78,23 +78,14 @@ namespace EgyptOnline.Presentation.Controllers.V2
             try
             {
                 var result = await _postService.GetAllPostsAsync(pageNumber, pageSize);
-                return Ok(new
-                {
-                    data = result,
-                    pageNumber,
-                    pageSize
-                });
+                return Ok(new { data = result, pageNumber, pageSize });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving posts", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Get a single post by ID
-        /// GET /api/v2/posts/{id}
-        /// </summary>
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetPostById(int id)
         {
@@ -103,27 +94,23 @@ namespace EgyptOnline.Presentation.Controllers.V2
                 var result = await _postService.GetPostByIdAsync(id);
                 if (result == null)
                 {
-                    return NotFound(new { message = $"Post with ID {id} not found", errorCode = "NotFound" });
+                    return NotFound(new { message = $"المنشور بالمعرف {id} غير موجود", errorCode = "POST_NOT_FOUND" });
                 }
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving the post", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Delete a post by ID
-        /// DELETE /api/v2/posts/{id}
-        /// </summary>
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeletePost(int id)
         {
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User ID not found in token", errorCode = "Unauthorized" });
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             try
@@ -131,24 +118,20 @@ namespace EgyptOnline.Presentation.Controllers.V2
                 var success = await _postService.DeletePostAsync(id, userId);
                 if (!success)
                 {
-                    return NotFound(new { message = $"Post with ID {id} not found", errorCode = "NotFound" });
+                    return NotFound(new { message = $"المنشور بالمعرف {id} غير موجود", errorCode = "POST_NOT_FOUND" });
                 }
-                return Ok(new { message = "Post deleted successfully" });
+                return Ok(new { message = "تم حذف المنشور بنجاح" });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message, errorCode = "Forbidden" });
+                return StatusCode(403, new { message = ex.Message, errorCode = "FORBIDDEN" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while deleting the post", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Get posts created by the authenticated user
-        /// GET /api/v2/users/me/posts
-        /// </summary>
         [HttpGet("/api/v2/users/me/posts")]
         [HttpGet("me")]
         public async Task<IActionResult> GetMyPosts()
@@ -156,7 +139,7 @@ namespace EgyptOnline.Presentation.Controllers.V2
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User ID not found in token", errorCode = "Unauthorized" });
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             try
@@ -166,7 +149,7 @@ namespace EgyptOnline.Presentation.Controllers.V2
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving user posts", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
     }

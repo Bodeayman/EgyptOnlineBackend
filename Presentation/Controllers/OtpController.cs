@@ -28,26 +28,24 @@ namespace EgyptOnline.Controllers
         public async Task<IActionResult> RequestOtp([FromBody] OtpRequestDto request)
         {
             if (string.IsNullOrWhiteSpace(request.PhoneNumber))
-                return BadRequest(new { message = "Phone number is required" });
+                return BadRequest(new { message = "رقم الهاتف مطلوب", errorCode = "INVALID_INPUT" });
 
-            // Normalize to same format as registration: +2 + digits (e.g. 01012345678 -> +201012345678)
-            string phoneNumber = request.PhoneNumber.Trim();
-            if (!phoneNumber.StartsWith("+"))
-                phoneNumber = $"+2{phoneNumber}";
+            // Normalize to canonical +20XXXXXXXXXX format
+            string phoneNumber = EgyptOnline.Utilities.Helper.NormalizePhoneNumber(request.PhoneNumber.Trim());
 
             // Find user by phone (primary); optionally match email if provided
             var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
             if (user == null)
-                return NotFound(new { message = "User not found" });
+                return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
             if (!string.IsNullOrWhiteSpace(request.Email) && user.Email != request.Email)
-                return NotFound(new { message = "User not found" });
+                return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
 
             // OTP key is phone-based (email optional)
             string key = string.IsNullOrWhiteSpace(request.Email) ? phoneNumber : $"{request.Email}:{phoneNumber}";
 
             await _otpService.SendOtpAsync(key, false);
 
-            return Ok(new { message = "OTP sent successfully" });
+            return Ok(new { message = "تم إرسال رمز التحقق بنجاح" });
         }
 
         // ------------------ VERIFY OTP ------------------
@@ -58,24 +56,22 @@ namespace EgyptOnline.Controllers
         public async Task<IActionResult> ChangePassword([FromBody] OtpVerifyDto model)
         {
             if (string.IsNullOrWhiteSpace(model.PhoneNumber))
-                return BadRequest(new { message = "Phone number is required" });
+                return BadRequest(new { message = "رقم الهاتف مطلوب", errorCode = "INVALID_INPUT" });
 
-            string phoneNumber = model.PhoneNumber.Trim();
-            if (!phoneNumber.StartsWith("+"))
-                phoneNumber = $"+2{phoneNumber}";
+            string phoneNumber = EgyptOnline.Utilities.Helper.NormalizePhoneNumber(model.PhoneNumber.Trim());
 
             // OTP key: phone-only when email not used
             string key = string.IsNullOrWhiteSpace(model.Email) ? phoneNumber : $"{model.Email}:{phoneNumber}";
 
             bool isOtpValid = await _otpService.ValidateOtpAsync(key, model.Otp);
             if (!isOtpValid)
-                return BadRequest(new { message = "OTP invalid or expired" });
+                return BadRequest(new { message = "رمز التحقق غير صالح أو منتهي الصلاحية", errorCode = "OTP_INVALID" });
 
             var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
             if (user == null)
-                return NotFound(new { message = "User not found" });
+                return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
             if (!string.IsNullOrWhiteSpace(model.Email) && user.Email != model.Email)
-                return NotFound(new { message = "User not found" });
+                return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
 
             // Reset password
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -83,9 +79,9 @@ namespace EgyptOnline.Controllers
 
 
             if (!result.Succeeded)
-                return BadRequest(result.Errors);
+                return BadRequest(new { message = result.Errors.First().Description, errorCode = result.Errors.First().Code });
 
-            return Ok(new { message = "Password changed successfully" });
+            return Ok(new { message = "تم تغيير كلمة المرور بنجاح" });
         }
     }
         // ------------------ DTOs ------------------

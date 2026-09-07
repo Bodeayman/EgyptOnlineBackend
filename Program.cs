@@ -186,7 +186,8 @@ try
                 // safe generic message
                 var json = System.Text.Json.JsonSerializer.Serialize(new
                 {
-                    message = "An unexpected error occurred. Please contact support."
+                    message = "حدث خطأ غير متوقع. يرجى التواصل مع الدعم الفني.",
+                    errorCode = "INTERNAL_ERROR"
                 });
                 await context.Response.WriteAsync(json);
             });
@@ -216,7 +217,8 @@ try
                // return safe generic message to client
                var json = System.Text.Json.JsonSerializer.Serialize(new
                {
-                   message = "An unexpected error occurred. Please contact support."
+                   message = "حدث خطأ غير متوقع. يرجى التواصل مع الدعم الفني.",
+                   errorCode = "INTERNAL_ERROR"
                });
                await context.Response.WriteAsync(json);
            });

@@ -158,7 +158,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
         [HttpGet("payments/{userId}")]
@@ -169,7 +169,7 @@ namespace EgyptOnline.Controllers
             var paymentTransaction = await _context.PaymentTransactions.Where(pt => pt.UserId == userId).ToListAsync();
             if (paymentTransaction == null)
             {
-                return NotFound(new { message = "No payment transactions found for the specified user." });
+                return NotFound(new { message = "لم يتم العثور على معاملات دفع للمستخدم المحدد", errorCode = "PAYMENT_NOT_FOUND" });
             }
             return Ok(paymentTransaction);
         }
@@ -186,22 +186,22 @@ namespace EgyptOnline.Controllers
                     .FirstOrDefaultAsync(u => u.Id == userId);
 
                 if (user == null)
-                    return NotFound(new { message = "User not found" });
+                    return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
 
                 var roles = await _userManager.GetRolesAsync(user);
 
                 if (roles.Contains(Roles.Admin))
                 {
-                    return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟" });
+                    return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟", errorCode = "FORBIDDEN_OPERATION" });
                 }
 
                 if (dto.Points < 0)
                 {
-                    return BadRequest(new { message = "The points should be more than or equal 0" });
+                    return BadRequest(new { message = "يجب أن تكون النقاط 0 أو أكبر", errorCode = "INVALID_INPUT" });
                 }
                 if (dto.SubscriptionPoints < 0)
                 {
-                    return BadRequest(new { message = "The subscription points should be more than or equal 0" });
+                    return BadRequest(new { message = "يجب أن تكون نقاط الاشتراك 0 أو أكبر", errorCode = "INVALID_INPUT" });
                 }
 
                 if (dto.PhoneNumber != null)
@@ -211,12 +211,11 @@ namespace EgyptOnline.Controllers
                     {
                         return BadRequest(new
                         {
-                            success = false,
-                            message = "Validation failed",
-                            errorCode = "InvalidInput",
+                            message = "رقم الهاتف يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقماً",
+                            errorCode = UserErrors.InvalidPhoneNumber.ToString(),
                             errors = new
                             {
-                                PhoneNumber = "Phone number must start with 010, 011, 012, or 015 and be 11 digits long"
+                                PhoneNumber = "رقم الهاتف يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقماً"
                             }
                         });
                     }
@@ -225,7 +224,7 @@ namespace EgyptOnline.Controllers
                     {
                         return BadRequest(new
                         {
-                            message = "This phone is already in use",
+                            message = "رقم الهاتف مستخدم بالفعل",
                             errorCode = UserErrors.PhoneNumberAlreadyExists.ToString()
                         });
                     }
@@ -238,7 +237,7 @@ namespace EgyptOnline.Controllers
                     {
                         return BadRequest(new
                         {
-                            message = "This email is already in use",
+                            message = "البريد الإلكتروني مستخدم بالفعل",
                             errorCode = UserErrors.EmailAlreadyExists.ToString()
                         });
                     }
@@ -313,12 +312,12 @@ namespace EgyptOnline.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "User updated successfully" });
+                return Ok(new { message = "تم تحديث بيانات المستخدم بنجاح" });
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
         [HttpDelete("users/{userId}")]
@@ -336,12 +335,12 @@ namespace EgyptOnline.Controllers
                     .FirstOrDefaultAsync(u => u.Id == userId);
 
                 if (user == null)
-                    return NotFound(new { message = "User not found" });
+                    return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
 
                 var roles = await _userManager.GetRolesAsync(user);
                 if (roles.Contains(Roles.Admin))
                 {
-                    return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟" });
+                    return BadRequest(new { message = "انتا بتعمل اييييييييييييييه؟", errorCode = "FORBIDDEN_OPERATION" });
                 }
 
                 if (user.FirebaseTokens != null && user.FirebaseTokens.Any())
@@ -371,14 +370,14 @@ namespace EgyptOnline.Controllers
 
                 if (!result.Succeeded)
                 {
-                    return BadRequest(new { message = "Failed to delete user", errors = result.Errors.Select(e => e.Description) });
+                    return BadRequest(new { message = "فشل حذف المستخدم", errorCode = "DELETE_FAILED", errors = result.Errors.Select(e => e.Description) });
                 }
 
-                return Ok(new { message = "User deleted successfully" });
+                return Ok(new { message = "تم حذف المستخدم بنجاح" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal Server Error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
         // Admin login moved to AuthController for centralized authentication handling.
@@ -388,19 +387,19 @@ namespace EgyptOnline.Controllers
         public async Task<IActionResult> Logout([FromBody] RefreshRequest refreshRequest)
         {
             if (refreshRequest == null || string.IsNullOrEmpty(refreshRequest.RefreshToken))
-                return BadRequest("Refresh token is required");
+                return BadRequest(new { message = "رمز التحديث مطلوب", errorCode = "INVALID_INPUT" });
 
             var storedToken = await _context.RefreshTokens
                 .FirstOrDefaultAsync(t => t.Token == refreshRequest.RefreshToken);
 
             if (storedToken == null)
-                return NotFound(new { message = "Refresh token not found" });
+                return NotFound(new { message = "رمز التحديث غير موجود", errorCode = "REFRESH_TOKEN_NOT_FOUND" });
 
             storedToken.IsRevoked = true;
             storedToken.Revoked = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Logout successful, refresh token revoked" });
+            return Ok(new { message = "تم تسجيل الخروج بنجاح وإلغاء رمز التحديث" });
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -447,20 +446,20 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Approve or reject a KYC submission.
-        /// PUT /api/v1/Admin/kyc/{kycId}/review
-        /// Body: { "status": "approved" | "rejected" | "edit_required", "rejectionReason": "optional" }
-        /// </summary>
         [HttpPut("kyc/{kycId:int}/review")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> ReviewKyc(int kycId, [FromBody] ReviewKycDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -500,13 +499,13 @@ namespace EgyptOnline.Controllers
                     data = new { result.Id, result.UserId, result.Status, result.ReviewedAt, result.RejectionReason }
                 });
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
             catch (DbUpdateConcurrencyException)
             {
-                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة هذا الطلب بالفعل من قبل مسؤول آخر" });
+                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة هذا الطلب بالفعل من قبل مسؤول آخر", errorCode = "CONFLICT" });
             }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
 
         }
 
@@ -557,19 +556,20 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Review deposit request (Accept/Reject).
-        /// PUT /api/v1/Admin/deposits/{id}/review
-        /// </summary>
         [HttpPut("deposits/{id:int}/review")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> ReviewDeposit(int id, [FromBody] ReviewKycDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -611,13 +611,13 @@ namespace EgyptOnline.Controllers
                     }
                 });
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
             catch (DbUpdateConcurrencyException)
             {
-                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة طلب الإيداع بالفعل من قبل مسؤول آخر" });
+                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة طلب الإيداع بالفعل من قبل مسؤول آخر", errorCode = "CONFLICT" });
             }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
 
         }
 
@@ -665,19 +665,20 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Review withdrawal request (Accept/Reject).
-        /// PUT /api/v1/Admin/withdrawals/{id}/review
-        /// </summary>
         [HttpPut("withdrawals/{id:int}/review")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> ReviewWithdraw(int id, [FromBody] ReviewKycDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -719,13 +720,13 @@ namespace EgyptOnline.Controllers
                     }
                 });
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
             catch (DbUpdateConcurrencyException)
             {
-                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة طلب السحب بالفعل من قبل مسؤول آخر" });
+                return StatusCode(409, new { message = "عذراً، لقد تم تعديل حالة طلب السحب بالفعل من قبل مسؤول آخر", errorCode = "CONFLICT" });
             }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
 
         }
 
@@ -764,7 +765,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -772,12 +773,6 @@ namespace EgyptOnline.Controllers
         // Complaints
         // ═══════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// List all complaints — optionally filter by status and search.
-        /// GET /api/v1/Admin/complaints?status=open&pageNumber=1&pageSize=20&search=keyword
-        /// status options: open | under_review | resolved | rejected
-        /// search: searches in reason, description, reporter name, client name, provider name
-        /// </summary>
         [HttpGet("complaints")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> GetComplaints(
@@ -800,20 +795,20 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Review a complaint — change its status and optionally leave a note.
-        /// PUT /api/v1/Admin/complaints/{id}/review
-        /// Body: { "status": "under_review" | "resolved" | "rejected", "adminNote": "optional" }
-        /// </summary>
         [HttpPut("complaints/{id:int}/review")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> ReviewComplaint(int id, [FromBody] ReviewComplaintDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -833,10 +828,10 @@ namespace EgyptOnline.Controllers
                     }
                 });
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_INPUT" }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -909,14 +904,10 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Get detailed contract information for dispute resolution.
-        /// GET /api/v1/Admin/contracts/{id}/details
-        /// </summary>
         [HttpGet("contracts/{id:int}/details")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> GetContractDetails(int id)
@@ -929,7 +920,7 @@ namespace EgyptOnline.Controllers
                     .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (contract == null)
-                    return NotFound(new { message = "Contract not found" });
+                    return NotFound(new { message = "العقد غير موجود", errorCode = "CONTRACT_NOT_FOUND" });
 
                 // Get provider user by phone number
                 var providerUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
@@ -989,20 +980,20 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Override user balance for dispute resolution.
-        /// PUT /api/v1/Admin/users/{userId}/balance/override
-        /// Body: { "balanceType": "free" | "frozen", "amount": decimal, "operation": "add" | "deduct", "reason": string }
-        /// </summary>
         [HttpPut("users/{userId}/balance/override")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> OverrideUserBalance(string userId, [FromBody] OverrideBalanceDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -1020,25 +1011,26 @@ namespace EgyptOnline.Controllers
                     }
                 });
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
             catch (DbUpdateConcurrencyException)
             {
-                return StatusCode(409, new { message = "حدث تضارب أثناء تعديل الرصيد. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى" });
+                return StatusCode(409, new { message = "حدث تضارب أثناء تعديل الرصيد. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى", errorCode = "CONFLICT" });
             }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
 
         }
 
-        /// <summary>
-        /// Resolve contract dispute via Adjust & Resume.
-        /// POST /api/v1/Admin/contracts/{id}/resolve/adjust-resume
-        /// </summary>
         [HttpPost("contracts/{id}/resolve/adjust-resume")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> ResolveAdjustResume(int id, [FromBody] AdminAdjustResumeDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -1054,20 +1046,21 @@ namespace EgyptOnline.Controllers
 
                 return Ok(new { message = "تمت تسوية وتفعيل العقد بنجاح", data = contract });
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
         }
 
-        /// <summary>
-        /// Admin terminates a disputed contract.
-        /// POST /api/v1/Admin/contracts/{id}/terminate
-        /// </summary>
         [HttpPost("contracts/{id}/terminate")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> TerminateContract(int id, [FromBody] AdminTerminateContractDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -1140,20 +1133,21 @@ namespace EgyptOnline.Controllers
                     throw;
                 }
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
         }
 
-        /// <summary>
-        /// Admin sends a broadcast notification to all users.
-        /// POST /api/v1/Admin/broadcast-notification
-        /// </summary>
         [HttpPost("broadcast-notification")]
         [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> BroadcastNotification([FromBody] BroadcastNotificationDto dto)
+        public async Task<IActionResult> BroadcastNotificationToAllUsers([FromBody] BroadcastNotificationDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -1186,19 +1180,22 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Admin resumes a suspended contract.
-        /// POST /api/v1/Admin/contracts/{id}/resume
-        /// </summary>
+     
+
         [HttpPost("contracts/{id}/resume")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> ResumeContract(int id, [FromBody] AdminResumeContractDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -1295,9 +1292,9 @@ namespace EgyptOnline.Controllers
                     throw;
                 }
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (Exception ex) { return StatusCode(500, new { message = "Internal server error", error = ex.Message }); }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message, errorCode = "NOT_FOUND" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" }); }
+            catch (Exception ex) { return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" }); }
         }
     }
 

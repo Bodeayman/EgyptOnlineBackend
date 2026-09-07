@@ -46,7 +46,12 @@ namespace EgyptOnline.Presentation.Controllers
             CancellationToken ct)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var errors = ModelState
+                    .Where(x => x.Value!.Errors.Count > 0)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors });
+            }
 
             try
             {
@@ -55,19 +60,18 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (HttpRequestException ex)
             {
-                // Gemini API returned an error
                 return StatusCode(502, new
                 {
-                    message = "AI service is temporarily unavailable. Please try again.",
-                    detail = ex.Message
+                    message = "خدمة الذكاء الاصطناعي غير متاحة مؤقتاً. يرجى المحاولة لاحقاً.",
+                    errorCode = "AI_SERVICE_UNAVAILABLE"
                 });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new
                 {
-                    message = "An unexpected error occurred.",
-                    detail = ex.Message
+                    message = "حدث خطأ داخلي في الخادم",
+                    errorCode = "INTERNAL_ERROR"
                 });
             }
         }

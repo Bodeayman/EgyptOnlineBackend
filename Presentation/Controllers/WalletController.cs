@@ -30,7 +30,7 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var wallet = await _walletService.GetBalanceAsync(userId);
                 return Ok(new
@@ -46,7 +46,7 @@ namespace EgyptOnline.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -61,15 +61,15 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors = ModelState });
 
                 // Validate and upload receipt image
                 var receiptPath = await ValidateAndUploadReceiptAsync(dto.ReceiptImage, $"receipt_{userId}");
                 if (string.IsNullOrEmpty(receiptPath))
-                    return BadRequest(new { message = "فشل رفع صورة الإيصال" });
+                    return BadRequest(new { message = "فشل رفع صورة الإيصال", errorCode = "FILE_UPLOAD_FAILED" });
 
                 var request = await _walletService.SubmitDepositRequestAsync(
                     userId,
@@ -95,11 +95,11 @@ namespace EgyptOnline.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -113,10 +113,10 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors = ModelState });
 
                 var request = await _walletService.SubmitWithdrawRequestAsync(
                     userId,
@@ -141,11 +141,11 @@ namespace EgyptOnline.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -180,10 +180,10 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 if (!ModelState.IsValid)
-                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errors = ModelState });
+                    return BadRequest(new { message = "فشل التحقق من صحة البيانات", errorCode = "INVALID_INPUT", errors = ModelState });
 
                 var (fromWallet, toWallet) = await _walletService.TransferAsync(userId, dto.ToUserId, dto.Amount);
                 return Ok(new
@@ -194,11 +194,11 @@ namespace EgyptOnline.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -208,14 +208,14 @@ namespace EgyptOnline.Controllers
             try
             {
                 var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
 
                 var transactions = await _walletService.GetTransactionHistoryAsync(userId, pageNumber, pageSize);
                 return Ok(new { data = transactions, pageNumber, pageSize });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "خطأ في الخادم الداخلي", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 

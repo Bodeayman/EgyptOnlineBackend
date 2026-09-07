@@ -38,9 +38,8 @@ namespace EgyptOnline.Presentation.Controllers
             {
                 return BadRequest(new
                 {
-                    success = false,
-                    message = "Validation failed",
-                    errorCode = "InvalidInput",
+                    message = "فشل التحقق من صحة البيانات",
+                    errorCode = "INVALID_INPUT",
                     errors = ModelState
                         .Where(x => x.Value!.Errors.Count > 0)
                         .ToDictionary(
@@ -53,7 +52,7 @@ namespace EgyptOnline.Presentation.Controllers
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User ID not found in token", errorCode = "Unauthorized" });
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             try
@@ -63,11 +62,11 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message, errorCode = "InvalidInput" });
+                return BadRequest(new { message = ex.Message, errorCode = "INVALID_INPUT" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while creating the post", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
@@ -81,7 +80,7 @@ namespace EgyptOnline.Presentation.Controllers
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User ID not found in token", errorCode = "Unauthorized" });
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
             }
 
             try
@@ -91,15 +90,10 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving posts", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
 
-        /// <summary>
-        /// Get all posts from all users with author profile information
-        /// GET /api/v1/Post/all
-        /// Query params: pageNumber (default 1), pageSize (default 15)
-        /// </summary>
         [HttpGet("all")]
         public async Task<IActionResult> GetAllPosts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 15)
         {
@@ -110,7 +104,7 @@ namespace EgyptOnline.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving posts", error = ex.Message });
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
             }
         }
     }

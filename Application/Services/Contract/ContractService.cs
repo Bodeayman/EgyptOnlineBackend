@@ -33,22 +33,8 @@ namespace EgyptOnline.Application.Services.Contract
         }
 
         #region 2-Party Contract System (New Simplified Logic)
-        private string NormalizeEgyptianPhoneNumber(string phoneNumber)
-        {
-            if (string.IsNullOrWhiteSpace(phoneNumber))
-                return phoneNumber;
-
-            // Remove spaces and dashes
-            var cleaned = phoneNumber.Replace(" ", "").Replace("-", "");
-
-            // If it doesn't already start with +20, add it
-            if (!cleaned.StartsWith("+20"))
-            {
-                cleaned = "+2" + cleaned;
-            }
-
-            return cleaned;
-        }
+        private static string NormalizeEgyptianPhoneNumber(string phoneNumber)
+            => EgyptOnline.Utilities.Helper.NormalizePhoneNumber(phoneNumber);
         public async Task<ContractModel> CreateContractAsync(ContractModel contract, List<DateTime>? selectedDates = null, List<ContractDayModel>? contractDays = null)
         {
             var phoneNumberNormalized = NormalizeEgyptianPhoneNumber(contract.ServiceProviderPhoneNumber);
@@ -80,7 +66,7 @@ namespace EgyptOnline.Application.Services.Contract
                         if (contract.TotalDays <= 0)
                             throw new InvalidOperationException("عدد الأيام يجب أن يكون أكبر من صفر");
 
-                        var startDate = contract.StartDate == default ? DateTime.UtcNow.Date : contract.StartDate.Date;
+                        var startDate = contract.StartDate == default ? EgyptTimeHelper.TodayInEgypt().ToDateTime(TimeOnly.MinValue) : contract.StartDate.Date;
                         selectedDates = Enumerable.Range(0, contract.TotalDays)
                             .Select(i => startDate.AddDays(i))
                             .ToList();
@@ -923,9 +909,9 @@ namespace EgyptOnline.Application.Services.Contract
                 // Shift remaining days if newStartDate is provided
                 if (newStartDate.HasValue && newStartDate.Value != default(DateTime))
                 {
-                    var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+                    var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo");
                     DateTime startDateUtc;
-                    
+
                     if (newStartDate.Value.Kind == DateTimeKind.Utc)
                     {
                         startDateUtc = newStartDate.Value;
@@ -939,8 +925,10 @@ namespace EgyptOnline.Application.Services.Contract
                         startDateUtc = TimeZoneInfo.ConvertTimeToUtc(newStartDate.Value, egyptTimeZone);
                     }
 
-                    // Validate newStartDate is not in the past
-                    if (startDateUtc < DateTime.UtcNow.Date)
+                    // Validate newStartDate is not in the past (compare Egypt dates)
+                    var egyptToday = EgyptTimeHelper.TodayInEgypt().ToDateTime(TimeOnly.MinValue);
+                    var startDateEgypt = TimeZoneInfo.ConvertTimeFromUtc(startDateUtc, egyptTimeZone).Date;
+                    if (startDateEgypt < egyptToday)
                     {
                         throw new InvalidOperationException("تاريخ البدء الجديد يجب أن يكون في المستقبل أو اليوم الحالي على الأقل");
                     }

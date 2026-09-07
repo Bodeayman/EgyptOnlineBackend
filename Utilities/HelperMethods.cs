@@ -81,6 +81,36 @@ namespace EgyptOnline.Utilities
                 <= rangeSq
             );
         }
+        /// <summary>
+        /// Normalizes an Egyptian phone number to the canonical +20XXXXXXXXXX format.
+        /// Handles all three input variants (idempotent):
+        ///   01XXXXXXXXX   → +201XXXXXXXXX
+        ///   201XXXXXXXXX  → +201XXXXXXXXX
+        ///   +201XXXXXXXXX → +201XXXXXXXXX  (unchanged)
+        /// Also strips whitespace and dashes before normalizing.
+        /// </summary>
+        public static string NormalizePhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return phoneNumber;
+
+            var cleaned = phoneNumber.Replace(" ", "").Replace("-", "");
+
+            if (cleaned.StartsWith("+20"))
+                return cleaned;         // already canonical — do nothing
+
+            if (cleaned.StartsWith("20"))
+                return "+" + cleaned;   // e.g. 201143512531 → +201143512531
+
+            // Local format: 01XXXXXXXXX → +201XXXXXXXXX
+            // Strip the leading 0, then prepend +20
+            if (cleaned.StartsWith("0"))
+                return "+20" + cleaned.Substring(1);
+
+            // Unrecognised format — return as-is to avoid silent corruption
+            return cleaned;
+        }
+
         public static bool IsEmail(string input)
         {
             try
