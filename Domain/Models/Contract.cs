@@ -24,6 +24,7 @@ namespace EgyptOnline.Models
         // Mandatory Fields (User Input)
         [Required]
         public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         [Required]
         public TimeSpan ShiftStartTime { get; set; }
         public TimeSpan? ShiftEndTime { get; set; }

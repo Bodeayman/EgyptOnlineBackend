@@ -179,7 +179,12 @@ public class AutoPayoutBackgroundService : BackgroundService
             // Execute batch payment for Batch contracts
             if (contract.ContractType == ContractType.Batch)
             {
-                var batchAmount = contractDay.BatchAmount ?? contract.DailySalary;
+                if (!contractDay.BatchAmount.HasValue)
+                {
+                    Log.Error("BatchAmount is null for ContractDay {ContractDayId} in Contract {ContractId}. Skipping payout.", contractDay.Id, contract.Id);
+                    throw new InvalidOperationException($"مبلغ الدفعة غير محدد للدفعة رقم {contractDay.DayNumber} في العقد #{contract.Id}");
+                }
+                var batchAmount = contractDay.BatchAmount.Value;
                 await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, batchAmount);
 
                 if (providerUser != null)
@@ -211,22 +216,14 @@ public class AutoPayoutBackgroundService : BackgroundService
                 contract.Status = "completed";
                 contract.CompletedAt = DateTime.UtcNow;
 
-                if (contract.ContractType == ContractType.Batch && providerUser != null)
+                // Batch contracts: No additional payout at completion since each batch is paid individually
+                // EndOfDays contracts: Single lump payout of full TotalAmount at contract end
+                if (contract.ContractType == ContractType.EndOfDays && providerUser != null)
                 {
-                    // Batch contract: Pay out full TotalAmount to provider upon completion
+                    // EndOfDays contract: Pay the full TotalAmount (not derived from DailySalary)
                     await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, contract.TotalAmount);
                     await walletService.AddToFreeBalanceAsync(providerUser.Id, contract.TotalAmount);
-                }
-                else if (contract.ContractType == ContractType.EndOfDays && providerUser != null)
-                {
-                    // EndOfDays contract: Calculate earned amount for all worked/completed days
-                    var completedDaysCount = contract.ContractDays.Count(cd => cd.Status == ContractDayStatus.Completed);
-                    var earnedAmount = completedDaysCount * contract.DailySalary;
-                    if (earnedAmount > 0)
-                    {
-                        await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, earnedAmount);
-                        await walletService.AddToFreeBalanceAsync(providerUser.Id, earnedAmount);
-                    }
+                    Log.Information("Contract {ContractId} completed (EndOfDays). Paid full TotalAmount {Amount} to provider", contract.Id, contract.TotalAmount);
                 }
 
                 // Calculate remaining frozen balance for client (includes unused daily salary + client's penalty)
@@ -362,7 +359,9 @@ public class AutoPayoutBackgroundService : BackgroundService
         var incompleteContracts = await context.Contracts
             .Include(c => c.ContractDays)
             .Where(c => c.Status == "active" &&
-                        EgyptTimeHelper.ToEgyptDate(c.StartDate.AddDays(c.TotalDays - 1)) < egyptToday)
+                        (c.ContractType == ContractType.EndOfDays
+                            ? (c.EndDate.HasValue && EgyptTimeHelper.ToEgyptDate(c.EndDate.Value) < egyptToday)
+                            : EgyptTimeHelper.ToEgyptDate(c.StartDate.AddDays(c.TotalDays - 1)) < egyptToday))
             .ToListAsync(stoppingToken);
 
         foreach (var contract in incompleteContracts)
@@ -394,13 +393,10 @@ public class AutoPayoutBackgroundService : BackgroundService
 
             if (contract.ContractType == ContractType.EndOfDays && providerUser != null)
             {
-                var completedDaysCount = contract.ContractDays.Count(cd => cd.Status == ContractDayStatus.Completed);
-                var earnedAmount = completedDaysCount * contract.DailySalary;
-                if (earnedAmount > 0)
-                {
-                    await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, earnedAmount);
-                    await walletService.AddToFreeBalanceAsync(providerUser.Id, earnedAmount);
-                }
+                // EndOfDays contract: Pay the full TotalAmount (not derived from DailySalary)
+                await walletService.SubtractFromFrozenBalanceAsync(contract.ClientUserId, contract.TotalAmount);
+                await walletService.AddToFreeBalanceAsync(providerUser.Id, contract.TotalAmount);
+                Log.Information("Contract {ContractId} auto-completed (EndOfDays). Paid full TotalAmount {Amount} to provider", contract.Id, contract.TotalAmount);
             }
 
             // Batch contracts: No additional payout at completion since each batch is paid individually
@@ -509,12 +505,17 @@ public class AutoPayoutBackgroundService : BackgroundService
                     // Send 24h notification if we're within the notification window
                     if (currentEgyptTime >= notificationTime && currentEgyptTime < contractDayEgyptLocal)
                     {
+                        if (!contractDay.BatchAmount.HasValue)
+                        {
+                            Log.Warning("BatchAmount is null for ContractDay {ContractDayId} in Contract {ContractId}. Skipping notification.", contractDay.Id, contract.Id);
+                            continue;
+                        }
                         try
                         {
                             await notificationService.SendNotificationToUser(
                                 contract.ClientUserId,
                                 "سيتم تسليم الدفعة خلال 24 ساعة",
-                                $"سيتم تسليم دفعة {contractDay.BatchAmount ?? contract.DailySalary} جنيه عن الدفعة رقم {contractDay.DayNumber} من العقد #{contract.Id} خلال 24 ساعة",
+                                $"سيتم تسليم دفعة {contractDay.BatchAmount.Value} جنيه عن الدفعة رقم {contractDay.DayNumber} من العقد #{contract.Id} خلال 24 ساعة",
                                 "contract",
                                 providerUser.Id,
                                 $"{providerUser.FirstName} {providerUser.LastName}"
@@ -532,8 +533,13 @@ public class AutoPayoutBackgroundService : BackgroundService
             // EndOfDays contracts: 48h and 24h notifications before contract end
             if (contract.ContractType == ContractType.EndOfDays)
             {
-                var contractEndDate = contract.StartDate.AddDays(contract.TotalDays - 1);
-                var contractEndEgyptLocal = TimeZoneInfo.ConvertTimeFromUtc(contract.StartDate, egyptTimeZone).Date.AddDays(contract.TotalDays - 1);
+                if (!contract.EndDate.HasValue)
+                {
+                    Log.Warning("Contract {ContractId} is EndOfDays type but has no EndDate. Skipping notifications.", contract.Id);
+                    continue;
+                }
+
+                var contractEndEgyptLocal = TimeZoneInfo.ConvertTimeFromUtc(contract.EndDate.Value, egyptTimeZone).Date;
 
                 var notification48hTime = contractEndEgyptLocal.AddHours(-48);
                 var notification24hTime = contractEndEgyptLocal.AddHours(-24);

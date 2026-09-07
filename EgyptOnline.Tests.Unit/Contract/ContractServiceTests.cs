@@ -695,24 +695,26 @@ public class ContractTypeTests : UnitTestBase
     }
 
     [Fact]
-    public async Task CreateContract_EndOfDays_NoContractDaysCreated()
+    public async Task CreateContract_EndOfDays_UsesEndDateAndTotalAmount()
     {
-        await SeedUser("client-eod-new", "+201600000001", walletBalance: 4000);
+        await SeedUser("client-eod-new", "+201600000001", walletBalance: 5000);
         await SeedUser("provider-eod-new", "+201600000002");
 
         var svc = BuildService();
         var startDate = new DateTime(2026, 9, 10, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = new DateTime(2026, 9, 13, 0, 0, 0, DateTimeKind.Utc);
 
         var contract = new Models.Contract
         {
             ClientUserId = "client-eod-new",
             ServiceProviderPhoneNumber = "+201600000002",
-            DailySalary = 300,
-            TotalDays = 4,
-            TotalAmount = 1200,
+            DailySalary = 0, // Not used for EndOfDays
+            TotalDays = 0, // Calculated from StartDate and EndDate
+            TotalAmount = 5000, // Full contract amount
             PenaltyAmount = 0,
             ContractType = ContractType.EndOfDays,
             StartDate = startDate,
+            EndDate = endDate,
             ShiftStartTime = TimeSpan.FromHours(8),
             Governorate = "Cairo", City = "Cairo", District = "Maadi"
         };
@@ -720,13 +722,20 @@ public class ContractTypeTests : UnitTestBase
         var result = await svc.CreateContractAsync(contract, null);
 
         Assert.Equal(ContractType.EndOfDays, result.ContractType);
-        Assert.Equal(4, result.TotalDays);
+        Assert.Equal(5000, result.TotalAmount);
+        Assert.Equal(0, result.DailySalary);
+        Assert.Equal(4, result.TotalDays); // 4 days from Sep 10 to Sep 13 inclusive
 
         var days = await Context.ContractDays
             .Where(cd => cd.ContractId == result.Id)
+            .OrderBy(cd => cd.DayNumber)
             .ToListAsync();
 
-        Assert.Empty(days); // EndOfDays should not create ContractDay records
+        Assert.Equal(4, days.Count); // EndOfDays now creates ContractDay records for attendance tracking
+        Assert.Equal(new DateTime(2026, 9, 10, 0, 0, 0, DateTimeKind.Utc), days[0].Date);
+        Assert.Equal(new DateTime(2026, 9, 11, 0, 0, 0, DateTimeKind.Utc), days[1].Date);
+        Assert.Equal(new DateTime(2026, 9, 12, 0, 0, 0, DateTimeKind.Utc), days[2].Date);
+        Assert.Equal(new DateTime(2026, 9, 13, 0, 0, 0, DateTimeKind.Utc), days[3].Date);
     }
 
     [Fact]
@@ -779,7 +788,7 @@ public class ContractTypeTests : UnitTestBase
     }
 
     [Fact]
-    public async Task CreateContract_Batch_BatchAmountsDontMatchTotal_ThrowsException()
+    public async Task CreateContract_Batch_TotalAmountSetFromBatchAmounts()
     {
         await SeedUser("client-batch-invalid", "+201500000001", walletBalance: 5000);
         await SeedUser("provider-batch-invalid", "+201500000002");
@@ -800,7 +809,43 @@ public class ContractTypeTests : UnitTestBase
             ServiceProviderPhoneNumber = "+201500000002",
             DailySalary = 0,
             TotalDays = 2,
-            TotalAmount = 4000, // Doesn't match sum of batch amounts (3000)
+            TotalAmount = 4000, // This value will be overridden by the sum of BatchAmount (3000)
+            PenaltyAmount = 0,
+            ContractType = ContractType.Batch,
+            StartDate = batchDate1,
+            ShiftStartTime = TimeSpan.FromHours(9),
+            Governorate = "Cairo", City = "Cairo", District = "Giza"
+        };
+
+        var result = await svc.CreateContractAsync(contract, null, contractDays);
+
+        // Verify that TotalAmount was set from the sum of BatchAmount (3000), not the initial value (4000)
+        Assert.Equal(3000, result.TotalAmount);
+    }
+
+    [Fact]
+    public async Task CreateContract_Batch_NullBatchAmount_ThrowsException()
+    {
+        await SeedUser("client-batch-null", "+201700000001", walletBalance: 5000);
+        await SeedUser("provider-batch-null", "+201700000002");
+
+        var svc = BuildService();
+        var batchDate1 = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+        var batchDate2 = new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc);
+
+        var contractDays = new List<ContractDay>
+        {
+            new ContractDay { DayNumber = 1, Date = batchDate1, BatchAmount = null }, // Missing BatchAmount
+            new ContractDay { DayNumber = 2, Date = batchDate2, BatchAmount = 2000 }
+        };
+
+        var contract = new Models.Contract
+        {
+            ClientUserId = "client-batch-null",
+            ServiceProviderPhoneNumber = "+201700000002",
+            DailySalary = 0,
+            TotalDays = 2,
+            TotalAmount = 2000,
             PenaltyAmount = 0,
             ContractType = ContractType.Batch,
             StartDate = batchDate1,
@@ -809,5 +854,155 @@ public class ContractTypeTests : UnitTestBase
         };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateContractAsync(contract, null, contractDays));
+    }
+
+    [Fact]
+    public async Task CreateContract_Batch_ZeroBatchAmount_ThrowsException()
+    {
+        await SeedUser("client-batch-zero", "+201800000001", walletBalance: 5000);
+        await SeedUser("provider-batch-zero", "+201800000002");
+
+        var svc = BuildService();
+        var batchDate1 = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+        var batchDate2 = new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc);
+
+        var contractDays = new List<ContractDay>
+        {
+            new ContractDay { DayNumber = 1, Date = batchDate1, BatchAmount = 0 }, // Invalid BatchAmount
+            new ContractDay { DayNumber = 2, Date = batchDate2, BatchAmount = 2000 }
+        };
+
+        var contract = new Models.Contract
+        {
+            ClientUserId = "client-batch-zero",
+            ServiceProviderPhoneNumber = "+201800000002",
+            DailySalary = 0,
+            TotalDays = 2,
+            TotalAmount = 2000,
+            PenaltyAmount = 0,
+            ContractType = ContractType.Batch,
+            StartDate = batchDate1,
+            ShiftStartTime = TimeSpan.FromHours(9),
+            Governorate = "Cairo", City = "Cairo", District = "Giza"
+        };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateContractAsync(contract, null, contractDays));
+    }
+
+    [Fact]
+    public async Task AdminAdjustAndResumeAsync_BatchContract_UsesBatchAmount()
+    {
+        await SeedUser("client-batch-adjust", "+201900000001", walletBalance: 5000);
+        await SeedUser("provider-batch-adjust", "+201900000002");
+
+        var svc = BuildService();
+        var batchDate1 = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+        var batchDate2 = new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc);
+        var batchDate3 = new DateTime(2026, 9, 25, 0, 0, 0, DateTimeKind.Utc);
+
+        var contractDays = new List<ContractDay>
+        {
+            new ContractDay { DayNumber = 1, Date = batchDate1, BatchAmount = 1000 },
+            new ContractDay { DayNumber = 2, Date = batchDate2, BatchAmount = 1500 },
+            new ContractDay { DayNumber = 3, Date = batchDate3, BatchAmount = 2000 }
+        };
+
+        var contract = new Models.Contract
+        {
+            ClientUserId = "client-batch-adjust",
+            ServiceProviderPhoneNumber = "+201900000002",
+            DailySalary = 0,
+            TotalDays = 3,
+            TotalAmount = 4500,
+            PenaltyAmount = 0,
+            ContractType = ContractType.Batch,
+            StartDate = batchDate1,
+            ShiftStartTime = TimeSpan.FromHours(9),
+            Governorate = "Cairo", City = "Cairo", District = "Giza"
+        };
+
+        var result = await svc.CreateContractAsync(contract, null, contractDays);
+        result.Status = "active";
+        await Context.SaveChangesAsync();
+
+        // Adjust and resume with 2 days worked (should sum BatchAmount of first 2 days: 1000 + 1500 = 2500)
+        var adminUserId = "admin-user";
+        await SeedUser(adminUserId, "+209900000001");
+
+        var adjustedContract = await svc.AdminAdjustAndResumeAsync(
+            result.Id,
+            daysWorked: 2,
+            direction: "client_to_worker",
+            newStartDate: null,
+            adminUserId: adminUserId,
+            comment: "Test adjustment"
+        );
+
+        Assert.Equal("active", adjustedContract.Status);
+
+        // Verify the first 2 days are marked as processed
+        var processedDays = await Context.ContractDays
+            .Where(cd => cd.ContractId == result.Id && cd.IsProcessed)
+            .OrderBy(cd => cd.DayNumber)
+            .ToListAsync();
+
+        Assert.Equal(2, processedDays.Count);
+        Assert.Equal(ContractDayStatus.Completed, processedDays[0].Status);
+        Assert.Equal(ContractDayStatus.Completed, processedDays[1].Status);
+    }
+
+    [Fact]
+    public async Task AdminAdjustAndResumeAsync_EndOfDaysContract_UsesProportionalTotalAmount()
+    {
+        await SeedUser("client-eod-adjust", "+202000000001", walletBalance: 10000);
+        await SeedUser("provider-eod-adjust", "+202000000002");
+
+        var svc = BuildService();
+        var startDate = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = new DateTime(2026, 9, 18, 0, 0, 0, DateTimeKind.Utc);
+
+        var contract = new Models.Contract
+        {
+            ClientUserId = "client-eod-adjust",
+            ServiceProviderPhoneNumber = "+202000000002",
+            DailySalary = 0,
+            TotalDays = 0,
+            TotalAmount = 8000,
+            PenaltyAmount = 0,
+            ContractType = ContractType.EndOfDays,
+            StartDate = startDate,
+            EndDate = endDate,
+            ShiftStartTime = TimeSpan.FromHours(9),
+            Governorate = "Cairo", City = "Cairo", District = "Giza"
+        };
+
+        var result = await svc.CreateContractAsync(contract, null);
+        result.Status = "active";
+        await Context.SaveChangesAsync();
+
+        // Adjust and resume with 2 days worked (should pay 2/4 of TotalAmount: 8000 * 2/4 = 4000)
+        var adminUserId = "admin-user-eod";
+        await SeedUser(adminUserId, "+209999999999");
+
+        var adjustedContract = await svc.AdminAdjustAndResumeAsync(
+            result.Id,
+            daysWorked: 2,
+            direction: "client_to_worker",
+            newStartDate: null,
+            adminUserId: adminUserId,
+            comment: "Test EndOfDays adjustment"
+        );
+
+        Assert.Equal("active", adjustedContract.Status);
+
+        // Verify the first 2 days are marked as processed
+        var processedDays = await Context.ContractDays
+            .Where(cd => cd.ContractId == result.Id && cd.IsProcessed)
+            .OrderBy(cd => cd.DayNumber)
+            .ToListAsync();
+
+        Assert.Equal(2, processedDays.Count);
+        Assert.Equal(ContractDayStatus.Completed, processedDays[0].Status);
+        Assert.Equal(ContractDayStatus.Completed, processedDays[1].Status);
     }
 }

@@ -74,6 +74,35 @@ namespace EgyptOnline.Controllers
                     startDate = EgyptTimeHelper.ToUtc(tomorrowInEgypt.ToDateTime(TimeOnly.MinValue));
                 }
 
+                // Handle EndDate for EndOfDays contracts
+                DateTime? endDate = null;
+                if (dto.ContractType == ContractType.EndOfDays)
+                {
+                    if (!dto.EndDate.HasValue || dto.EndDate.Value == default(DateTime))
+                    {
+                        return BadRequest(new { message = "تاريخ الانتهاء مطلوب لعقود نهاية الأيام", errorCode = "INVALID_INPUT" });
+                    }
+
+                    if (dto.EndDate.Value.Kind == DateTimeKind.Utc)
+                    {
+                        endDate = dto.EndDate.Value;
+                    }
+                    else if (dto.EndDate.Value.Kind == DateTimeKind.Local)
+                    {
+                        endDate = TimeZoneInfo.ConvertTimeToUtc(dto.EndDate.Value);
+                    }
+                    else
+                    {
+                        endDate = TimeZoneInfo.ConvertTimeToUtc(dto.EndDate.Value, egyptTimeZone);
+                    }
+
+                    // Validate EndDate is after StartDate
+                    if (endDate.Value <= startDate.Date)
+                    {
+                        return BadRequest(new { message = "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء", errorCode = "INVALID_INPUT" });
+                    }
+                }
+
                 // Support explicit SelectedDates list for PerDay and Batch contract types
                 List<DateTime>? selectedDates = null;
                 if (dto.SelectedDates != null && dto.SelectedDates.Count > 0)
@@ -97,16 +126,53 @@ namespace EgyptOnline.Controllers
                     ? dto.ShiftEndTime.Value
                     : TimeSpan.FromHours(22); // 10 PM default
 
+                // Calculate TotalAmount based on contract type
+                int totalAmount;
+                int dailySalary = 0;
+                if (dto.ContractType == ContractType.Batch)
+                {
+                    // For Batch contracts, the service will validate that TotalAmount matches sum of BatchAmount
+                    totalAmount = 0;
+                    dailySalary = 0;
+                }
+                else if (dto.ContractType == ContractType.EndOfDays)
+                {
+                    // For EndOfDays contracts, TotalAmount is the full contract amount (not derived from DailySalary)
+                    if (!dto.TotalAmount.HasValue || dto.TotalAmount.Value <= 0)
+                    {
+                        return BadRequest(new { message = "المبلغ الإجمالي مطلوب لعقود نهاية الأيام", errorCode = "INVALID_INPUT" });
+                    }
+                    totalAmount = (int)dto.TotalAmount.Value;
+                    dailySalary = 0;
+                    // Calculate TotalDays from StartDate and EndDate
+                    totalDays = (int)((endDate.Value.Date - startDate.Date).Days) + 1;
+                }
+                else
+                {
+                    // For PerDay contracts, TotalAmount is calculated from DailySalary
+                    if (!dto.DailySalary.HasValue || dto.DailySalary.Value <= 0)
+                    {
+                        return BadRequest(new { message = "الأجر اليومي مطلوب", errorCode = "INVALID_INPUT" });
+                    }
+                    if (!totalDays.HasValue || totalDays.Value <= 0)
+                    {
+                        return BadRequest(new { message = "عدد الأيام مطلوب", errorCode = "INVALID_INPUT" });
+                    }
+                    totalAmount = (int)(dto.DailySalary.Value * totalDays.Value);
+                    dailySalary = (int)dto.DailySalary.Value;
+                }
+
                 var contract = new Contract
                 {
                     ClientUserId = userId,
                     ServiceProviderPhoneNumber = dto.ServiceProviderPhoneNumber,
                     StartDate = startDate,
+                    EndDate = endDate,
                     ShiftStartTime = shiftStartTime,
                     ShiftEndTime = shiftEndTime,
-                    TotalDays = totalDays,
-                    DailySalary = (int)dto.DailySalary,
-                    TotalAmount = (int)(dto.DailySalary * totalDays),
+                    TotalDays = totalDays ?? 0,
+                    DailySalary = dailySalary,
+                    TotalAmount = totalAmount,
                     PenaltyAmount = (int)dto.PenaltyAmount,
                     ContractType = dto.ContractType,
                     Governorate = dto.Governorate,
@@ -121,6 +187,16 @@ namespace EgyptOnline.Controllers
                 List<ContractDayModel>? contractDays = null;
                 if (dto.ContractDays != null && dto.ContractDays.Count > 0)
                 {
+                    // For Batch contracts, validate that all days have BatchAmount set
+                    if (dto.ContractType == ContractType.Batch)
+                    {
+                        var missingAmountDays = dto.ContractDays.Where(d => d.BatchAmount <= 0).ToList();
+                        if (missingAmountDays.Any())
+                        {
+                            return BadRequest(new { message = $"جميع الدفعات يجب أن تحتوي على مبلغ محدد. الأيام التالية لا تحتوي على مبالغ صالحة: {string.Join(", ", missingAmountDays.Select(d => d.DayNumber))}", errorCode = "INVALID_BATCH_AMOUNT" });
+                        }
+                    }
+
                     contractDays = dto.ContractDays.Select(d => new ContractDayModel
                     {
                         DayNumber = d.DayNumber,
@@ -379,13 +455,11 @@ namespace EgyptOnline.Controllers
         [Required(ErrorMessage = "رقم موبايل مقدم الخدمة مطلوب")]
         public string ServiceProviderPhoneNumber { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "عدد الأيام مطلوب")]
-        [Range(1, int.MaxValue, ErrorMessage = "عدد الأيام يجب أن يكون 1 على الأقل")]
-        public int TotalDays { get; set; }
+        public int? TotalDays { get; set; }
 
-        [Required(ErrorMessage = "الأجر اليومي مطلوب")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "الأجر اليومي يجب أن يكون أكبر من صفر")]
-        public decimal DailySalary { get; set; }
+        public decimal? DailySalary { get; set; }
+
+        public decimal? TotalAmount { get; set; }
 
         [Required(ErrorMessage = "مبلغ الشرط الجزائي مطلوب")]
         [Range(0.0, double.MaxValue, ErrorMessage = "الشرط الجزائي يجب أن يكون 0 أو أكبر")]
@@ -409,6 +483,7 @@ namespace EgyptOnline.Controllers
         public List<ContractDayDto>? ContractDays { get; set; }
 
         public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public TimeSpan? ShiftStartTime { get; set; }
         public TimeSpan? ShiftEndTime { get; set; }
     }

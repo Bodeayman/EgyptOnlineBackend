@@ -1246,8 +1246,12 @@ namespace EgyptOnline.Controllers
                             contract.TotalAmount += adjustment;
                         }
 
-                        // Recalculate daily salary
-                        contract.DailySalary = contract.TotalDays > 0 ? contract.TotalAmount / contract.TotalDays : contract.DailySalary;
+                        // Recalculate daily salary only for PerDay and EndOfDays contracts
+                        // Batch contracts use explicit BatchAmount values and should not recalculate DailySalary
+                        if (contract.ContractType != ContractType.Batch)
+                        {
+                            contract.DailySalary = contract.TotalDays > 0 ? contract.TotalAmount / contract.TotalDays : contract.DailySalary;
+                        }
                     }
 
                     // Resolve related open complaints

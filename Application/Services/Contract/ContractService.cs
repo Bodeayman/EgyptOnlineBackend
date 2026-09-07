@@ -78,17 +78,41 @@ namespace EgyptOnline.Application.Services.Contract
                 case ContractType.Batch:
                     if (contractDays == null || contractDays.Count == 0)
                         throw new InvalidOperationException("يجب تحديد الدفعات لعقود الدفع الدفعي");
+
+                    // Validate that all batch days have explicit BatchAmount set
+                    var missingAmountDays = contractDays.Where(cd => !cd.BatchAmount.HasValue || cd.BatchAmount.Value <= 0).ToList();
+                    if (missingAmountDays.Any())
+                    {
+                        throw new InvalidOperationException($"جميع الدفعات يجب أن تحتوي على مبلغ محدد. الأيام التالية لا تحتوي على مبالغ صالحة: {string.Join(", ", missingAmountDays.Select(cd => cd.DayNumber))}");
+                    }
+
                     var totalBatchAmount = contractDays.Sum(cd => cd.BatchAmount ?? 0);
-                    if (totalBatchAmount != contract.TotalAmount)
-                        throw new InvalidOperationException($"مجموع مبالغ الدفعات ({totalBatchAmount}) لا يساوي إجمالي العقد ({contract.TotalAmount})");
+                    // Set TotalAmount from the sum of BatchAmount values (don't rely on controller-provided value)
+                    contract.TotalAmount = totalBatchAmount;
                     contract.TotalDays = contractDays.Count;
                     contract.StartDate = contractDays.OrderBy(cd => cd.Date).First().Date;
                     break;
 
                 case ContractType.EndOfDays:
-                    // No ContractDay records for payment, single payment at end
+                    // EndOfDays contracts use StartDate and EndDate to define the period
+                    // TotalAmount is the full contract amount paid at the end
+                    if (!contract.EndDate.HasValue)
+                        throw new InvalidOperationException("تاريخ الانتهاء مطلوب لعقود نهاية الأيام");
+
+                    if (contract.EndDate.Value <= contract.StartDate.Date)
+                        throw new InvalidOperationException("تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء");
+
+                    // Calculate TotalDays from StartDate and EndDate (inclusive)
+                    contract.TotalDays = (int)((contract.EndDate.Value.Date - contract.StartDate.Date).Days) + 1;
+
                     if (contract.TotalDays <= 0)
                         throw new InvalidOperationException("عدد الأيام يجب أن يكون أكبر من صفر");
+
+                    if (contract.TotalAmount <= 0)
+                        throw new InvalidOperationException("المبلغ الإجمالي يجب أن يكون أكبر من صفر");
+
+                    // DailySalary is not used for EndOfDays contracts
+                    contract.DailySalary = 0;
                     break;
 
                 default:
@@ -144,7 +168,23 @@ namespace EgyptOnline.Application.Services.Contract
                         break;
 
                     case ContractType.EndOfDays:
-                        // No ContractDay records for payment - single payment at contract end
+                        // Generate per-day records from StartDate through EndDate for attendance tracking
+                        // Payment is a single lump sum of TotalAmount at contract end
+                        var endOfDaysDays = new List<ContractDayModel>();
+                        for (int i = 0; i < contract.TotalDays; i++)
+                        {
+                            var dayDate = contract.StartDate.Date.AddDays(i);
+                            endOfDaysDays.Add(new ContractDayModel
+                            {
+                                ContractId = contract.Id,
+                                DayNumber = i + 1,
+                                Date = DateTime.SpecifyKind(dayDate, DateTimeKind.Utc),
+                                ProviderArrived = false,
+                                Status = ContractDayStatus.Pending,
+                                IsProcessed = false
+                            });
+                        }
+                        _context.ContractDays.AddRange(endOfDaysDays);
                         break;
                 }
 
@@ -634,6 +674,7 @@ namespace EgyptOnline.Application.Services.Contract
                 contract.ClientUserId,
                 contract.ServiceProviderPhoneNumber,
                 contract.StartDate,
+                contract.EndDate,
                 contract.ShiftStartTime,
                 contract.ShiftEndTime,
                 contract.TotalDays,
@@ -666,7 +707,7 @@ namespace EgyptOnline.Application.Services.Contract
 
             if (includeDays)
             {
-                var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+                var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo");
                 var contractDaysWithEgyptTime = contract.ContractDays
                     .OrderBy(cd => cd.DayNumber)
                     .Select(cd => new
@@ -683,7 +724,8 @@ namespace EgyptOnline.Application.Services.Contract
                         ProcessedAt = cd.ProcessedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ProcessedAt.Value, egyptTimeZone) : (DateTime?)null,
                         ArrivalTime = cd.ArrivalTime.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ArrivalTime.Value, egyptTimeZone) : (DateTime?)null,
                         DisputeReportedAt = cd.DisputeReportedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.DisputeReportedAt.Value, egyptTimeZone) : (DateTime?)null,
-                        cd.DisputeReason
+                        cd.DisputeReason,
+                        cd.BatchAmount
                     }).ToList();
 
                 return new
@@ -758,6 +800,7 @@ namespace EgyptOnline.Application.Services.Contract
                     contract.ClientUserId,
                     contract.ServiceProviderPhoneNumber,
                     contract.StartDate,
+                    contract.EndDate,
                     contract.ShiftStartTime,
                     contract.ShiftEndTime,
                     contract.TotalDays,
@@ -807,7 +850,8 @@ namespace EgyptOnline.Application.Services.Contract
                             ProcessedAt = cd.ProcessedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ProcessedAt.Value, egyptTimeZone) : (DateTime?)null,
                             ArrivalTime = cd.ArrivalTime.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.ArrivalTime.Value, egyptTimeZone) : (DateTime?)null,
                             DisputeReportedAt = cd.DisputeReportedAt.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(cd.DisputeReportedAt.Value, egyptTimeZone) : (DateTime?)null,
-                            cd.DisputeReason
+                            cd.DisputeReason,
+                            cd.BatchAmount
                         }).ToList();
 
                     result.Add(new
@@ -816,6 +860,7 @@ namespace EgyptOnline.Application.Services.Contract
                         contractResult.ClientUserId,
                         contractResult.ServiceProviderPhoneNumber,
                         contractResult.StartDate,
+                        contractResult.EndDate,
                         contractResult.ShiftStartTime,
                         contractResult.ShiftEndTime,
                         contractResult.TotalDays,
@@ -868,10 +913,36 @@ namespace EgyptOnline.Application.Services.Contract
                 ?? throw new InvalidOperationException("مقدم الخدمة غير موجود");
 
             // Count only the days within the completed range that have not been paid yet
-            var unpaidDaysCount = contract.ContractDays
-                .Count(cd => cd.DayNumber <= daysWorked && !cd.IsProcessed);
-            
-            var adjustmentAmount = unpaidDaysCount * contract.DailySalary;
+            var unpaidDays = contract.ContractDays
+                .Where(cd => cd.DayNumber <= daysWorked && !cd.IsProcessed)
+                .ToList();
+
+            int adjustmentAmount;
+            if (contract.ContractType == ContractType.Batch)
+            {
+                // For Batch contracts, sum the explicit BatchAmount values
+                adjustmentAmount = unpaidDays.Sum(cd => cd.BatchAmount ?? 0);
+                if (adjustmentAmount == 0)
+                    throw new InvalidOperationException("مبالغ الدفعات غير محددة للأيام المستلمة");
+            }
+            else if (contract.ContractType == ContractType.EndOfDays)
+            {
+                // For EndOfDays contracts, calculate proportional amount based on TotalAmount
+                // The full TotalAmount is paid at the end, but for adjustments we calculate proportionally
+                if (contract.TotalDays > 0)
+                {
+                    adjustmentAmount = (int)((contract.TotalAmount * unpaidDays.Count) / contract.TotalDays);
+                }
+                else
+                {
+                    throw new InvalidOperationException("عدد الأيام في العقد غير صالح");
+                }
+            }
+            else
+            {
+                // For PerDay contracts, use DailySalary
+                adjustmentAmount = unpaidDays.Count * contract.DailySalary;
+            }
 
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -893,11 +964,7 @@ namespace EgyptOnline.Application.Services.Contract
 
                     // ── CRITICAL: stamp every settled day as processed so the
                     // AutoPayoutBackgroundService never pays them a second time. ──
-                    var settledDays = contract.ContractDays
-                        .Where(cd => cd.DayNumber <= daysWorked && !cd.IsProcessed)
-                        .ToList();
-
-                    foreach (var day in settledDays)
+                    foreach (var day in unpaidDays)
                     {
                         day.IsProcessed   = true;
                         day.ProcessedAt   = DateTime.UtcNow;
@@ -937,6 +1004,16 @@ namespace EgyptOnline.Application.Services.Contract
                     if (daysWorked >= contract.TotalDays)
                     {
                         throw new InvalidOperationException($"عدد الأيام المدفوع ({daysWorked}) يجب أن يكون أقل من إجمالي أيام العقد ({contract.TotalDays})");
+                    }
+
+                    // For Batch contracts, validate that all unpaid days have BatchAmount set
+                    if (contract.ContractType == ContractType.Batch)
+                    {
+                        var missingAmountDays = unpaidDays.Where(cd => !cd.BatchAmount.HasValue).ToList();
+                        if (missingAmountDays.Any())
+                        {
+                            throw new InvalidOperationException($"بعض الأيام المستلمة ({string.Join(", ", missingAmountDays.Select(cd => cd.DayNumber))}) لا تحتوي على مبالغ دفعات محددة");
+                        }
                     }
 
                     // Validate newStartDate is not before the last worked day
