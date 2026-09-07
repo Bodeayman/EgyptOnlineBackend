@@ -634,6 +634,7 @@ public class ContractTypeTests : UnitTestBase
         Assert.Equal(3, result.TotalDays);
         Assert.Equal(600, result.TotalAmount);
         Assert.Equal(ContractType.PerDay, result.ContractType);
+        Assert.Equal(new DateTime(2026, 10, 7, 0, 0, 0, DateTimeKind.Utc), result.EndDate); // EndDate = last selected date
 
         var days = await Context.ContractDays
             .Where(cd => cd.ContractId == result.Id)
@@ -725,6 +726,7 @@ public class ContractTypeTests : UnitTestBase
         Assert.Equal(5000, result.TotalAmount);
         Assert.Equal(0, result.DailySalary);
         Assert.Equal(4, result.TotalDays); // 4 days from Sep 10 to Sep 13 inclusive
+        Assert.Equal(endDate, result.EndDate); // EndDate = user-provided end date
 
         var days = await Context.ContractDays
             .Where(cd => cd.ContractId == result.Id)
@@ -775,6 +777,7 @@ public class ContractTypeTests : UnitTestBase
         Assert.Equal(ContractType.Batch, result.ContractType);
         Assert.Equal(4500, result.TotalAmount);
         Assert.Equal(3, result.TotalDays);
+        Assert.Equal(new DateTime(2026, 9, 25, 0, 0, 0, DateTimeKind.Utc), result.EndDate); // EndDate = last batch's date
 
         var days = await Context.ContractDays
             .Where(cd => cd.ContractId == result.Id)

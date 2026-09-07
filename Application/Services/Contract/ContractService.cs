@@ -59,6 +59,7 @@ namespace EgyptOnline.Application.Services.Contract
                     {
                         contract.TotalDays = selectedDates.Count;
                         contract.StartDate = selectedDates.First();
+                        contract.EndDate = selectedDates.Last();
                         contract.TotalAmount = contract.DailySalary * contract.TotalDays;
                     }
                     else
@@ -71,6 +72,7 @@ namespace EgyptOnline.Application.Services.Contract
                             .Select(i => startDate.AddDays(i))
                             .ToList();
                         contract.StartDate = startDate;
+                        contract.EndDate = selectedDates.Last();
                         contract.TotalAmount = contract.DailySalary * contract.TotalDays;
                     }
                     break;
@@ -90,7 +92,9 @@ namespace EgyptOnline.Application.Services.Contract
                     // Set TotalAmount from the sum of BatchAmount values (don't rely on controller-provided value)
                     contract.TotalAmount = totalBatchAmount;
                     contract.TotalDays = contractDays.Count;
-                    contract.StartDate = contractDays.OrderBy(cd => cd.Date).First().Date;
+                    var orderedBatchDays = contractDays.OrderBy(cd => cd.Date).ToList();
+                    contract.StartDate = orderedBatchDays.First().Date;
+                    contract.EndDate = orderedBatchDays.Last().Date;
                     break;
 
                 case ContractType.EndOfDays:
