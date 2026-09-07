@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 namespace EgyptOnline.Controllers
 {
     [ApiController]
-    [Route("api/v{version:apiVersion}")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiVersion("1.0")]
     [Authorize(Roles = Roles.User)]
     public class SearchController : ControllerBase
@@ -735,120 +735,5 @@ namespace EgyptOnline.Controllers
 
         #endregion
 
-        #region Search V2 Endpoints
-
-        [ApiVersion("2.0")]
-        [HttpGet("workers")]
-        public async Task<IActionResult> SearchWorkersV2([FromQuery] FilterSearchDto? filter)
-        {
-            try
-            {
-                var results = await _searchService.SearchWorkersV2Async(filter);
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SearchWorkersV2 failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
-            }
-        }
-
-        [ApiVersion("2.0")]
-        [HttpGet("companies")]
-        public async Task<IActionResult> SearchCompaniesV2([FromQuery] FilterSearchDto? filter)
-        {
-            try
-            {
-                var results = await _searchService.SearchCompaniesV2Async(filter);
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SearchCompaniesV2 failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
-            }
-        }
-
-        [ApiVersion("2.0")]
-        [HttpGet("contractors")]
-        public async Task<IActionResult> SearchContractorsV2([FromQuery] FilterSearchDto? filter)
-        {
-            try
-            {
-                var results = await _searchService.SearchContractorsV2Async(filter);
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SearchContractorsV2 failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
-            }
-        }
-
-        [ApiVersion("2.0")]
-        [HttpGet("marketplaces")]
-        public async Task<IActionResult> SearchMarketPlacesV2([FromQuery] FilterSearchDto? filter)
-        {
-            try
-            {
-                var results = await _searchService.SearchMarketPlacesV2Async(filter);
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SearchMarketPlacesV2 failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
-            }
-        }
-
-        [ApiVersion("2.0")]
-        [HttpGet("engineers")]
-        public async Task<IActionResult> SearchEngineersV2([FromQuery] FilterSearchDto? filter)
-        {
-            try
-            {
-                var results = await _searchService.SearchEngineersV2Async(filter);
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SearchEngineersV2 failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
-            }
-        }
-
-        [ApiVersion("2.0")]
-        [HttpGet("assistants")]
-        public async Task<IActionResult> SearchAssistantsV2([FromQuery] FilterSearchDto? filter)
-        {
-            try
-            {
-                var results = await _searchService.SearchAssistantsV2Async(filter);
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SearchAssistantsV2 failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
-            }
-        }
-
-        [ApiVersion("2.0")]
-        [HttpGet("sculptors")]
-        public async Task<IActionResult> SearchSculptorsV2([FromQuery] FilterSearchDto? filter)
-        {
-            try
-            {
-                var results = await _searchService.SearchSculptorsV2Async(filter);
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SearchSculptorsV2 failed: {Message}", ex.Message);
-                return StatusCode(500, new { message = $"Internal Error: {ex.Message}" });
-            }
-        }
-
-        #endregion
     }
 }
