@@ -1,6 +1,7 @@
 
 
 using System.Runtime.InteropServices;
+using EgyptOnline.Application.Services.Search;
 using EgyptOnline.Data;
 using EgyptOnline.Domain.Interfaces;
 using EgyptOnline.Dtos;
@@ -27,13 +28,15 @@ namespace EgyptOnline.Controllers
         private readonly UserManager<User> _userManager;
         private readonly ApplicationDbContext _context;
         private readonly OccupationService _occupationService;
+        private readonly SearchService _searchService;
 
-        public ProfileController(UserManager<User> userManager, IUserService userService, ApplicationDbContext context, OccupationService occupationService)
+        public ProfileController(UserManager<User> userManager, IUserService userService, ApplicationDbContext context, OccupationService occupationService, SearchService searchService)
         {
             _userService = userService;
             _userManager = userManager;
             _context = context;
             _occupationService = occupationService;
+            _searchService = searchService;
         }
         // Get the profile of the worker
         // Non-critical: Allow viewing profile even if expired (uses token claim, no DB hit for subscription check)
@@ -56,6 +59,28 @@ namespace EgyptOnline.Controllers
                     return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
 
                 return Ok(user.ToShowProfileDto());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
+            }
+        }
+
+        // Get the public profile of any user by id.
+        // Only explicitly public fields are exposed; the response is projected
+        // into SearchV2ResultDto and never serializes the raw User entity.
+        // Route uses a GUID constraint so literal action names like
+        // "subscription-status" never collide and invalid GUIDs are rejected.
+        [HttpGet("{userId:guid}")]
+        public async Task<IActionResult> GetUserProfile(Guid userId)
+        {
+            try
+            {
+                var profile = await _searchService.GetUserPublicProfileAsync(userId.ToString());
+                if (profile == null)
+                    return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
+
+                return Ok(profile);
             }
             catch (Exception ex)
             {

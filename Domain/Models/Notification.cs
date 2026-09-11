@@ -23,5 +23,8 @@ namespace EgyptOnline.Domain.Models
         // Optional fields for sender information
         public string? SenderId { get; set; }
         public string? SenderName { get; set; }
+
+        // Optional: contract this notification relates to (e.g. rating prompt)
+        public int? ContractId { get; set; }
     }
 }

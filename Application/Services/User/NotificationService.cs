@@ -8,7 +8,7 @@ namespace EgyptOnline.Services
 {
     public interface INotificationService
     {
-        Task SendNotificationToUser(string userId, string title, string body, string type = "general", string senderId = null, string senderName = null);
+        Task SendNotificationToUser(string userId, string title, string body, string type = "general", string senderId = null, string senderName = null, int? contractId = null);
         Task SendNotificationToAdmins(string title, string body);
     }
 
@@ -32,10 +32,11 @@ namespace EgyptOnline.Services
             string body,
             string type = "general",
             string senderId = null,
-            string senderName = null)
+            string senderName = null,
+            int? contractId = null)
         {
             // Save to MongoDB
-            await _notificationMongoService.SaveNotificationAsync(userId, title, body, type, senderId, senderName);
+            await _notificationMongoService.SaveNotificationAsync(userId, title, body, type, senderId, senderName, contractId);
 
             var user = await _context.Users.Include(u => u.FirebaseTokens)
                 .FirstOrDefaultAsync(u => u.Id == userId);
@@ -58,6 +59,11 @@ namespace EgyptOnline.Services
                 if (!string.IsNullOrEmpty(senderName))
                 {
                     data["senderName"] = senderName;
+                }
+
+                if (contractId.HasValue)
+                {
+                    data["contractId"] = contractId.Value.ToString();
                 }
 
                 var message = new Message()

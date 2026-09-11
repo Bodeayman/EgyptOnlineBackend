@@ -66,6 +66,7 @@ namespace EgyptOnline.Models
 
         public DateTime? UpdatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
+        public bool RatingNotificationSent { get; set; }
         public DateTime? TerminatedAt { get; set; }
         public string? TerminatedBy { get; set; }
         public string? TerminationReason { get; set; }

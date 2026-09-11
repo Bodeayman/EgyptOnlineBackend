@@ -23,6 +23,12 @@ namespace EgyptOnline.Application.Services.Rating
         /// </summary>
         public async Task<RatingResponseDto> SubmitRatingAsync(string userId, CreateRatingDto dto)
         {
+            // A user cannot rate/comment on themselves
+            if (userId == dto.TargetUserId)
+            {
+                throw new InvalidOperationException("Cannot rate yourself");
+            }
+
             // Validate that the target user exists
             var targetUser = await _context.Users.FindAsync(dto.TargetUserId);
             if (targetUser == null)
@@ -61,6 +67,33 @@ namespace EgyptOnline.Application.Services.Rating
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             return rating != null ? MapToResponseDto(rating) : null;
+        }
+
+        /// <summary>
+        /// Delete a rating that belongs to the given user.
+        /// Ownership is enforced server-side using the authenticated user's ID.
+        /// </summary>
+        public async Task<RatingResponseDto> DeleteRatingAsync(string userId, int ratingId)
+        {
+            var rating = await _context.Ratings
+                .Include(r => r.User)
+                .Include(r => r.TargetUser)
+                .FirstOrDefaultAsync(r => r.Id == ratingId);
+
+            if (rating == null)
+            {
+                throw new KeyNotFoundException($"Rating {ratingId} not found");
+            }
+
+            if (rating.UserId != userId)
+            {
+                throw new UnauthorizedAccessException("Cannot delete another user's rating");
+            }
+
+            _context.Ratings.Remove(rating);
+            await _context.SaveChangesAsync();
+
+            return MapToResponseDto(rating);
         }
 
         /// <summary>

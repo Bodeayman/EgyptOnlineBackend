@@ -61,6 +61,10 @@ namespace EgyptOnline.Presentation.Controllers.V2
             {
                 return BadRequest(new { message = "المستخدم المستهدف غير موجود", errorCode = "USER_NOT_FOUND" });
             }
+            catch (InvalidOperationException)
+            {
+                return BadRequest(new { message = "لا يمكنك التقييم أو التعليق على نفسك", errorCode = "CANNOT_RATE_SELF" });
+            }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
@@ -100,6 +104,38 @@ namespace EgyptOnline.Presentation.Controllers.V2
                     return NotFound(new { message = $"التقييم بالمعرف {id} غير موجود", errorCode = "RATING_NOT_FOUND" });
                 }
                 return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "حدث خطأ داخلي في الخادم", errorCode = "INTERNAL_ERROR" });
+            }
+        }
+
+        /// <summary>
+        /// Delete the authenticated user's own rating
+        /// DELETE /api/v2/ratings/{id}
+        /// </summary>
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteRating(int id)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "المستخدم غير مصرح له", errorCode = "UNAUTHORIZED" });
+            }
+
+            try
+            {
+                var result = await _ratingService.DeleteRatingAsync(userId, id);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { message = $"التقييم بالمعرف {id} غير موجود", errorCode = "RATING_NOT_FOUND" });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
             }
             catch (Exception ex)
             {

@@ -79,7 +79,7 @@ public class JobRequestServiceTests : UnitTestBase
         // Arrange – notification service throws on every call
         await SeedUser("c2");
         A.CallTo(() => _notifFake.SendNotificationToUser(
-                A<string>._, A<string>._, A<string>._, A<string>._, A<string>._, A<string>._))
+                A<string>._, A<string>._, A<string>._, A<string>._, A<string>._, A<string>._, A<int?>._))
             .Throws<Exception>();
 
         var svc = BuildService();

@@ -4,6 +4,7 @@ using EgyptOnline.Models;
 using EgyptOnline.Tests.Unit;
 using FakeItEasy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using RatingEntity = EgyptOnline.Models.Rating;
 
@@ -614,6 +615,176 @@ public class RatingServiceTests : UnitTestBase
     {
         var result = await _ratingService.GetRatingByIdAsync(999999);
         Assert.Null(result);
+    }
+
+    // ── Self-rating prevention ────────────────────────────────────────────
+
+    [Fact]
+    public async Task SubmitRatingAsync_ShouldReject_WhenRatingSelf()
+    {
+        // Arrange
+        var userId = "self-rater-id";
+        var user = new User
+        {
+            Id = userId,
+            FirstName = "John",
+            LastName = "Doe",
+            UserName = "johndoe",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        Context.Users.Add(user);
+        await Context.SaveChangesAsync();
+
+        var dto = new CreateRatingDto
+        {
+            TargetUserId = userId,
+            Rating = 5,
+            Description = "Commenting on myself"
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _ratingService.SubmitRatingAsync(userId, dto));
+    }
+
+    // ── Delete own rating ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteRatingAsync_ShouldDeleteOwnRating()
+    {
+        // Arrange
+        var userId = "owner-id";
+        var targetUserId = "target-id";
+        var user = new User
+        {
+            Id = userId,
+            FirstName = "John",
+            LastName = "Doe",
+            UserName = "johndoe",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        var targetUser = new User
+        {
+            Id = targetUserId,
+            FirstName = "Jane",
+            LastName = "Smith",
+            UserName = "janesmith",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        Context.Users.Add(user);
+        Context.Users.Add(targetUser);
+        var rating = new RatingEntity { UserId = userId, TargetUserId = targetUserId, RatingValue = 5, Description = "Great!" };
+        Context.Ratings.Add(rating);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _ratingService.DeleteRatingAsync(userId, rating.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(5, result.Rating);
+        Assert.False(await Context.Ratings.AnyAsync(r => r.Id == rating.Id));
+    }
+
+    [Fact]
+    public async Task DeleteRatingAsync_ShouldReject_WhenNotOwner()
+    {
+        // Arrange
+        var ownerId = "owner-id";
+        var otherUserId = "other-id";
+        var targetUserId = "target-id";
+        var owner = new User
+        {
+            Id = ownerId,
+            FirstName = "John",
+            LastName = "Doe",
+            UserName = "johndoe",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        var other = new User
+        {
+            Id = otherUserId,
+            FirstName = "Sam",
+            LastName = "Lee",
+            UserName = "samlee",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        var target = new User
+        {
+            Id = targetUserId,
+            FirstName = "Jane",
+            LastName = "Smith",
+            UserName = "janesmith",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        Context.Users.Add(owner);
+        Context.Users.Add(other);
+        Context.Users.Add(target);
+        var rating = new RatingEntity { UserId = ownerId, TargetUserId = targetUserId, RatingValue = 5 };
+        Context.Ratings.Add(rating);
+        await Context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _ratingService.DeleteRatingAsync(otherUserId, rating.Id));
+
+        // The rating should still exist (not deleted)
+        Assert.True(await Context.Ratings.AnyAsync(r => r.Id == rating.Id));
+    }
+
+    [Fact]
+    public async Task DeleteRatingAsync_ShouldThrow_WhenNotFound()
+    {
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _ratingService.DeleteRatingAsync("any-user", 999999));
+    }
+
+    [Fact]
+    public async Task DeleteRatingAsync_ShouldKeepAggregatesCorrect()
+    {
+        // Arrange
+        var userId = "owner-id";
+        var targetUserId = "target-id";
+        var user = new User
+        {
+            Id = userId,
+            FirstName = "John",
+            LastName = "Doe",
+            UserName = "johndoe",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        var target = new User
+        {
+            Id = targetUserId,
+            FirstName = "Jane",
+            LastName = "Smith",
+            UserName = "janesmith",
+            Governorate = "Cairo",
+            City = "Cairo"
+        };
+        Context.Users.Add(user);
+        Context.Users.Add(target);
+
+        // Two ratings overall: one to be deleted (5) and one that remains (3)
+        var toDelete = new RatingEntity { UserId = userId, TargetUserId = targetUserId, RatingValue = 5 };
+        var toKeep = new RatingEntity { UserId = userId, TargetUserId = targetUserId, RatingValue = 3 };
+        Context.Ratings.AddRange(toDelete, toKeep);
+        await Context.SaveChangesAsync();
+
+        // Act
+        await _ratingService.DeleteRatingAsync(userId, toDelete.Id);
+
+        // Assert aggregates are recomputed from remaining ratings
+        var summary = await _ratingService.GetRatingsAsync();
+        Assert.Equal(1, summary.Summary.TotalRatings);
+        Assert.Equal(3.0, summary.Summary.AverageRating);
+        Assert.Equal(1, summary.Summary.Distribution.ThreeStars);
+        Assert.DoesNotContain(summary.Ratings, r => r.Id == toDelete.Id);
     }
 }
 

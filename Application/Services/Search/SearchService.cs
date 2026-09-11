@@ -159,6 +159,122 @@ namespace EgyptOnline.Application.Services.Search
                 postPreviews.GetValueOrDefault(s.User.Id, new()))).ToList();
         }
 
+        /// <summary>
+        /// Returns the public profile for a single user by id.
+        /// Only explicitly public information is exposed. The user supplies the
+        /// id but the lookup is fully parameterized through EF Core and the
+        /// response is projected into SearchV2ResultDto (a user entity is never
+        /// serialized). Returns null when the user does not exist.
+        /// </summary>
+        public async Task<SearchV2ResultDto?> GetUserPublicProfileAsync(string userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.ServiceProvider)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            var isOccupied = _occupationService != null &&
+                             await _occupationService.IsUserOccupiedAsync(userId);
+
+            // Ratings received by this user (deleted ratings no longer exist in the table)
+            var ratings = await GetReceivedRatingsSummaryAsync(userId);
+            var postPreviews = (await GetPostImagePreviewsForUsers([userId]))
+                .GetValueOrDefault(userId, new List<string>());
+
+            if (user.ServiceProvider != null)
+            {
+                var mapped = await MapProviderProfileAsync(
+                    user.ServiceProvider.ProviderType, userId, isOccupied, ratings, postPreviews);
+                if (mapped != null)
+                {
+                    return mapped;
+                }
+            }
+
+            // No provider or unrecognized provider type — expose only the public base fields
+            return BuildBaseProfile(user, isOccupied, ratings, postPreviews);
+        }
+
+        /// <summary>
+        /// Average and count of ratings the given user RECEIVED (public reputation).
+        /// A user with no ratings returns (0, 0).
+        /// </summary>
+        private async Task<(double average, int count)> GetReceivedRatingsSummaryAsync(string userId)
+        {
+            var summary = await _context.Ratings
+                .Where(r => r.TargetUserId == userId)
+                .GroupBy(r => r.TargetUserId)
+                .Select(g => new
+                {
+                    Average = g.Average(r => r.RatingValue),
+                    Count = g.Count()
+                })
+                .FirstOrDefaultAsync();
+
+            return summary == null ? (0, 0) : (Math.Round(summary.Average, 1), summary.Count);
+        }
+
+        private static SearchV2ResultDto BuildBaseProfile(User user, bool isOccupied, (double average, int count) ratings, List<string> postPreviews)
+        {
+            return new SearchV2ResultDto
+            {
+                userId = user.Id,
+                name = $"{user.FirstName} {user.LastName}",
+                skill = string.Empty,
+                governorate = user.Governorate,
+                city = user.City,
+                district = user.District,
+                pay = 0,
+                owner = null,
+                imageUrl = user.ImageUrl,
+                isCompany = false,
+                workerType = 0,
+                mobileNumber = user.PhoneNumber ?? string.Empty,
+                typeOfService = user.ServiceProvider?.ProviderType,
+                aboutMe = user.ServiceProvider?.Bio,
+                isOccupied = isOccupied,
+                marketPlace = null,
+                derivedSpec = null,
+                averageRating = ratings.average,
+                totalRatingCount = ratings.count,
+                postImagePreviews = postPreviews
+            };
+        }
+
+        private async Task<SearchV2ResultDto?> MapProviderProfileAsync(string providerType, string userId, bool isOccupied, (double average, int count) ratings, List<string> postPreviews)
+        {
+            switch (providerType)
+            {
+                case "Worker":
+                    var worker = await _context.Workers.Include(w => w.User).FirstOrDefaultAsync(w => w.UserId == userId);
+                    return worker != null ? MapToV2Result(worker, false, Convert.ToInt32(worker.WorkerType), worker.ServicePricePerDay, isOccupied, ratings, postPreviews) : null;
+                case "Company":
+                    var company = await _context.Companies.Include(c => c.User).FirstOrDefaultAsync(c => c.UserId == userId);
+                    return company != null ? MapToV2Result(company, true, 0, 0, isOccupied, ratings, postPreviews) : null;
+                case "Contractor":
+                    var contractor = await _context.Contractors.Include(c => c.User).FirstOrDefaultAsync(c => c.UserId == userId);
+                    return contractor != null ? MapToV2Result(contractor, false, 0, 0, isOccupied, ratings, postPreviews) : null;
+                case "Marketplace":
+                    var marketPlace = await _context.MarketPlaces.Include(m => m.User).FirstOrDefaultAsync(m => m.UserId == userId);
+                    return marketPlace != null ? MapToV2Result(marketPlace, false, 0, 0, isOccupied, ratings, postPreviews) : null;
+                case "Engineer":
+                    var engineer = await _context.Engineers.Include(e => e.User).FirstOrDefaultAsync(e => e.UserId == userId);
+                    return engineer != null ? MapToV2Result(engineer, false, 0, 0, isOccupied, ratings, postPreviews) : null;
+                case "Assistant":
+                    var assistant = await _context.Assistants.Include(a => a.User).FirstOrDefaultAsync(a => a.UserId == userId);
+                    return assistant != null ? MapToV2Result(assistant, false, 0, 0, isOccupied, ratings, postPreviews) : null;
+                case "Sculptor":
+                    var sculptor = await _context.Sculptors.Include(s => s.User).FirstOrDefaultAsync(s => s.UserId == userId);
+                    return sculptor != null ? MapToV2Result(sculptor, false, Convert.ToInt32(sculptor.WorkerType), sculptor.ServicePricePerDay, isOccupied, ratings, postPreviews) : null;
+                default:
+                    return null;
+            }
+        }
+
         private async Task<Dictionary<string, (double average, int count)>> GetRatingsForUsers(List<string> userIds)
         {
             var ratings = await _context.Ratings

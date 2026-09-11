@@ -39,15 +39,15 @@ namespace EgyptOnline.Presentation.Hubs
         /// <summary>
         /// Send a notification to a specific user (can be called from server-side code)
         /// </summary>
-        public async Task SendNotificationToUser(string userId, string title, string body, string? senderId = null, string? senderName = null)
+        public async Task SendNotificationToUser(string userId, string title, string body, string? senderId = null, string? senderName = null, int? contractId = null)
         {
             try
             {
                 // Save to MongoDB
-                var notificationId = await _notificationService.SaveNotificationAsync(userId, title, body, senderId, senderName);
+                var notificationId = await _notificationService.SaveNotificationAsync(userId, title, body, "general", senderId, senderName, contractId);
 
                 // Send real-time notification to the user
-                await Clients.User(userId).SendAsync("ReceiveNotification", notificationId, title, body, senderId, senderName, DateTime.UtcNow);
+                await Clients.User(userId).SendAsync("ReceiveNotification", notificationId, title, body, senderId, senderName, contractId, DateTime.UtcNow);
             }
             catch (Exception ex)
             {

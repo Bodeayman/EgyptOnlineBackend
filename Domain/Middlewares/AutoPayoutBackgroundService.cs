@@ -246,25 +246,30 @@ public class AutoPayoutBackgroundService : BackgroundService
 
                 Log.Information("Contract {ContractId} completed. Payouts processed for type {ContractType}, remaining funds and penalties released", contract.Id, contract.ContractType);
 
-                // Send rating notification to client
-                try
+                // Send rating notification to client exactly once per contract
+                if (!contract.RatingNotificationSent)
                 {
-                    if (providerUser != null)
+                    contract.RatingNotificationSent = true;
+                    try
                     {
-                        await notificationService.SendNotificationToUser(
-                            contract.ClientUserId,
-                            "انتهى العقد. يمكنك الآن تقييم مقدم الخدمة",
-                            $"انتهى العقد #{contract.Id}. يمكنك الآن تقييم مقدم الخدمة {providerUser.FirstName} {providerUser.LastName}",
-                            "rating",
-                            providerUser.Id,
-                            $"{providerUser.FirstName} {providerUser.LastName}"
-                        );
-                        Log.Information("Sent rating notification for completed Contract {ContractId}", contract.Id);
+                        if (providerUser != null)
+                        {
+                            await notificationService.SendNotificationToUser(
+                                contract.ClientUserId,
+                                "انتهى العقد. يمكنك الآن تقييم مقدم الخدمة",
+                                $"انتهى العقد #{contract.Id}. يمكنك الآن تقييم مقدم الخدمة {providerUser.FirstName} {providerUser.LastName}",
+                                "rating",
+                                providerUser.Id,
+                                $"{providerUser.FirstName} {providerUser.LastName}",
+                                contract.Id
+                            );
+                            Log.Information("Sent rating notification for completed Contract {ContractId}", contract.Id);
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to send rating notification for completed Contract {ContractId}", contract.Id);
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to send rating notification for completed Contract {ContractId}", contract.Id);
+                    }
                 }
             }
 
@@ -389,6 +394,10 @@ public class AutoPayoutBackgroundService : BackgroundService
                 day.ProcessedAt = DateTime.UtcNow;
             }
 
+            contract.Status = "completed";
+            contract.CompletedAt = DateTime.UtcNow;
+            contract.UpdatedAt = DateTime.UtcNow;
+
             var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
 
             if (contract.ContractType == ContractType.EndOfDays && providerUser != null)
@@ -435,25 +444,30 @@ public class AutoPayoutBackgroundService : BackgroundService
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // Send rating notification to client
-            try
+            // Send rating notification to client exactly once per contract
+            if (!contract.RatingNotificationSent)
             {
-                if (providerUser != null)
+                contract.RatingNotificationSent = true;
+                try
                 {
-                    await notificationService.SendNotificationToUser(
-                        contract.ClientUserId,
-                        "انتهى العقد. يمكنك الآن تقييم مقدم الخدمة",
-                        $"انتهى العقد #{contract.Id}. يمكنك الآن تقييم مقدم الخدمة {providerUser.FirstName} {providerUser.LastName}",
-                        "rating",
-                        providerUser.Id,
-                        $"{providerUser.FirstName} {providerUser.LastName}"
-                    );
-                    Log.Information("Sent rating notification for auto-completed Contract {ContractId}", contract.Id);
+                    if (providerUser != null)
+                    {
+                        await notificationService.SendNotificationToUser(
+                            contract.ClientUserId,
+                            "انتهى العقد. يمكنك الآن تقييم مقدم الخدمة",
+                            $"انتهى العقد #{contract.Id}. يمكنك الآن تقييم مقدم الخدمة {providerUser.FirstName} {providerUser.LastName}",
+                            "rating",
+                            providerUser.Id,
+                            $"{providerUser.FirstName} {providerUser.LastName}",
+                            contract.Id
+                        );
+                        Log.Information("Sent rating notification for auto-completed Contract {ContractId}", contract.Id);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Failed to send rating notification for auto-completed Contract {ContractId}", contract.Id);
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to send rating notification for auto-completed Contract {ContractId}", contract.Id);
+                }
             }
 
             Log.Information(
@@ -585,40 +599,6 @@ public class AutoPayoutBackgroundService : BackgroundService
                         Log.Warning(ex, "Failed to send 24h EndOfDays notification for Contract {ContractId}", contract.Id);
                     }
                 }
-            }
-        }
-
-        // Send rating notifications for recently completed contracts
-        var recentlyCompletedContracts = await context.Contracts
-            .Include(c => c.ContractDays)
-            .Where(c => c.Status == "completed" &&
-                        c.CompletedAt.HasValue &&
-                        c.CompletedAt.Value.AddHours(1) > DateTime.UtcNow &&
-                        c.CompletedAt.Value <= DateTime.UtcNow)
-            .ToListAsync(stoppingToken);
-
-        foreach (var contract in recentlyCompletedContracts)
-        {
-            if (stoppingToken.IsCancellationRequested) break;
-
-            var providerUser = await context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == contract.ServiceProviderPhoneNumber);
-            if (providerUser == null) continue;
-
-            try
-            {
-                await notificationService.SendNotificationToUser(
-                    contract.ClientUserId,
-                    "انتهى العقد. يمكنك الآن تقييم مقدم الخدمة",
-                    $"انتهى العقد #{contract.Id}. يمكنك الآن تقييم مقدم الخدمة {providerUser.FirstName} {providerUser.LastName}",
-                    "rating",
-                    providerUser.Id,
-                    $"{providerUser.FirstName} {providerUser.LastName}"
-                );
-                Log.Information("Sent rating notification for completed Contract {ContractId}", contract.Id);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Failed to send rating notification for completed Contract {ContractId}", contract.Id);
             }
         }
     }
