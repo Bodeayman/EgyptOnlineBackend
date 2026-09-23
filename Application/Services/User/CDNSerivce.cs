@@ -55,10 +55,11 @@ namespace EgyptOnline.Services
                 ServiceURL = endpoint,
                 ForcePathStyle = true,
                 AuthenticationRegion = "auto",
-                // R2 rejects the trailing-checksum streaming signature
-                // (STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER) that the SDK emits by
-                // default. WHEN_REQUIRED keeps SigV4 payload signing + chunked encoding
-                // but drops the x-amz-checksum trailer R2 does not implement.
+                // R2 does not implement AWS SigV4 streaming/chunked payload signing
+                // (STREAMING-AWS4-HMAC-SHA256-PAYLOAD[-TRAILER]) emitted by the SDK by
+                // default. WHEN_REQUIRED suppresses the x-amz-checksum trailer, and
+                // per-request DisablePayloadSigning (see BuildPutRequest) switches the
+                // upload to UNSIGNED-PAYLOAD, the framing R2 supports.
                 RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED
             };
 
@@ -193,15 +194,7 @@ namespace EgyptOnline.Services
             try
             {
                 using var stream = new MemoryStream(fileBytes);
-
-                var request = new PutObjectRequest
-                {
-                    BucketName = bucket,
-                    Key = objectKey,
-                    InputStream = stream,
-                    ContentType = contentType,
-                    AutoCloseStream = true
-                };
+                var request = BuildPutObjectRequest(bucket, objectKey, contentType, stream);
 
                 await _s3.PutObjectAsync(request);
             }
@@ -210,6 +203,24 @@ namespace EgyptOnline.Services
                 _logger.LogError(ex, "R2 PutObject failed: bucket={Bucket}, key={ObjectKey}", bucket, objectKey);
                 throw new Exception($"Image upload failed: {ex.Message}", ex);
             }
+        }
+
+        internal static PutObjectRequest BuildPutObjectRequest(string bucket, string objectKey, string contentType, Stream stream)
+        {
+            return new PutObjectRequest
+            {
+                BucketName = bucket,
+                Key = objectKey,
+                InputStream = stream,
+                ContentType = contentType,
+                AutoCloseStream = true,
+                // R2 does not implement the Streaming SigV4 that AWSSDK.S3 emits by
+                // default (STREAMING-AWS4-HMAC-SHA256-PAYLOAD). Disabling payload
+                // signing makes the SDK send x-amz-content-sha256: UNSIGNED-PAYLOAD,
+                // the framing Cloudflare R2 accepts.
+                DisablePayloadSigning = true,
+                DisableDefaultChecksumValidation = true
+            };
         }
 
         private async Task RemoveObjectAsync(string bucket, string objectKey)
