@@ -144,7 +144,7 @@ namespace EgyptOnline.Controllers
                 // never reports failure after data was already changed.
                 if (user.ServiceProvider == null)
                 {
-                    return BadRequest(new { message = "لم يتم العثور على مقدم الخدمة المرتبط بهذا المستخدم", errorCode = "PROVIDER_NOT_FOUND" });
+                    return NotFound(new { message = "لم يتم العثور على مقدم الخدمة المرتبط بهذا المستخدم", errorCode = "PROVIDER_NOT_FOUND" });
                 }
 
                 using var transaction = await _context.Database.BeginTransactionAsync();
@@ -164,10 +164,9 @@ namespace EgyptOnline.Controllers
                     user.ServiceProvider.Bio = model.Bio;
                 }
 
-                // ProviderType is stored verbatim at registration (any casing); switch case-insensitively
-                switch (user.ServiceProvider.ProviderType?.ToLowerInvariant())
+                switch (user.ServiceProvider.ProviderType)
                 {
-                    case "worker":
+                    case "Worker":
                         var worker = await _context.Workers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (worker == null) return BadRequest(new { message = "لم يتم العثور على بيانات العامل", errorCode = "PROVIDER_NOT_FOUND" });
 
@@ -180,23 +179,23 @@ namespace EgyptOnline.Controllers
                         worker.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? worker.DerivedSpec : model.DerivedSpec;
                         break;
 
-                    case "contractor":
+                    case "Contractor":
                         var contractor = await _context.Contractors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (contractor == null) return BadRequest(new { message = "لم يتم العثور على بيانات المقاول", errorCode = "PROVIDER_NOT_FOUND" });
 
                         break;
 
-                    case "company":
+                    case "Company":
                         var company = await _context.Companies.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (company == null) return BadRequest(new { message = "لم يتم العثور على بيانات الشركة", errorCode = "PROVIDER_NOT_FOUND" });
                         break;
 
-                    case "marketplace":
+                    case "Marketplace":
                         var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (marketPlace == null) return BadRequest(new { message = "لم يتم العثور على بيانات المعرض", errorCode = "PROVIDER_NOT_FOUND" });
                         break;
 
-                    case "engineer":
+                    case "Engineer":
                         var engineer = await _context.Engineers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (engineer == null) return BadRequest(new { message = "لم يتم العثور على بيانات المهندس", errorCode = "PROVIDER_NOT_FOUND" });
 
@@ -205,7 +204,7 @@ namespace EgyptOnline.Controllers
                         engineer.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? engineer.DerivedSpec : model.DerivedSpec;
                         break;
 
-                    case "assistant":
+                    case "Assistant":
                         var assistant = await _context.Assistants.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (assistant == null) return BadRequest(new { message = "لم يتم العثور على بيانات المساعد", errorCode = "PROVIDER_NOT_FOUND" });
 
@@ -218,7 +217,7 @@ namespace EgyptOnline.Controllers
                         assistant.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? assistant.DerivedSpec : model.DerivedSpec;
                         break;
 
-                    case "sculptor":
+                    case "Sculptor":
                         var sculptor = await _context.Sculptors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (sculptor == null) return BadRequest(new { message = "لم يتم العثور على بيانات النحات", errorCode = "PROVIDER_NOT_FOUND" });
 
