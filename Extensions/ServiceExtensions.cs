@@ -28,7 +28,7 @@ namespace EgyptOnline.Extensions
         {
             services.AddScoped<UserImageService>();
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<ICDNService, MinioStorageService>();
+            services.AddScoped<ICDNService, R2StorageService>();
             services.AddScoped<IPaymentStrategy, MobileWalletPaymentStrategy>();
             services.AddScoped<IPaymentStrategy, CreditCardPaymentStrategy>();
             services.AddScoped<IPaymentService, PaymobService>();

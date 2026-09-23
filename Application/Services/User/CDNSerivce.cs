@@ -1,26 +1,27 @@
 using EgyptOnline.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Minio;
-using Minio.DataModel.Args;
-using Minio.Exceptions;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Util;
 
 namespace EgyptOnline.Services
 {
     /// <summary>
-    /// MinIO-backed CDN service with two-bucket strategy:
-    ///   • PUBLIC  bucket  → profile photos        → anonymous read, permanent URLs
+    /// Cloudflare R2-backed CDN service with two-bucket strategy:
+    ///   • PUBLIC  bucket  → profile photos        → anonymous read (via R2 public bucket custom domain), permanent URLs
     ///   • PRIVATE bucket  → KYC docs / receipts   → no public access, presigned URLs only
     /// </summary>
-    public class MinioStorageService : ICDNService
+    public class R2StorageService : ICDNService
     {
-        private readonly IMinioClient _minio;
+        private readonly IAmazonS3 _s3;
         private readonly string _publicBucket;
         private readonly string _privateBucket;
         private readonly string _publicBaseUrl;
-        private readonly string _publicEndpoint;
-        private readonly string _internalEndpoint;
-        private readonly ILogger<MinioStorageService> _logger;
+        private readonly ILogger<R2StorageService> _logger;
+
+        /// <inheritdoc/>
+        public string PublicBaseUrl => _publicBaseUrl;
 
         // ── Allowed image magic-byte signatures ───────────────────────────────────
         private static readonly IReadOnlyList<(byte[] Magic, int Offset)> AllowedMagicBytes =
@@ -36,30 +37,30 @@ namespace EgyptOnline.Services
         private static readonly string[] AllowedExtensions =
             { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
 
-        public MinioStorageService(IConfiguration config, ILogger<MinioStorageService> logger)
+        public R2StorageService(IConfiguration config, ILogger<R2StorageService> logger)
         {
             _logger = logger;
 
-            var endpoint  = config["Minio:Endpoint"]  ?? "localhost:9000";
-            var accessKey = config["Minio:AccessKey"] ?? throw new InvalidOperationException("Minio:AccessKey is not configured.");
-            var secretKey = config["Minio:SecretKey"] ?? throw new InvalidOperationException("Minio:SecretKey is not configured.");
-            var useSSL    = bool.Parse(config["Minio:UseSSL"] ?? "false");
+            var endpoint  = config["R2:Endpoint"]          ?? throw new InvalidOperationException("R2:Endpoint is not configured.");
+            var accessKey = config["R2:AccessKeyId"]       ?? throw new InvalidOperationException("R2:AccessKeyId is not configured.");
+            var secretKey = config["R2:SecretAccessKey"]   ?? throw new InvalidOperationException("R2:SecretAccessKey is not configured.");
 
-            _publicBucket  = config["Minio:PublicBucketName"]  ?? "egypt-online-public";
-            _privateBucket = config["Minio:PrivateBucketName"] ?? "egypt-online-private";
-            _publicBaseUrl = (config["Minio:PublicBaseUrl"] ?? $"http://{endpoint}/{_publicBucket}").TrimEnd('/');
-            _publicEndpoint = config["Minio:PublicEndpoint"] ?? endpoint;
-            _internalEndpoint = endpoint;
+            _publicBucket  = config["R2:PublicBucketName"]  ?? "egypt-online-public";
+            _privateBucket = config["R2:PrivateBucketName"] ?? "egypt-online-private";
+            _publicBaseUrl = (config["R2:PublicBaseUrl"] ?? throw new InvalidOperationException("R2:PublicBaseUrl is not configured.")).TrimEnd('/');
 
-            _minio = new MinioClient()
-                .WithEndpoint(endpoint)
-                .WithCredentials(accessKey, secretKey)
-                .WithSSL(useSSL)
-                .Build();
+            var s3Config = new AmazonS3Config
+            {
+                ServiceURL = endpoint,
+                ForcePathStyle = true,
+                AuthenticationRegion = "auto"
+            };
 
-            // Ensure both buckets exist at startup
-            _ = EnsureBucketExistsAsync(_publicBucket,  isPublic: true);
-            _ = EnsureBucketExistsAsync(_privateBucket, isPublic: false);
+            _s3 = new AmazonS3Client(accessKey, secretKey, s3Config);
+
+            // Ensure both buckets exist at startup (R2 requires bucket-creation permission; harmless if they exist)
+            _ = EnsureBucketExistsAsync(_publicBucket);
+            _ = EnsureBucketExistsAsync(_privateBucket);
         }
 
         // ═══════════════════════════════════════════════════════════════════════════
@@ -113,33 +114,57 @@ namespace EgyptOnline.Services
         /// <inheritdoc/>
         public async Task<string> GetPresignedUrlAsync(string objectKey, int expirySeconds = 3600)
         {
+            objectKey = NormalizeObjectKey(objectKey, _privateBucket);
+            if (string.IsNullOrWhiteSpace(objectKey))
+                throw new ArgumentException("Object key cannot be empty.", nameof(objectKey));
+
             try
             {
-                var args = new PresignedGetObjectArgs()
-                    .WithBucket(_privateBucket)
-                    .WithObject(objectKey)
-                    .WithExpiry(expirySeconds);
-
-                var url = await _minio.PresignedGetObjectAsync(args);
-
-                // Replace internal endpoint with public endpoint for external access
-                if (!string.IsNullOrEmpty(_publicEndpoint) && _publicEndpoint != _internalEndpoint)
+                var request = new GetPreSignedUrlRequest
                 {
-                    var uri = new Uri(url);
-                    var queryString = uri.Query;
+                    BucketName = _privateBucket,
+                    Key = objectKey,
+                    Expires = DateTime.UtcNow.AddSeconds(expirySeconds),
+                    Verb = HttpVerb.GET
+                };
 
-                    // Construct the public URL in the expected format: https://domain/files/bucket/object?query
-                    var publicUrl = $"https://{_publicEndpoint}/files/{_privateBucket}/{objectKey}{queryString}";
-                    url = publicUrl;
-                }
+                var url = await Task.FromResult(_s3.GetPreSignedURL(request));
 
                 _logger.LogInformation("Presigned URL generated for {ObjectKey}, expires in {Expiry}s", objectKey, expirySeconds);
                 return url;
             }
-            catch (MinioException ex)
+            catch (AmazonS3Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate presigned URL for {ObjectKey}", objectKey);
                 throw new Exception($"Could not generate presigned URL: {ex.Message}", ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<(Stream Content, string ContentType, long ContentLength)?> GetObjectStreamAsync(string bucket, string objectKey)
+        {
+            objectKey = NormalizeObjectKey(objectKey, bucket);
+            if (string.IsNullOrWhiteSpace(objectKey))
+                return null;
+
+            try
+            {
+                var request = new GetObjectRequest { BucketName = bucket, Key = objectKey };
+                var response = await _s3.GetObjectAsync(request);
+                var contentType = response.Headers.ContentType;
+                if (string.IsNullOrWhiteSpace(contentType))
+                    contentType = GetContentType(Path.GetExtension(objectKey));
+                return (response.ResponseStream, contentType, response.ContentLength);
+            }
+            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("R2 GetObject not found: bucket={Bucket}, key={ObjectKey}", bucket, objectKey);
+                return null;
+            }
+            catch (AmazonS3Exception ex)
+            {
+                _logger.LogError(ex, "R2 GetObject failed: bucket={Bucket}, key={ObjectKey}", bucket, objectKey);
+                throw new Exception($"Failed to read object: {ex.Message}", ex);
             }
         }
 
@@ -163,18 +188,20 @@ namespace EgyptOnline.Services
             {
                 using var stream = new MemoryStream(fileBytes);
 
-                var args = new PutObjectArgs()
-                    .WithBucket(bucket)
-                    .WithObject(objectKey)
-                    .WithStreamData(stream)
-                    .WithObjectSize(fileBytes.Length)
-                    .WithContentType(contentType);
+                var request = new PutObjectRequest
+                {
+                    BucketName = bucket,
+                    Key = objectKey,
+                    InputStream = stream,
+                    ContentType = contentType,
+                    AutoCloseStream = true
+                };
 
-                await _minio.PutObjectAsync(args);
+                await _s3.PutObjectAsync(request);
             }
-            catch (MinioException ex)
+            catch (AmazonS3Exception ex)
             {
-                _logger.LogError(ex, "MinIO PutObject failed: bucket={Bucket}, key={ObjectKey}", bucket, objectKey);
+                _logger.LogError(ex, "R2 PutObject failed: bucket={Bucket}, key={ObjectKey}", bucket, objectKey);
                 throw new Exception($"Image upload failed: {ex.Message}", ex);
             }
         }
@@ -183,59 +210,37 @@ namespace EgyptOnline.Services
         {
             try
             {
-                var args = new RemoveObjectArgs()
-                    .WithBucket(bucket)
-                    .WithObject(objectKey);
+                var request = new DeleteObjectRequest { BucketName = bucket, Key = objectKey };
 
-                await _minio.RemoveObjectAsync(args);
+                await _s3.DeleteObjectAsync(request);
                 _logger.LogInformation("Deleted: bucket={Bucket}, key={ObjectKey}", bucket, objectKey);
             }
-            catch (MinioException ex)
+            catch (AmazonS3Exception ex)
             {
-                _logger.LogError(ex, "MinIO RemoveObject failed: bucket={Bucket}, key={ObjectKey}", bucket, objectKey);
+                _logger.LogError(ex, "R2 RemoveObject failed: bucket={Bucket}, key={ObjectKey}", bucket, objectKey);
             }
         }
 
-        private async Task EnsureBucketExistsAsync(string bucketName, bool isPublic)
+        private async Task EnsureBucketExistsAsync(string bucketName)
         {
             try
             {
-                var existsArgs = new BucketExistsArgs().WithBucket(bucketName);
-                bool exists = await _minio.BucketExistsAsync(existsArgs);
+                bool exists = await AmazonS3Util.DoesS3BucketExistV2Async(_s3, bucketName);
 
                 if (!exists)
                 {
-                    await _minio.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
-                    _logger.LogInformation("Created MinIO bucket: {BucketName}", bucketName);
-                }
-
-                // Set anonymous read policy on the public bucket only
-                if (isPublic)
-                {
-                    var policy = $$"""
-                    {
-                        "Version": "2012-10-17",
-                        "Statement": [{
-                            "Effect": "Allow",
-                            "Principal": {"AWS": ["*"]},
-                            "Action":    ["s3:GetObject"],
-                            "Resource":  ["arn:aws:s3:::{{bucketName}}/*"]
-                        }]
-                    }
-                    """;
-
-                    var setPolicyArgs = new SetPolicyArgs()
-                        .WithBucket(bucketName)
-                        .WithPolicy(policy);
-
-                    await _minio.SetPolicyAsync(setPolicyArgs);
-                    _logger.LogInformation("Applied public-read policy to bucket: {BucketName}", bucketName);
+                    await _s3.PutBucketAsync(new PutBucketRequest { BucketName = bucketName });
+                    _logger.LogInformation("Created R2 bucket: {BucketName}", bucketName);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to initialise bucket: {BucketName}", bucketName);
             }
+
+            // Note: R2 does not support anonymous public-read bucket policies via the
+            // S3 API. Public access for the public bucket is enabled in the Cloudflare
+            // dashboard (Public bucket custom domain) and is served via R2:PublicBaseUrl.
         }
 
         // ─── Static utility ───────────────────────────────────────────────────────
@@ -269,13 +274,32 @@ namespace EgyptOnline.Services
         private static string ExtractObjectKey(string url, string publicBaseUrl, string bucketName)
         {
             var prefix = $"{publicBaseUrl}/";
-            if (url.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(publicBaseUrl) && url.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 return url.Substring(prefix.Length);
 
-            var path = new Uri(url).AbsolutePath.TrimStart('/');
-            return path.StartsWith(bucketName + "/", StringComparison.OrdinalIgnoreCase)
-                ? path.Substring(bucketName.Length + 1)
-                : path;
+            return NormalizeObjectKey(url, bucketName);
+        }
+
+        private static string NormalizeObjectKey(string input, string bucketName)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return input;
+
+            var key = input.Trim();
+            if (Uri.TryCreate(key, UriKind.Absolute, out var absolute) && !string.IsNullOrEmpty(absolute.AbsolutePath))
+                key = absolute.AbsolutePath.TrimStart('/');
+
+            // Legacy public URL format: https://host/files/{bucket}/{object-key}
+            if (key.StartsWith("files/", StringComparison.OrdinalIgnoreCase))
+                key = key.Substring("files/".Length);
+
+            if (key.StartsWith(bucketName + "/", StringComparison.OrdinalIgnoreCase))
+                key = key.Substring(bucketName.Length + 1);
+
+            var queryIndex = key.IndexOf('?');
+            if (queryIndex >= 0)
+                key = key.Substring(0, queryIndex);
+
+            return Uri.UnescapeDataString(key);
         }
 
         private static string SanitizeFileName(string fileName)

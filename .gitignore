@@ -6,6 +6,7 @@ Properties/
 Logs/
 wwwroot/images/profiles
 appsettings.Development.json
+.env
 serviceAccountKey.json
 googlekey.json
 

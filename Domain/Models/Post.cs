@@ -57,7 +57,7 @@ namespace EgyptOnline.Models
         public Post? Post { get; set; }
 
         /// <summary>
-        /// Public URL of the photo (stored in MinIO public bucket)
+        /// Public URL of the photo (stored in the R2 public bucket)
         /// </summary>
         [Required]
         [MaxLength(500)]
