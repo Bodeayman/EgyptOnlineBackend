@@ -39,20 +39,21 @@ namespace EgyptOnline.Services
                     fileBytes = ms.ToArray();
                 }
 
-                // Delete old image if exists
-                if (!string.IsNullOrEmpty(user.ImageUrl))
-                {
-                    try { await _cdnService.DeleteImageAsync(user.ImageUrl); }
-                    catch { /* log but ignore */ }
-                }
-
-                // Upload new image
+                // Upload the new image FIRST so a failed upload leaves the
+                // existing profile photo intact instead of deleting it.
+                var oldImageUrl = user.ImageUrl;
                 var uniqueFileName = $"user_{user.Id}_{Guid.NewGuid()}{extension}";
                 var imageUrl = await _cdnService.UploadImageAsync(fileBytes, uniqueFileName, "profiles");
 
-                // Update user entity
+                // Update user entity, then delete the old image best-effort.
                 user.ImageUrl = imageUrl;
                 await _context.SaveChangesAsync();
+
+                if (!string.IsNullOrEmpty(oldImageUrl))
+                {
+                    try { await _cdnService.DeleteImageAsync(oldImageUrl); }
+                    catch { /* log but ignore */ }
+                }
 
                 return imageUrl;
             }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
+using Amazon.Runtime;
 
 namespace EgyptOnline.Services
 {
@@ -53,7 +54,12 @@ namespace EgyptOnline.Services
             {
                 ServiceURL = endpoint,
                 ForcePathStyle = true,
-                AuthenticationRegion = "auto"
+                AuthenticationRegion = "auto",
+                // R2 rejects the trailing-checksum streaming signature
+                // (STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER) that the SDK emits by
+                // default. WHEN_REQUIRED keeps SigV4 payload signing + chunked encoding
+                // but drops the x-amz-checksum trailer R2 does not implement.
+                RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED
             };
 
             _s3 = new AmazonS3Client(accessKey, secretKey, s3Config);

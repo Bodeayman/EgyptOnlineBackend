@@ -649,6 +649,10 @@ namespace EgyptOnline.Controllers
                 try
                 {
                     var imageUrl = await _userImageService.UploadUserImageAsync(user, file);
+                    if (imageUrl == null)
+                    {
+                        return BadRequest(new { message = "فشل رفع صورة الملف الشخصي", errorCode = UserErrors.GeneralError.ToString() });
+                    }
                     return Ok(new { message = "تم رفع صورة الملف الشخصي بنجاح", imageUrl });
                 }
                 catch (Exception)
