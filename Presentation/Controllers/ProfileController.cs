@@ -140,36 +140,23 @@ namespace EgyptOnline.Controllers
                     return NotFound(new { message = "المستخدم غير موجود", errorCode = "USER_NOT_FOUND" });
                 }
 
-                // Subscription check is handled by [RequireSubscription] attribute
+                // All existence checks run BEFORE any mutation so an error response
+                // never reports failure after data was already changed.
+                if (user.ServiceProvider == null)
+                {
+                    return BadRequest(new { message = "لم يتم العثور على مقدم الخدمة المرتبط بهذا المستخدم", errorCode = "PROVIDER_NOT_FOUND" });
+                }
+
                 using var transaction = await _context.Database.BeginTransactionAsync();
 
-
-
-
-                /* End of Authentcation the User is added*/
-
-
                 /* Update User Data */
-
                 user.FirstName = model.FirstName ?? user.FirstName;
                 user.LastName = model.LastName ?? user.LastName;
                 user.Governorate = model.Governorate ?? user.Governorate;
                 user.City = model.City ?? user.City;
                 user.District = model.District ?? user.District;
 
-                // The UserName of the user should be consistent even after we change the first name and the last name
-
-
-
                 /* Update the Service Provider Data */
-
-
-
-
-                if (user == null || user.ServiceProvider == null)
-                {
-                    return NotFound(new { message = "لم يتم العثور على مقدم الخدمة المرتبط بهذا المستخدم", errorCode = "PROVIDER_NOT_FOUND" });
-                }
 
                 // Update Bio safely
                 if (!string.IsNullOrWhiteSpace(model.Bio))
@@ -183,8 +170,8 @@ namespace EgyptOnline.Controllers
                         var worker = await _context.Workers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (worker == null) return BadRequest(new { message = "لم يتم العثور على بيانات العامل", errorCode = "PROVIDER_NOT_FOUND" });
 
-                        if (model.Pay >= 0)
-                            worker.ServicePricePerDay = model.Pay;
+                        if (model.Pay.HasValue)
+                            worker.ServicePricePerDay = model.Pay.Value;
 
                         if (!string.IsNullOrWhiteSpace(model.Marketplace))
                             worker.MarketPlace = model.Marketplace;
@@ -221,8 +208,8 @@ namespace EgyptOnline.Controllers
                         var assistant = await _context.Assistants.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (assistant == null) return BadRequest(new { message = "لم يتم العثور على بيانات المساعد", errorCode = "PROVIDER_NOT_FOUND" });
 
-                        if (model.Pay >= 0)
-                            assistant.ServicePricePerDay = model.Pay;
+                        if (model.Pay.HasValue)
+                            assistant.ServicePricePerDay = model.Pay.Value;
 
                         if (!string.IsNullOrWhiteSpace(model.Marketplace))
                             assistant.MarketPlace = model.Marketplace;
@@ -234,8 +221,8 @@ namespace EgyptOnline.Controllers
                         var sculptor = await _context.Sculptors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (sculptor == null) return BadRequest(new { message = "لم يتم العثور على بيانات النحات", errorCode = "PROVIDER_NOT_FOUND" });
 
-                        if (model.Pay >= 0)
-                            sculptor.ServicePricePerDay = model.Pay;
+                        if (model.Pay.HasValue)
+                            sculptor.ServicePricePerDay = model.Pay.Value;
 
                         if (!string.IsNullOrWhiteSpace(model.Marketplace))
                             sculptor.MarketPlace = model.Marketplace;
@@ -245,11 +232,9 @@ namespace EgyptOnline.Controllers
                         return BadRequest(new { message = "نوع مقدم الخدمة غير صحيح", errorCode = "INVALID_PROVIDER_TYPE" });
                 }
 
-                // Save changes safely
-
-
-                await transaction.CommitAsync();
+                // Save changes inside the transaction, then commit — never the other way around
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return Ok(new { message = "تم تحديث ملفك الشخصي بنجاح" });
 

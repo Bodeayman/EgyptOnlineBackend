@@ -8,7 +8,7 @@ namespace EgyptOnline.Dtos
 
         public string? Bio { get; set; }
 
-        public decimal Pay { get; set; } = 0;
+        public decimal? Pay { get; set; }
 
 
 
