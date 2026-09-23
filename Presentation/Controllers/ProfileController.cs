@@ -164,9 +164,10 @@ namespace EgyptOnline.Controllers
                     user.ServiceProvider.Bio = model.Bio;
                 }
 
-                switch (user.ServiceProvider.ProviderType)
+                // ProviderType is stored verbatim at registration (any casing); switch case-insensitively
+                switch (user.ServiceProvider.ProviderType?.ToLowerInvariant())
                 {
-                    case "Worker":
+                    case "worker":
                         var worker = await _context.Workers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (worker == null) return BadRequest(new { message = "لم يتم العثور على بيانات العامل", errorCode = "PROVIDER_NOT_FOUND" });
 
@@ -179,23 +180,23 @@ namespace EgyptOnline.Controllers
                         worker.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? worker.DerivedSpec : model.DerivedSpec;
                         break;
 
-                    case "Contractor":
+                    case "contractor":
                         var contractor = await _context.Contractors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (contractor == null) return BadRequest(new { message = "لم يتم العثور على بيانات المقاول", errorCode = "PROVIDER_NOT_FOUND" });
 
                         break;
 
-                    case "Company":
+                    case "company":
                         var company = await _context.Companies.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (company == null) return BadRequest(new { message = "لم يتم العثور على بيانات الشركة", errorCode = "PROVIDER_NOT_FOUND" });
                         break;
 
-                    case "Marketplace":
+                    case "marketplace":
                         var marketPlace = await _context.MarketPlaces.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (marketPlace == null) return BadRequest(new { message = "لم يتم العثور على بيانات المعرض", errorCode = "PROVIDER_NOT_FOUND" });
                         break;
 
-                    case "Engineer":
+                    case "engineer":
                         var engineer = await _context.Engineers.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (engineer == null) return BadRequest(new { message = "لم يتم العثور على بيانات المهندس", errorCode = "PROVIDER_NOT_FOUND" });
 
@@ -204,7 +205,7 @@ namespace EgyptOnline.Controllers
                         engineer.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? engineer.DerivedSpec : model.DerivedSpec;
                         break;
 
-                    case "Assistant":
+                    case "assistant":
                         var assistant = await _context.Assistants.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (assistant == null) return BadRequest(new { message = "لم يتم العثور على بيانات المساعد", errorCode = "PROVIDER_NOT_FOUND" });
 
@@ -217,7 +218,7 @@ namespace EgyptOnline.Controllers
                         assistant.DerivedSpec = string.IsNullOrWhiteSpace(model.DerivedSpec) ? assistant.DerivedSpec : model.DerivedSpec;
                         break;
 
-                    case "Sculptor":
+                    case "sculptor":
                         var sculptor = await _context.Sculptors.FirstOrDefaultAsync(s => s.Id == user.ServiceProvider.Id);
                         if (sculptor == null) return BadRequest(new { message = "لم يتم العثور على بيانات النحات", errorCode = "PROVIDER_NOT_FOUND" });
 
